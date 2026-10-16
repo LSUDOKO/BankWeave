@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Env and data
+.env
+data/raw/
+*.csv
+!data/demo/*.csv
+eval/ground_truth.json
+
+# OS
+.DS_Store

@@ -1,0 +1,16 @@
+services:
+  falkordb:
+    image: falkordb/falkordb:latest
+    ports: ["6390:6379", "3030:3000"]
+    volumes: ["falkor_data:/var/lib/falkordb/data"]
+  redis:
+    image: redis:7-alpine
+    ports: ["6391:6379"]
+  postgres:
+    image: postgres:16
+    environment: { POSTGRES_PASSWORD: bankweave, POSTGRES_DB: kyc }
+    ports: ["5440:5432"]
+    volumes: ["pg_data:/var/lib/postgresql/data"]
+volumes:
+  falkor_data: {}
+  pg_data: {}

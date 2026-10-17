@@ -8,7 +8,14 @@ def test_memory_reports_used():
     assert m["used_mb"] > 0
 
 
+def test_prune_is_off_unless_enabled(monkeypatch):
+    monkeypatch.setattr(capacity, "memory", lambda: {"pct": 0.99, "used_mb": 99})
+    assert capacity.prune()["pruned"] == []
+
+
 def test_prune_drops_oldest_unpinned(monkeypatch):
+    from app.config import get_settings
+    monkeypatch.setattr(get_settings(), "capacity_prune", True)
     a = store.open_case("AL-cap-1", "acct-cap", ["001"], "cap test a", case_id="CAP-old")
     b = store.open_case("AL-cap-2", "acct-cap", ["001"], "cap test b", case_id="CAP-new")
     assert db.case_graph("CAP-old") in db.list_graphs()

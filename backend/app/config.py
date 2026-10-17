@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     task_stale_seconds: int = 30
     # case graphs the capacity guard never drops (comma separated case ids)
     pinned_cases: str = ""
+    # dropping old case graphs deletes data, so the guard only prunes when this is switched on
+    capacity_prune: bool = False
     falkordb_region: str = "local"
     worker_concurrency: int = 3
 

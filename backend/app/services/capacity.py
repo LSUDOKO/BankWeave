@@ -40,7 +40,7 @@ def drop_case(case_id: str) -> None:
 def prune(high: float = HIGH, target: float = TARGET) -> dict:
     """Drop the oldest unpinned case graphs while memory is above `high`, down to `target`."""
     m = memory()
-    if m["pct"] is None or m["pct"] < high:
+    if not get_settings().capacity_prune or m["pct"] is None or m["pct"] < high:
         return {"pruned": [], "memory": m}
     pinned = {c.strip() for c in get_settings().pinned_cases.split(",") if c.strip()}
     cases = sorted((g for g in db.case_graphs() if db.case_id_of(g) not in pinned),

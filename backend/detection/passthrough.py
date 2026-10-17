@@ -27,7 +27,7 @@ RETURN ins, collect({txn:o.txn_id, ts:o.ts, amt:o.amount, cur:o.cur, cp:d.id}) A
 CANDIDATES = cy("passthrough_candidates", "Accounts with enough in and out transfers to scan", """
 MATCH (x:Account) WHERE x.in_deg >= $m AND x.out_deg >= $m
   AND x.in_deg <= $max_deg AND x.out_deg <= $max_deg
-RETURN x.id AS id
+RETURN x.id AS id ORDER BY id SKIP $skip LIMIT $limit
 """)
 
 WRITE = cy("passthrough_write", "Store pass-through results on the account", """
@@ -103,8 +103,8 @@ def scan(graph: str = db.CONSORTIUM) -> dict:
     p = cfg()["passthrough"]
     flagged: dict[str, list[dict]] = {}
     # hubs (payroll, merchants) are skipped: pair matching is quadratic and hubs aren't relays
-    for r in db.ro(graph, CANDIDATES, {"m": p["min_pairs"], "max_deg": p.get("max_degree", 500)},
-                   timeout=60000):
+    for r in db.ro_all(graph, CANDIDATES, {"m": p["min_pairs"],
+                                           "max_deg": p.get("max_degree", 500)}):
         res = check(graph, r["id"])["result"]
         db.q(graph, WRITE, {"id": r["id"], "pairs": res["n_pairs"] if res["pairs"] else 0,
                             "value": res["value"]})

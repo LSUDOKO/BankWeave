@@ -19,6 +19,7 @@ R1 = cy("baseline_r1_large_transfer", "Baseline rule: transfer above threshold",
 MATCH (a:Account)-[t:TRANSFERS]->()
 WHERE t.amount > $thr
 RETURN a.id AS account, a.bank_id AS bank, min(t.ts) AS ts, count(t) AS hits
+ORDER BY account SKIP $skip LIMIT $limit
 """)
 
 R2 = cy("baseline_r2_near_threshold", "Baseline rule: bursts just under threshold", """
@@ -27,7 +28,7 @@ WHERE t.amount >= $thr * 0.85 AND t.amount < $thr
 WITH a, t ORDER BY t.ts
 WITH a, collect(t.ts) AS ts
 WHERE size(ts) >= 3
-RETURN a.id AS account, a.bank_id AS bank, ts
+RETURN a.id AS account, a.bank_id AS bank, ts ORDER BY account SKIP $skip LIMIT $limit
 """)
 
 R3 = cy("baseline_r3_new_counterparty", "Baseline rule: first transfer to a new counterparty, large", """
@@ -35,12 +36,14 @@ MATCH (a:Account)-[f:FLOWS]->(b:Account)
 WHERE f.n_txn = 1 AND f.capacity >= $thr * 0.5
 MATCH (a)-[t:TRANSFERS]->(b)
 RETURN a.id AS account, a.bank_id AS bank, min(t.ts) AS ts, count(DISTINCT b) AS hits
+ORDER BY account SKIP $skip LIMIT $limit
 """)
 
 R4 = cy("baseline_r4_high_risk_format", "Baseline rule: cash / crypto above 30% of threshold", """
 MATCH (a:Account)-[t:TRANSFERS]->()
 WHERE t.format IN ['Cash', 'Bitcoin'] AND t.amount >= $thr * 0.3
 RETURN a.id AS account, a.bank_id AS bank, min(t.ts) AS ts, count(t) AS hits
+ORDER BY account SKIP $skip LIMIT $limit
 """)
 
 WRITE_ALERTS = cy("alerts_write", "Create Alert nodes linked to their account", """
@@ -68,25 +71,26 @@ def generate(graph: str = db.CONSORTIUM, reset: bool = True) -> dict:
     db.try_query(graph, "CREATE INDEX FOR (al:Alert) ON (al.id)")
     db.try_query(graph, "CREATE INDEX FOR (al:Alert) ON (al.status)")
     rows: list[dict] = []
-    for r in db.ro(graph, R1, {"thr": thr}):
+    for r in db.ro_all(graph, R1, {"thr": thr}):
         rows.append({**r, "rule": "large_transfer",
                      "reason": f"{r['hits']} transfer(s) above {thr:,.0f}"})
-    for r in db.ro(graph, R2, {"thr": thr}):
+    for r in db.ro_all(graph, R2, {"thr": thr}):
         ts = r["ts"]
         burst = max(sum(1 for y in ts if 0 <= y - x <= 86400) for x in ts)
         if burst >= 3:
             rows.append({"account": r["account"], "bank": r["bank"], "ts": ts[0], "hits": burst,
                          "rule": "near_threshold_burst",
                          "reason": f"{burst} near-threshold transfers within 24h"})
-    for r in db.ro(graph, R3, {"thr": thr}):
+    for r in db.ro_all(graph, R3, {"thr": thr}):
         rows.append({**r, "rule": "new_counterparty_big",
                      "reason": f"large first transfer to {r['hits']} new counterparty(ies)"})
-    for r in db.ro(graph, R4, {"thr": thr}):
+    for r in db.ro_all(graph, R4, {"thr": thr}):
         rows.append({**r, "rule": "high_risk_format",
                      "reason": f"{r['hits']} cash/crypto transfer(s)"})
     for r in rows:
         r["id"] = _id(r["account"], r["rule"])
-    db.q(graph, WRITE_ALERTS, {"rows": rows})
+    for k in range(0, len(rows), 5000):
+        db.q(graph, WRITE_ALERTS, {"rows": rows[k:k + 5000]})
     by_rule: dict[str, int] = {}
     for r in rows:
         by_rule[r["rule"]] = by_rule.get(r["rule"], 0) + 1

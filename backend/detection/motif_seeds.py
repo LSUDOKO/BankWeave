@@ -18,11 +18,11 @@ from detection.settings import cfg
 
 ADJACENCY = cy("motif_adjacency", "Export the simple digraph for motif precompute", """
 MATCH (a:Account)-[:FLOWS]->(b:Account)
-RETURN a.id AS s, b.id AS d
+RETURN a.id AS s, b.id AS d ORDER BY s, d SKIP $skip LIMIT $limit
 """)
 
 ALL_ACCOUNTS = cy("motif_all_accounts", "Accounts for motif precompute", """
-MATCH (a:Account) RETURN a.id AS id
+MATCH (a:Account) RETURN a.id AS id ORDER BY id SKIP $skip LIMIT $limit
 """)
 
 WRITE_SCORES = cy("motif_write_scores", "Store motif score and its components on accounts", """
@@ -48,10 +48,10 @@ RETURN a.id AS id, a.motif_score AS score ORDER BY score DESC LIMIT $k
 
 def load_digraph(graph: str) -> tuple[dict[str, set], dict[str, set], list[str]]:
     out_, in_ = defaultdict(set), defaultdict(set)
-    for r in db.ro(graph, ADJACENCY, timeout=300000):
+    for r in db.ro_all(graph, ADJACENCY):
         out_[r["s"]].add(r["d"])
         in_[r["d"]].add(r["s"])
-    nodes = [r["id"] for r in db.ro(graph, ALL_ACCOUNTS, timeout=120000)]
+    nodes = [r["id"] for r in db.ro_all(graph, ALL_ACCOUNTS)]
     return out_, in_, nodes
 
 

@@ -42,7 +42,8 @@ def _variant(name: str) -> str:
 
 def build(consortium: str, banks: list[str], attempts: list[dict], seed: int) -> dict:
     r = random.Random(seed)
-    accts = db.q(consortium, "MATCH (a:Account) RETURN a.id AS id, a.bank_id AS bank")
+    accts = db.ro_all(consortium, "MATCH (a:Account) RETURN a.id AS id, a.bank_id AS bank "
+                                  "ORDER BY id SKIP $skip LIMIT $limit")
     by_id = {a["id"]: a for a in accts}
     ids = [a["id"] for a in accts]
     members: set[str] = {m for a in attempts for m in a["members"] if m in by_id}
@@ -126,8 +127,9 @@ def write_graph(name: str, data: dict, bank: str | None) -> None:
     for label in ("Person", "Company"):
         rows = [{"id": pid, "name": n, "norm": n.lower()} for pid, n in persons.items()
                 if kinds[pid] == label]
-        db.q(name, f"UNWIND $rows AS r CREATE (:{label} {{id:r.id, name:r.name, "
-                   f"name_norm:r.norm, kyc_id:r.id}})", {"rows": rows})
+        for k in range(0, len(rows), 5000):
+            db.q(name, f"UNWIND $rows AS r CREATE (:{label} {{id:r.id, name:r.name, "
+                       f"name_norm:r.norm, kyc_id:r.id}})", {"rows": rows[k:k + 5000]})
     # one name per (person, account) so variants exist across banks
     db.q(name, """UNWIND $rows AS r MATCH (a:Account {id:r.a})
         MATCH (p {id:r.p}) WHERE p:Person OR p:Company

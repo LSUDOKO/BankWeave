@@ -4,7 +4,7 @@ import ModeBadge from "@/components/ModeBadge";
 import { live } from "@/lib/snapshot";
 
 type Prf = { precision: number; recall: number; f1: number; escalated?: number; tp?: number; fp?: number; fn?: number };
-type Curve = { dataset: string; threshold: number; hand_cutoff: number; rules_k: number; rows: [number, number, number, number][] };
+type Curve = { dataset: string; threshold: number; threshold_source?: string; hand_cutoff: number; rules_k: number; rows: [number, number, number, number][] };
 
 const p1 = (x?: number | null) => (x == null ? "–" : `${(Math.round(x * 1000) / 10).toFixed(1)}%`);
 const f3 = (x?: number | null) => (x == null ? "–" : x.toFixed(3));
@@ -79,19 +79,23 @@ function stats(rows: Curve["rows"], pred: (r: Curve["rows"][number]) => boolean)
 }
 
 function E1({ r, params, curve }: { r: any; params: any; curve: Curve | null }) {
-  const [t, setT] = useState<number | null>(null);
-  useEffect(() => { if (curve && t == null) setT(curve.threshold); }, [curve, t]);
-  const live = useMemo(() => (curve && t != null ? stats(curve.rows, (x) => x[0] >= t) : null), [curve, t]);
+  // the explorer escalates the k highest-scoring accounts; k is what an analyst team can absorb
+  const n = curve?.rows.length ?? 0;
+  const liveK = useMemo(() => (curve ? curve.rows.filter((x) => x[0] >= curve.threshold).length : 0), [curve]);
+  const [k, setK] = useState<number | null>(null);
+  useEffect(() => { if (curve && k == null) setK(Math.max(1, liveK)); }, [curve, k, liveK]);
+  const at = (kk: number) => (curve ? stats(curve.rows.map((x, i) => [x[0], x[1], x[2], x[3], i] as any), (x: any) => x[4] < kk) : null);
+  const live = useMemo(() => (k != null ? at(k) : null), [k, curve]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rules = useMemo(() => (curve ? stats(curve.rows, (x) => x[2] >= curve.rules_k) : null), [curve]);
+  const base = curve ? curve.rows.filter((x) => x[3]).length / Math.max(1, n) : 0;
   const sweep = useMemo(() => {
     if (!curve) return [];
-    const pts = [] as { t: number; p: number; r: number; f: number }[];
-    for (let i = 0; i <= 60; i++) {
-      const th = i / 60;
-      const s = stats(curve.rows, (x) => x[0] >= th);
-      pts.push({ t: th, p: s.precision, r: s.recall, f: s.f1 });
-    }
-    return pts;
-  }, [curve]);
+    return Array.from({ length: 61 }, (_, i) => {
+      const kk = Math.max(1, Math.round((i / 60) * n));
+      const s = at(kk)!;
+      return { t: kk / n, p: s.precision, r: s.recall, f: s.f1 };
+    });
+  }, [curve]); // eslint-disable-line react-hooks/exhaustive-deps
   const rows: [string, Prf, string][] = [
     ["Rule-based: escalate every alert", r.baseline_escalate_all, "text-muted"],
     [`Rules without the graph (≥${params?.no_graph_rules_k ?? 3} rules)`, r.no_graph_rules, "text-paper"],
@@ -99,49 +103,53 @@ function E1({ r, params, curve }: { r: any; params: any; curve: Curve | null }) 
     ["Graph score, calibrated on the dev split", r.graph_calibrated, "text-ok"],
   ];
   const W = 520, H = 180, X = (v: number) => 30 + v * (W - 40), Y = (v: number) => H - 20 - v * (H - 40);
-  const line = (k: "p" | "r" | "f") => sweep.map((s, i) => `${i ? "L" : "M"}${X(s.t)},${Y(s[k])}`).join(" ");
+  const line = (key: "p" | "r" | "f") => sweep.map((s, i) => `${i ? "L" : "M"}${X(s.t)},${Y(s[key])}`).join(" ");
   return (
     <section className="glass p-6 space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-xs uppercase tracking-wider text-muted">E1 · Alert triage on {params?.test_accounts?.toLocaleString()} later-period alerted accounts ({params?.illicit_in_test} illicit)</p>
+        <p className="text-xs uppercase tracking-wider text-muted">E1 · Alert triage on {params?.test_accounts?.toLocaleString()} later-period alerted accounts ({params?.illicit_in_test} illicit), IBM HI-Small</p>
         <p className="text-xs text-muted">weights and thresholds tuned on the earlier half only</p>
       </div>
       <table className="w-full text-sm">
         <thead className="text-left text-muted"><tr className="border-b border-line"><th className="py-1.5 font-normal">Method</th><th className="py-1.5 font-normal text-right">Precision</th><th className="py-1.5 font-normal text-right">Recall</th><th className="py-1.5 font-normal text-right">F1</th><th className="py-1.5 font-normal text-right">Escalated</th></tr></thead>
-        <tbody>{rows.map(([k, v, tone]) => (
-          <tr key={k} className={`border-b border-line/40 ${tone}`}><td className="py-1.5">{k}</td><td className="py-1.5 text-right tabular-nums">{p1(v.precision)}</td><td className="py-1.5 text-right tabular-nums">{p1(v.recall)}</td><td className="py-1.5 text-right tabular-nums">{f3(v.f1)}</td><td className="py-1.5 text-right tabular-nums">{v.escalated?.toLocaleString()}</td></tr>
+        <tbody>{rows.map(([kk, v, tone]) => (
+          <tr key={kk} className={`border-b border-line/40 ${tone}`}><td className="py-1.5">{kk}</td><td className="py-1.5 text-right tabular-nums">{p1(v.precision)}</td><td className="py-1.5 text-right tabular-nums">{p1(v.recall)}</td><td className="py-1.5 text-right tabular-nums">{f3(v.f1)}</td><td className="py-1.5 text-right tabular-nums">{v.escalated?.toLocaleString()}</td></tr>
         ))}</tbody>
       </table>
-      {!curve ? <p className="text-sm text-muted">Threshold explorer: per-account scores have not been exported yet (rerun <span className="mono">eval/e1_alert_triage.py</span>).</p> : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px] items-start">
-          <div>
-            <label className="text-sm text-muted">Calibrated model threshold <span className="mono text-paper">{t?.toFixed(3)}</span>
-              {t != null && Math.abs(t - curve.threshold) > 1e-6 && <button onClick={() => setT(curve.threshold)} className="ml-2 link text-xs">reset to dev-tuned {curve.threshold}</button>}
-            </label>
-            <input type="range" min={0} max={1} step={0.002} value={t ?? 0} onChange={(e) => setT(+e.target.value)} className="mt-1 w-full accent-[var(--cyan)]" aria-label="Triage threshold" />
-            <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full" role="img" aria-label="Precision, recall and F1 by threshold">
-              {[0, 0.25, 0.5, 0.75, 1].map((g) => <line key={g} x1={30} x2={W - 10} y1={Y(g)} y2={Y(g)} stroke="#243247" />)}
-              <path d={line("p")} fill="none" stroke="#06b6d4" strokeWidth={2} />
-              <path d={line("r")} fill="none" stroke="#f59e0b" strokeWidth={2} />
-              <path d={line("f")} fill="none" stroke="#10b981" strokeWidth={2.5} />
-              {t != null && <line x1={X(t)} x2={X(t)} y1={10} y2={H - 20} stroke="#e2e8f0" strokeDasharray="3 3" />}
-              <line x1={X(curve.threshold)} x2={X(curve.threshold)} y1={10} y2={H - 20} stroke="#10b98166" />
-              {[0, 0.5, 1].map((g) => <text key={g} x={X(g)} y={H - 4} fill="#94a3b8" fontSize={10} textAnchor="middle">{g}</text>)}
-              <text x={W - 12} y={18} fill="#06b6d4" fontSize={10} textAnchor="end">precision</text>
-              <text x={W - 12} y={32} fill="#f59e0b" fontSize={10} textAnchor="end">recall</text>
-              <text x={W - 12} y={46} fill="#10b981" fontSize={10} textAnchor="end">F1</text>
-            </svg>
-          </div>
-          {live && (
-            <div className="glass-2 p-4 text-sm space-y-1">
-              <p className="text-xs uppercase tracking-wider text-muted">At this threshold</p>
-              <p>Precision <b className="text-cyan">{p1(live.precision)}</b></p>
-              <p>Recall <b className="text-verify">{p1(live.recall)}</b></p>
-              <p>F1 <b className="text-ok">{f3(live.f1)}</b></p>
-              <p>Escalated <b>{live.escalated.toLocaleString()}</b> of {curve.rows.length.toLocaleString()} ({p1(live.escalated / curve.rows.length)})</p>
-              <p className="pt-1 text-xs text-muted">Computed in your browser from {curve.rows.length.toLocaleString()} exported test scores.</p>
+      {!curve ? <p className="text-sm text-muted">Threshold explorer: run <span className="mono">eval/e1_slice_scores.py</span> to export per-account scores.</p> : (
+        <div className="space-y-2 border-t border-line pt-4">
+          <p className="text-xs uppercase tracking-wider text-muted">Threshold explorer · {curve.dataset}: {n.toLocaleString()} alerted accounts, {curve.rows.filter((x) => x[3]).length} illicit ({p1(base)} base rate)</p>
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] items-start">
+            <div>
+              <label className="text-sm text-muted">Escalate the top <span className="mono text-paper">{k}</span> accounts by model score
+                {k !== liveK && <button onClick={() => setK(liveK)} className="ml-2 link text-xs">reset to the live cutoff ({liveK})</button>}
+              </label>
+              <input type="range" min={1} max={n} step={1} value={k ?? 1} onChange={(e) => setK(+e.target.value)} className="mt-1 w-full accent-[var(--cyan)]" aria-label="Accounts escalated" />
+              <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full" role="img" aria-label="Precision, recall and F1 by share escalated">
+                {[0, 0.25, 0.5, 0.75, 1].map((g) => <line key={g} x1={30} x2={W - 10} y1={Y(g)} y2={Y(g)} stroke="#243247" />)}
+                <path d={line("p")} fill="none" stroke="#06b6d4" strokeWidth={2} />
+                <path d={line("r")} fill="none" stroke="#f59e0b" strokeWidth={2} />
+                <path d={line("f")} fill="none" stroke="#10b981" strokeWidth={2.5} />
+                {k != null && <line x1={X(k / n)} x2={X(k / n)} y1={10} y2={H - 20} stroke="#e2e8f0" strokeDasharray="3 3" />}
+                <line x1={X(liveK / n)} x2={X(liveK / n)} y1={10} y2={H - 20} stroke="#10b98188" />
+                {[0, 0.5, 1].map((g) => <text key={g} x={X(g)} y={H - 4} fill="#94a3b8" fontSize={10} textAnchor="middle">{Math.round(g * 100)}% escalated</text>)}
+                <text x={W - 12} y={18} fill="#06b6d4" fontSize={10} textAnchor="end">precision</text>
+                <text x={W - 12} y={32} fill="#f59e0b" fontSize={10} textAnchor="end">recall</text>
+                <text x={W - 12} y={46} fill="#10b981" fontSize={10} textAnchor="end">F1</text>
+              </svg>
             </div>
-          )}
+            {live && (
+              <div className="glass-2 p-4 text-sm space-y-1">
+                <p className="text-xs uppercase tracking-wider text-muted">Escalating {k} ({p1((k ?? 0) / n)})</p>
+                <p>Precision <b className="text-cyan">{p1(live.precision)}</b> <span className="text-xs text-muted">({(live.precision / Math.max(base, 1e-9)).toFixed(1)}× base rate)</span></p>
+                <p>Recall <b className="text-verify">{p1(live.recall)}</b></p>
+                <p>F1 <b className="text-ok">{f3(live.f1)}</b></p>
+                {rules && <p className="pt-1 text-xs text-muted">Rules alone (≥{curve.rules_k} rules) on the same accounts: P {p1(rules.precision)}, R {p1(rules.recall)}, {rules.escalated} escalated.</p>}
+                <p className="text-xs text-muted">Computed in your browser from exported scores; the live cutoff comes from {curve.threshold_source ?? "the calibration"}.</p>
+                <p className="text-xs text-verify">The slice overlaps the data the model was trained on, so these numbers are optimistic. The held-out result is the table above (F1 0.205).</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>

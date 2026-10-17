@@ -1,23 +1,25 @@
-# Demo script (about 3 minutes)
+# Demo script (about 3 minutes, BankWeave 2.0)
 
 Before recording: `scripts/reset_demo.sh`, start the API (`uvicorn app.main:app --port 8000`)
-and the UI (`pnpm start -p 3001`), open the FalkorDB Browser on http://localhost:3030 as a
-second screen. Press **Start agents** on Demo control about a minute before you begin, so
-cases exist.
+and the UI (`pnpm start -p 3001`), and open the FalkorDB Browser on http://localhost:3030 as a
+second screen. Press **Start agents** on Demo control a few minutes before you begin so cases
+exist, and approve one SAR on Approvals so procedural memory has something to show.
 
 | Time | Beat | Where | What to say / do |
 |---|---|---|---|
-| 0:00-0:15 | Hook | Alert queue | "Banks clear 85-95% of AML alerts as false positives, and the real rings hide between banks." |
-| 0:15-0:40 | Alert flood | Alert queue | Point at the counter: rule-based monitoring would send every alert to an analyst; BankWeave cleared most. Click a cleared alert to show its graph signals. |
-| 0:40-1:05 | Consortium reveal | Network | Pick the case with the most banks. Click "Bank 001 only": a few disconnected pieces. Click **Consortium**: one structure, red threads across lanes. Show the Cypher behind the view. |
-| 1:05-1:30 | Skeptic and echo | Case workspace | Open the case. The ring claim says "N paths, K independent sources". Trust page: toggle naive path counting to show how much path-counting inflates. |
-| 1:30-1:50 | Cascade | Trust | Press **Push KYC update: A-77 is a 200-unit building**. Claims, the freeze recommendation and SAR sentences turn amber. Approvals: the action now needs an override note. |
-| 1:50-2:10 | Kill and resume | Demo control | Press **Kill agents** mid-investigation, then **Restart agents**; tasks reset from their heartbeats. On a case, press **Resume from graph**. |
-| 2:10-2:35 | SAR and gate | Case > Report | Provenance fidelity badge; click a sentence to light up its accounts. Show a divergent case if one exists. |
-| 2:35-2:55 | Scoreboard | Scoreboard | Measured precision/recall vs baselines, consortium vs single bank, SPNSA vs the paper. Every number links to its result file and commit. |
-| 2:55-3:00 | Close | FalkorDB Browser | `GRAPH.LIST` showing consortium, bank_*, case_* graphs. "Many banks, one ring, every claim proven." |
+| 0:00-0:15 | Hook | Command Center | "Banks clear 85-95% of AML alerts as false positives, and the real rings hide between banks." Point at the live counters and the FalkorDB health card. |
+| 0:15-0:40 | Innocent alert | Golden scenarios, A | "This alert fired on a rule. `algo.wcc` shows a two-account island at one bank: cleared, with the reason." |
+| 0:40-1:05 | The ring nobody sees | Golden scenarios, B | Toggle "Bank 012 alone" vs **Consortium**: "the best bank holds half of this ring; across 36 IBM rings, 43.8%, and never the whole ring." |
+| 1:05-1:25 | Echo | Case → Evidence independence | "15 paths, 12 origins: the Skeptic hit the same KYC fact twice; confidence counts it once." |
+| 1:25-1:45 | Cascade | Case → Evidence independence → **Revoke** on the A-77 address | Watch the ripple; the DAG tab highlights what it reached; Approvals now needs an override note. |
+| 1:45-2:00 | Freeze | Case → Simulate freeze | "`GRAPH.COPY` sandbox, delete the account, rerun `algo.maxFlow`: 100% of the ring's money flow stops. The case graph is untouched." |
+| 2:00-2:15 | Signed report | Case → Audit dossier | Merkle root, Ed25519 signature, every query's execution hash. Hardware Lab → Approval signing: sign with a passkey; revoke evidence and the seal breaks. |
+| 2:15-2:35 | The engine | FalkorDB Lab | **Run all 17**; open the PROFILE inspector on a tool's query; Engine features: JS UDF reach, tri-modal query, ACL denial in `ACL LOG`. |
+| 2:35-2:50 | Hardware | Hardware Lab → Card terminals | Preset "Cloned EMV: Mumbai → Delhi": ATC replay plus 2,755 km/h, alert raised into the queue. Mention the Wokwi ESP32 that posts the same taps. |
+| 2:50-3:00 | Close | 3D consortium → **Fly through** | "Many banks, one ring, every claim proven." |
 
-Optional (if time): Demo control > **Inject evasive ring** (no alert fires) then **Run hunt mode**
-(the ring gets an alert from motif seeds alone).
+Optional: Demo control → **Inject smurfing (25 transfers)**: rules see one alert at the source;
+the agents open a case covering the fan-out and fan-in. 3D consortium → **Kill worker**: watch
+the 30-second heartbeat countdown, then a fresh worker resumes from the graph.
 
 Record at 1080p with voice-over; keep a backup recording.

@@ -145,6 +145,20 @@ def _weights() -> dict | None:
     return None
 
 
+@lru_cache
+def _calibration() -> dict | None:
+    rows = db.ro(db.CONSORTIUM, "MATCH (m:Meta {id:'triage_cutoff'}) RETURN m.json AS j")
+    return json.loads(rows[0]["j"]) if rows else None
+
+
+def _cutoff() -> float | None:
+    c = _calibration()
+    return c["cutoff"] if c else None
+
+
+_cutoff.cache_clear = _calibration.cache_clear  # type: ignore[attr-defined]
+
+
 def model_probability(f: dict[str, float]) -> float | None:
     """Logistic model calibrated on the dev split by eval/e1_alert_triage.py."""
     import math
@@ -176,8 +190,10 @@ def decide(s: dict, f: dict[str, float] | None = None) -> dict:
     w = _weights()
     prob = model_probability(f) if (f is not None and w) else None
     if prob is not None:
-        thr = w["threshold"]
-        score, lo, hi = prob, thr * 0.5, thr * 1.5
+        cal = _calibration()  # graph's alert-budget cutoff when calibrated
+        thr = cal["cutoff"] if cal else w["threshold"]
+        lo = cal.get("llm_floor", thr) if cal else thr * 0.5
+        score, hi = prob, thr
         public["model_probability"] = round(prob, 4)
     else:
         score = risk_score(s)

@@ -16,7 +16,7 @@ from memory import procedural
 from trust import echo, store
 
 MEMBERS = cy("case_members", "Accounts in a case graph ranked by motif score", """
-MATCH (a:Account)
+MATCH (a:Account) WHERE a.bank_id IS NOT NULL
 RETURN a.id AS id, a.bank_id AS bank, coalesce(a.motif_score, 0.0) AS motif
 ORDER BY motif DESC
 """)
@@ -156,7 +156,7 @@ def build_claims(case_id: str, seed: str, members: list[dict]) -> list[str]:
     made = []
     if ring_ev:
         accts = sorted({a for e in ring_ev for a in (e["accounts"] or [])})
-        banks = sorted({m["bank"] for m in members if m["id"] in accts})
+        banks = sorted({m["bank"] for m in members if m["id"] in accts and m["bank"]})
         typs = sorted({e["origin"].split(":")[1] for e in ev if e["kind"] == "typology_match"})
         text = (f"{len(accts)} accounts across {len(banks)} bank(s) form a connected laundering "
                 f"structure around {seed[:6]}"

@@ -41,6 +41,7 @@ export default function Demo() {
           </Step>
           <Step title="Red team, then hunt" body="Inject a new cross-bank ring that keeps every amount under the alert rules, so no alert fires. Then run hunt mode: motif seeds and shortest-path subgraphs find suspicious regions with no alert at all and hand them to the agents.">
             <button onClick={() => act("/demo/red_team", { size: 5 }, "Inject evasive ring")} className="rounded border border-ring text-ring px-3 py-1.5">Inject evasive ring</button>
+            <button onClick={() => act("/demo/red_team/smurf", {}, "Inject smurfing")} className="rounded border border-verify text-verify px-3 py-1.5">Inject smurfing (25 transfers)</button>
             <button onClick={() => act("/demo/hunt", {}, "Hunt")} className="btn-quiet">Run hunt mode</button>
           </Step>
           <Step title="Kill and resume" body="Stops the agents mid-task without releasing their claims. Restart them: stale tasks are reset from their heartbeats and the work continues from the graph.">

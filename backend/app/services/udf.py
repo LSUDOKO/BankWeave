@@ -20,6 +20,8 @@ def listing() -> list[dict]:
         return [{"error": str(exc)[:200]}]
     out = []
     for r in rows:
+        if isinstance(r, list):  # RESP2 returns flat [key, value, ...] pairs
+            r = dict(zip(r[::2], r[1::2]))
         r = {(k.decode() if isinstance(k, bytes) else k): v for k, v in r.items()}
         fns = [f.decode() if isinstance(f, bytes) else f for f in r.get("functions", [])]
         name = r["library_name"].decode() if isinstance(r["library_name"], bytes) else r["library_name"]

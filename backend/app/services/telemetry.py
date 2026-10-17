@@ -69,6 +69,8 @@ def span(name: str, kind: str = "internal", case_id: str | None = None, **attrs)
         raise
     finally:
         rec["end_ns"] = time.time_ns()
+        if rec["attrs"].get("error"):  # handled failures (e.g. an LLM fallback) still count
+            rec["status"] = "error"
         _parent.reset(tok_parent)
         if task is not None:
             task["spans"].append(rec)

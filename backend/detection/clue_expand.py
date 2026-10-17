@@ -10,10 +10,14 @@ from __future__ import annotations
 
 from app import db
 from app.cypher import cy
+from detection.settings import cfg
 
 CONTEXT = cy("clue_context", "Two-hop context around clue accounts with risk signals", """
 MATCH (c:Account) WHERE c.id IN $clues
-MATCH (c)-[:FLOWS*1..2]-(n:Account)
+MATCH (c)-[:FLOWS]-(m:Account) WHERE m.in_deg + m.out_deg <= $hub
+OPTIONAL MATCH (m)-[:FLOWS]-(x:Account) WHERE x.in_deg + x.out_deg <= $hub
+WITH collect(DISTINCT m) + collect(DISTINCT x) AS ns
+UNWIND ns AS n
 WITH DISTINCT n
 RETURN n.id AS id, n.bank_id AS bank, coalesce(n.motif_score, 0.0) AS motif,
        coalesce(n.pagerank, 0.0) AS pagerank, coalesce(n.passthrough_pairs, 0) AS pt
@@ -22,7 +26,8 @@ LIMIT 3000
 
 CONSISTENT = cy("clue_consistent_edges", "Transfer pairs at a member that agree in time and amount", """
 MATCH (y:Account)-[a:TRANSFERS]-(g:Account)-[b:TRANSFERS]-(z:Account)
-WHERE g.id IN $ids AND y <> z AND a.txn_id < b.txn_id AND abs(a.ts - b.ts) <= $win
+WHERE g.id IN $ids AND g.in_deg + g.out_deg <= $hub
+  AND y <> z AND a.txn_id < b.txn_id AND abs(a.ts - b.ts) <= $win
   AND abs(a.amount - b.amount) <=
       $tol * (CASE WHEN a.amount > b.amount THEN a.amount ELSE b.amount END)
 RETURN g.id AS g, y.id AS y, z.id AS z
@@ -50,7 +55,8 @@ def expand(graph: str, clues: list[str], negatives: list[str] | None = None,
            max_rounds: int = 6, per_round: int = 2, theta: float = 0.4,
            win: int = 6 * 3600, tol: float = 0.2) -> dict:
     negatives = set(negatives or [])
-    ctx = {r["id"]: r for r in db.ro(graph, CONTEXT, {"clues": clues})}
+    hub = cfg()["triage"].get("hub_degree", 2000)  # hubs aren't ring members; skip them
+    ctx = {r["id"]: r for r in db.ro(graph, CONTEXT, {"clues": clues, "hub": hub}, timeout=30000)}
     sim: dict[str, float] = {}
     for c in clues:
         for r in db.ro(graph, SIMILAR, {"clue": c, "k": 200}):
@@ -72,7 +78,8 @@ def expand(graph: str, clues: list[str], negatives: list[str] | None = None,
             adj[m] = set()
         if not todo:
             return
-        for e in db.ro(graph, CONSISTENT, {"ids": todo, "win": win, "tol": tol}):
+        for e in db.ro(graph, CONSISTENT, {"ids": todo, "win": win, "tol": tol, "hub": hub},
+                       timeout=30000):
             for x in (e["y"], e["z"]):
                 adj[e["g"]].add(x)
                 adj.setdefault(x, set()).add(e["g"])

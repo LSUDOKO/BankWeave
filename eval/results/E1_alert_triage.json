@@ -1,0 +1,92 @@
+{
+  "experiment": "E1_alert_triage",
+  "commit": "37d623c",
+  "dataset": "ibm_",
+  "params": {
+    "sample_per_split": 4000,
+    "seed": 7,
+    "alerts_total": 24346,
+    "alerted_accounts": 18188,
+    "dev_accounts": 4000,
+    "test_accounts": 4000,
+    "illicit_in_dev": 110,
+    "illicit_in_test": 129,
+    "split_ts": 1662011400,
+    "hand_cutoff_tuned_on_dev": 2.5,
+    "model_threshold_tuned_on_dev": 0.824,
+    "no_graph_rules_k": 3,
+    "features": 38,
+    "mean_signal_seconds": 0.1326,
+    "wall_seconds": 134.2,
+    "workers": 8
+  },
+  "results": {
+    "baseline_escalate_all": {
+      "precision": 0.0323,
+      "recall": 1.0,
+      "f1": 0.0625,
+      "tp": 129,
+      "fp": 3871,
+      "fn": 0,
+      "escalated": 4000,
+      "alert_reduction": 0.0
+    },
+    "no_graph_rules": {
+      "precision": 0.3333,
+      "recall": 0.0775,
+      "f1": 0.1258,
+      "tp": 10,
+      "fp": 20,
+      "fn": 119,
+      "escalated": 30,
+      "alert_reduction": 0.9925
+    },
+    "graph_hand_weights": {
+      "precision": 0.1863,
+      "recall": 0.1473,
+      "f1": 0.1645,
+      "tp": 19,
+      "fp": 83,
+      "fn": 110,
+      "escalated": 102,
+      "alert_reduction": 0.9745
+    },
+    "graph_calibrated": {
+      "precision": 0.1902,
+      "recall": 0.2403,
+      "f1": 0.2123,
+      "tp": 31,
+      "fp": 132,
+      "fn": 98,
+      "escalated": 163,
+      "alert_reduction": 0.9593,
+      "precision_at_top_5pct": 0.18
+    },
+    "dev_calibrated": {
+      "precision": 0.363,
+      "recall": 0.4455,
+      "f1": 0.4,
+      "tp": 49,
+      "fp": 86,
+      "fn": 61
+    },
+    "top_model_weights": {
+      "beh_9": 1.322,
+      "beh_3": 1.077,
+      "beh_4": -0.847,
+      "beh_10": 0.717,
+      "beh_8": 0.652,
+      "typ_fan_out": -0.522,
+      "beh_13": 0.476,
+      "beh_1": -0.395
+    }
+  },
+  "notes": [
+    "Account level: an account is illicit if it is an endpoint of >=1 laundering transaction (IBM labels).",
+    "Dev = alerted accounts whose first alert falls in the earlier half of the period; test = the later half. Weights and thresholds come from dev only.",
+    "graph_calibrated uses labels from the dev split to fit 41 feature weights; graph_hand_weights uses none.",
+    "These rows evaluate the graph decision; the LLM only reviews scores near the threshold in the live agent and is not part of these numbers."
+  ],
+  "generated_at": "2026-10-17T21:16:35+0530",
+  "graph_prefix": "ibm_"
+}

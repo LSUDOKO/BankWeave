@@ -1,0 +1,42 @@
+{
+  "experiment": "E3_spnsa_hunt",
+  "commit": "cab75ea",
+  "dataset": "ibm_",
+  "params": {
+    "k": 200,
+    "r": 1,
+    "accounts": 28307
+  },
+  "results": {
+    "motif": {
+      "nodes": 280,
+      "illicit": 21,
+      "illicit_ratio": 0.075,
+      "seconds": 1.9
+    },
+    "degree": {
+      "nodes": 336,
+      "illicit": 57,
+      "illicit_ratio": 0.1696,
+      "seconds": 1.6
+    },
+    "random": {
+      "nodes": 249.5,
+      "illicit_ratio": 0.0341,
+      "illicit_ratio_sd": 0.0135,
+      "runs": 10
+    },
+    "base_rate": 0.0255,
+    "paper_hi_small_k200_r1": {
+      "random": 0.024,
+      "degree": 0.137,
+      "motif": 0.226
+    }
+  },
+  "notes": [
+    "We use FalkorDB PageRank in place of eigenvector centrality (not available natively).",
+    "Our graph is the top-20-bank consortium slice of HI-Small, not the paper's full largest WCC, so absolute ratios are not directly comparable."
+  ],
+  "generated_at": "2026-10-17T21:10:06+0530",
+  "graph_prefix": "ibm_"
+}

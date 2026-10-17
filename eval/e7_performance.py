@@ -8,7 +8,7 @@ import random
 import statistics
 import time
 
-from common import write
+from common import write, dataset_label
 
 
 def main(n: int) -> None:
@@ -84,7 +84,7 @@ def main(n: int) -> None:
         res[name] = {"ms": round((time.perf_counter() - t0) * 1000, 1)}
     size = db.ro(db.CONSORTIUM, "MATCH (a:Account) WITH count(a) AS n MATCH ()-[t:TRANSFERS]->() "
                                 "RETURN n AS accounts, count(t) AS transfers")[0]
-    write("E7_performance", db.PREFIX or "demo",
+    write("E7_performance", dataset_label(),
           {"samples_per_tool": n, **size, "machine": platform.processor() or platform.machine(),
            "cpus": os.cpu_count(), "falkordb": "docker falkordb/falkordb:latest (4.22.1)"},
           res, ["Single local machine; no comparison with other databases was run."])

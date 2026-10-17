@@ -1,0 +1,66 @@
+{
+  "experiment": "E7_performance",
+  "commit": "b8a1292",
+  "dataset": "ibm_",
+  "params": {
+    "samples_per_tool": 100,
+    "accounts": 28307,
+    "transfers": 1315597,
+    "machine": "x86_64",
+    "cpus": 16,
+    "falkordb": "docker falkordb/falkordb:latest (4.22.1)"
+  },
+  "results": {
+    "expand_neighborhood": {
+      "median_ms": 3.1,
+      "p95_ms": 6.1,
+      "calls": 100
+    },
+    "typology_patterns": {
+      "median_ms": 12.5,
+      "p95_ms": 674.0,
+      "calls": 100
+    },
+    "cross_bank_links": {
+      "median_ms": 0.6,
+      "p95_ms": 0.9,
+      "calls": 100
+    },
+    "shared_identity": {
+      "median_ms": 0.7,
+      "p95_ms": 0.9,
+      "calls": 100
+    },
+    "behavior_neighbors": {
+      "median_ms": 0.4,
+      "p95_ms": 1.0,
+      "calls": 100
+    },
+    "passthrough_check": {
+      "median_ms": 2.8,
+      "p95_ms": 10.5,
+      "calls": 100
+    },
+    "triage_signals_hub_accounts": {
+      "median_ms": 1.1,
+      "p95_ms": 2.3,
+      "calls": 15
+    },
+    "triage_signals_regular_accounts": {
+      "median_ms": 15.4,
+      "p95_ms": 58.0,
+      "calls": 100
+    },
+    "pagerank_consortium": {
+      "ms": 57.5
+    },
+    "wcc_consortium": {
+      "ms": 39.5
+    }
+  },
+  "notes": [
+    "Single local machine; no comparison with other databases was run."
+  ],
+  "generated_at": "2026-10-17T21:14:13+0530",
+  "graph_prefix": "ibm_"
+}

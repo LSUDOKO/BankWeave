@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import random
 
-from common import write
+from common import write, dataset_label
 
 
 def echo_and_gate() -> dict:
@@ -106,7 +106,7 @@ def main(trials: int, seed: int) -> None:
             WHERE e.superseded_at < a.decided_at AND coalesce(a.override_stale, false) = false
             RETURN count(DISTINCT a) AS n""")[0]["n"]
     res["stale_actions_approved_without_override"] = stale
-    write("E6_trust_layer", db.PREFIX or "demo", {"trials": trials, "seed": seed}, res,
+    write("E6_trust_layer", dataset_label(), {"trials": trials, "seed": seed}, res,
           ["Echo and gate figures are measured over the cases the agents produced in this graph.",
            "Writer-vs-auditor ablation needs an OpenRouter key and is reported separately when run."])
 

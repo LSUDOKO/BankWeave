@@ -44,3 +44,13 @@ def write(experiment: str, dataset: str, params: dict, results: dict, notes: lis
     p.write_text(json.dumps(out, indent=2, default=str))
     print(f"wrote {p}")
     return p
+
+
+def dataset_label() -> str:
+    """Which data the graph holds, from the loader's Meta node (e.g. HI-Small_Trans.csv)."""
+    from app import db
+    rows = db.ro(db.CONSORTIUM, "MATCH (m:Meta {id:'dataset'}) RETURN m.json AS j")
+    if not rows:
+        return "unknown"
+    meta = json.loads(rows[0]["j"])
+    return f"{meta['source']} ({len(meta['banks'])} banks, graph prefix '{db.PREFIX}')"

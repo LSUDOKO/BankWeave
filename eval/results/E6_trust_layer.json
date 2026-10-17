@@ -1,0 +1,42 @@
+{
+  "experiment": "E6_trust_layer",
+  "commit": "f3cff38",
+  "dataset": "IBM_SLICE_Trans.csv (6 banks, graph prefix '')",
+  "params": {
+    "trials": 50,
+    "seed": 11
+  },
+  "results": {
+    "cases": 28,
+    "echo": {
+      "evidence_items": 510,
+      "repeated_origin_items": 142,
+      "echo_rate": 0.2784,
+      "claims": 101,
+      "claims_with_more_paths_than_sources": 37,
+      "mean_paths": 3.1,
+      "mean_independent_sources": 2.59,
+      "mean_confidence_echo_proof": 0.417,
+      "mean_confidence_naive": 0.488
+    },
+    "gate": {
+      "sars": 28,
+      "published": 25,
+      "divergent": 3,
+      "mean_pf": 0.988,
+      "needed_repair": 26
+    },
+    "invalidation": {
+      "trials": 50,
+      "affected_recall": 1.0,
+      "affected_precision": 1.0
+    },
+    "stale_actions_approved_without_override": 0
+  },
+  "notes": [
+    "Echo and gate figures are measured over the cases the agents produced in this graph.",
+    "Writer-vs-auditor ablation needs an OpenRouter key and is reported separately when run."
+  ],
+  "generated_at": "2026-10-17T21:44:13+0530",
+  "graph_prefix": ""
+}

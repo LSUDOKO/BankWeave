@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import random
 
-from common import ground_truth, prf, write
+from common import ground_truth, prf, write, dataset_label
 
 
 def main(n_attempts: int, rounds: int, seed: int) -> None:
@@ -35,7 +35,7 @@ def main(n_attempts: int, rounds: int, seed: int) -> None:
             per_round[r][2] += len(truth) - tp
     table = {str(r): prf(*v) for r, v in per_round.items()}
     best = max(table, key=lambda r: table[r]["f1"]) if table else None
-    write("E5_clue_expansion", db.PREFIX or "demo",
+    write("E5_clue_expansion", dataset_label(),
           {"attempts": len(atts), "rounds": rounds, "clues_per_attempt": 2, "seed": seed},
           {"per_round": table, "best_round": best},
           ["No GNN: risk field = motif score, PageRank, pass-through pairs and behaviour-vector "

@@ -10,7 +10,7 @@ import argparse
 import statistics
 import time
 
-from common import ground_truth, write
+from common import ground_truth, write, dataset_label
 
 
 def main(k: int, r: int, random_runs: int) -> None:
@@ -42,7 +42,7 @@ def main(k: int, r: int, random_runs: int) -> None:
         x["id"] for x in db.ro_all(db.CONSORTIUM, "MATCH (a:Account) RETURN a.id AS id ORDER BY id "
                                         "SKIP $skip LIMIT $limit"))) / n_acc, 4)
     res["paper_hi_small_k200_r1"] = {"random": 0.024, "degree": 0.137, "motif": 0.226}
-    write("E3_spnsa_hunt", db.PREFIX or "demo", {"k": k, "r": r, "accounts": n_acc}, res,
+    write("E3_spnsa_hunt", dataset_label(), {"k": k, "r": r, "accounts": n_acc}, res,
           ["motif uses the paper's HI-Small parameters (gamma=0.8). motif_no_degree_penalty "
            "(gamma=0) is a post-hoc ablation added after seeing that the degree penalty inverts "
            "the score on this slice (account-level AUC 0.373 vs 0.646); treat it as exploratory.",

@@ -1,7 +1,7 @@
 """E4 - exact pass-through matcher (arXiv 2609.20737): precision of flagged accounts."""
 from __future__ import annotations
 
-from common import ground_truth, write
+from common import ground_truth, write, dataset_label
 
 
 def main() -> None:
@@ -16,7 +16,7 @@ def main() -> None:
     hits = sum(1 for a in flagged if a in illicit)
     n_acc = db.ro(db.CONSORTIUM, "MATCH (a:Account) RETURN count(a) AS c")[0]["c"]
     base = len(illicit) / n_acc if n_acc else 0
-    write("E4_passthrough", db.PREFIX or "demo", cfg()["passthrough"],
+    write("E4_passthrough", dataset_label(), cfg()["passthrough"],
           {"flagged": len(flagged), "illicit_among_flagged": hits,
            "precision": round(hits / len(flagged), 4) if flagged else 0.0,
            "base_rate": round(base, 4), "chain_deduplicated_value": res["chain_value"],

@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
-from common import ROOT, commit, ground_truth, prf, write
+from common import ROOT, commit, ground_truth, prf, write, dataset_label
 
 
 def fit_logistic(X: np.ndarray, y: np.ndarray, l2: float = 1.0, iters: int = 3000,
@@ -140,7 +140,7 @@ def main(sample: int, seed: int, workers: int) -> None:
     ng["alert_reduction"] = round(1 - ng["escalated"] / n, 4)
 
     top = sorted(zip(keys, w), key=lambda kv: -abs(kv[1]))[:8]
-    write("E1_alert_triage", db.PREFIX or "demo",
+    write("E1_alert_triage", dataset_label(),
           {"sample_per_split": sample, "seed": seed, "alerts_total": gen["alerts"],
            "alerted_accounts": len(by_acct), "dev_accounts": len(dev), "test_accounts": n,
            "illicit_in_dev": int(yd.sum()), "illicit_in_test": ill_n, "split_ts": split,

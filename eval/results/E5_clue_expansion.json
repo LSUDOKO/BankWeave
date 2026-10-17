@@ -1,0 +1,86 @@
+{
+  "experiment": "E5_clue_expansion",
+  "commit": "37d623c",
+  "dataset": "ibm_",
+  "params": {
+    "attempts": 12,
+    "rounds": 8,
+    "clues_per_attempt": 2,
+    "seed": 3
+  },
+  "results": {
+    "per_round": {
+      "1": {
+        "precision": 0.4,
+        "recall": 0.0272,
+        "f1": 0.051,
+        "tp": 4,
+        "fp": 6,
+        "fn": 143
+      },
+      "2": {
+        "precision": 0.3333,
+        "recall": 0.034,
+        "f1": 0.0617,
+        "tp": 5,
+        "fp": 10,
+        "fn": 142
+      },
+      "3": {
+        "precision": 0.2941,
+        "recall": 0.034,
+        "f1": 0.061,
+        "tp": 5,
+        "fp": 12,
+        "fn": 142
+      },
+      "4": {
+        "precision": 0.2941,
+        "recall": 0.034,
+        "f1": 0.061,
+        "tp": 5,
+        "fp": 12,
+        "fn": 142
+      },
+      "5": {
+        "precision": 0.2941,
+        "recall": 0.034,
+        "f1": 0.061,
+        "tp": 5,
+        "fp": 12,
+        "fn": 142
+      },
+      "6": {
+        "precision": 0.2941,
+        "recall": 0.034,
+        "f1": 0.061,
+        "tp": 5,
+        "fp": 12,
+        "fn": 142
+      },
+      "7": {
+        "precision": 0.2941,
+        "recall": 0.034,
+        "f1": 0.061,
+        "tp": 5,
+        "fp": 12,
+        "fn": 142
+      },
+      "8": {
+        "precision": 0.2941,
+        "recall": 0.034,
+        "f1": 0.061,
+        "tp": 5,
+        "fp": 12,
+        "fn": 142
+      }
+    },
+    "best_round": "2"
+  },
+  "notes": [
+    "No GNN: risk field = motif score, PageRank, pass-through pairs and behaviour-vector similarity; context = time/amount-consistent transfer pairs.",
+    "theta=0 so every round adds nodes, exposing the precision/recall trade-off."
+  ],
+  "generated_at": "2026-10-17T21:18:30+0530",
+  "graph_prefix": "ibm_"
+}

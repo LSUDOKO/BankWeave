@@ -14,7 +14,7 @@ import statistics
 
 import networkx as nx
 
-from common import ground_truth, write
+from common import ground_truth, write, dataset_label
 
 EDGES = """MATCH (s)-[t:TRANSFERS]->(d) WHERE s.id IN $ids AND d.id IN $ids
 RETURN s.id AS s, d.id AS d, t.txn_id AS txn"""
@@ -63,7 +63,7 @@ def main() -> None:
     def share_full(k):
         return round(sum(1 for r in rows if r[k] >= 0.999) / n, 4) if n else 0
 
-    write("E2_consortium_vs_single_bank", gt.get("attempt_source", ""),
+    write("E2_consortium_vs_single_bank", dataset_label(),
           {"min_members": 3, "banks": gt["banks"]},
           {"attempts": n,
            "best_single_bank": {"mean_accounts_held": mean("accounts_held"),

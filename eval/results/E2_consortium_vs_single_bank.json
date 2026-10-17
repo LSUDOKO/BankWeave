@@ -1,0 +1,414 @@
+{
+  "experiment": "E2_consortium_vs_single_bank",
+  "commit": "9c7a23d",
+  "dataset": "connected_components_of_laundering_transfers",
+  "params": {
+    "min_members": 3,
+    "banks": [
+      "001",
+      "0015",
+      "00220",
+      "003",
+      "006",
+      "007",
+      "010",
+      "011",
+      "0116",
+      "0118",
+      "012",
+      "01292",
+      "015",
+      "020",
+      "0211",
+      "022",
+      "0220",
+      "023",
+      "028",
+      "070"
+    ]
+  },
+  "results": {
+    "attempts": 36,
+    "best_single_bank": {
+      "mean_accounts_held": 0.4376,
+      "mean_transfers_visible": 0.9571,
+      "mean_connected_view": 0.9569,
+      "attempts_fully_held": 0.0,
+      "attempts_all_transfers_visible": 0.8889
+    },
+    "consortium": {
+      "mean_accounts_held": 1.0,
+      "mean_transfers_visible": 1.0,
+      "mean_connected_view": 1.0
+    },
+    "mean_banks_per_attempt": 3.5,
+    "per_attempt": [
+      {
+        "attempt": "lc0",
+        "size": 91,
+        "banks": 10,
+        "laundering_transfers": 90,
+        "accounts_held": 0.209,
+        "transfers_visible": 0.389,
+        "connected_view": 0.198,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc1",
+        "size": 16,
+        "banks": 6,
+        "laundering_transfers": 15,
+        "accounts_held": 0.312,
+        "transfers_visible": 0.733,
+        "connected_view": 0.75,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc2",
+        "size": 9,
+        "banks": 6,
+        "laundering_transfers": 8,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc3",
+        "size": 9,
+        "banks": 7,
+        "laundering_transfers": 8,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc4",
+        "size": 8,
+        "banks": 5,
+        "laundering_transfers": 7,
+        "accounts_held": 0.25,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc5",
+        "size": 6,
+        "banks": 3,
+        "laundering_transfers": 5,
+        "accounts_held": 0.667,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc6",
+        "size": 6,
+        "banks": 3,
+        "laundering_transfers": 5,
+        "accounts_held": 0.667,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc7",
+        "size": 6,
+        "banks": 5,
+        "laundering_transfers": 5,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc8",
+        "size": 5,
+        "banks": 3,
+        "laundering_transfers": 4,
+        "accounts_held": 0.6,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc9",
+        "size": 5,
+        "banks": 3,
+        "laundering_transfers": 4,
+        "accounts_held": 0.6,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc10",
+        "size": 5,
+        "banks": 4,
+        "laundering_transfers": 4,
+        "accounts_held": 0.4,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc11",
+        "size": 5,
+        "banks": 2,
+        "laundering_transfers": 4,
+        "accounts_held": 0.8,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc12",
+        "size": 4,
+        "banks": 4,
+        "laundering_transfers": 3,
+        "accounts_held": 0.25,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc13",
+        "size": 4,
+        "banks": 4,
+        "laundering_transfers": 3,
+        "accounts_held": 0.25,
+        "transfers_visible": 0.667,
+        "connected_view": 0.75,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc14",
+        "size": 4,
+        "banks": 2,
+        "laundering_transfers": 3,
+        "accounts_held": 0.75,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc15",
+        "size": 4,
+        "banks": 4,
+        "laundering_transfers": 3,
+        "accounts_held": 0.25,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc16",
+        "size": 4,
+        "banks": 3,
+        "laundering_transfers": 3,
+        "accounts_held": 0.5,
+        "transfers_visible": 0.667,
+        "connected_view": 0.75,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc17",
+        "size": 4,
+        "banks": 4,
+        "laundering_transfers": 3,
+        "accounts_held": 0.25,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc19",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc20",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc21",
+        "size": 3,
+        "banks": 2,
+        "laundering_transfers": 2,
+        "accounts_held": 0.667,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc22",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc23",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc24",
+        "size": 3,
+        "banks": 2,
+        "laundering_transfers": 2,
+        "accounts_held": 0.667,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc25",
+        "size": 3,
+        "banks": 2,
+        "laundering_transfers": 2,
+        "accounts_held": 0.667,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc26",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc27",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc29",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc30",
+        "size": 3,
+        "banks": 2,
+        "laundering_transfers": 2,
+        "accounts_held": 0.667,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc31",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc32",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc33",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc34",
+        "size": 3,
+        "banks": 2,
+        "laundering_transfers": 2,
+        "accounts_held": 0.667,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc35",
+        "size": 3,
+        "banks": 2,
+        "laundering_transfers": 2,
+        "accounts_held": 0.667,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc36",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      },
+      {
+        "attempt": "lc37",
+        "size": 3,
+        "banks": 3,
+        "laundering_transfers": 2,
+        "accounts_held": 0.333,
+        "transfers_visible": 1.0,
+        "connected_view": 1.0,
+        "consortium_connected": 1.0
+      }
+    ]
+  },
+  "notes": [
+    "A bank can only investigate (KYC, other transfers) its own customers; accounts held is the share of the ring it can actually work on.",
+    "Attempt ground truth: connected_components_of_laundering_transfers; laundering transfers identified by IBM's per-transaction label."
+  ],
+  "generated_at": "2026-10-17T21:13:00+0530",
+  "graph_prefix": "ibm_"
+}

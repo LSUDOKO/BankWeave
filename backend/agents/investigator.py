@@ -149,9 +149,10 @@ def build_claims(case_id: str, seed: str, members: list[dict]) -> list[str]:
     """Deterministic claim builder over recorded evidence (used when no LLM claims)."""
     ev = db.ro(db.case_graph(case_id), EVIDENCE)
     existing = {c["kind"]: c for c in db.ro(db.case_graph(case_id), CLAIMS)}
+    # shared attributes are taken at face value here; echo weighting discounts broadly shared
+    # ones and the Skeptic challenges them - that is the intended division of labour
     ring_ev = [e for e in ev if e["kind"] in ("path", "typology_match", "passthrough",
-                                               "behavior_similarity")
-               or (e["kind"] == "shared_attr" and "units 1)" in (e["summary"] or ""))]
+                                               "behavior_similarity", "shared_attr")]
     made = []
     if ring_ev:
         accts = sorted({a for e in ring_ev for a in (e["accounts"] or [])})

@@ -103,3 +103,46 @@ def account(account_id: str):
     r["identity"] = [x for x in r["identity"] if x.get("id")]
     r["alerts"] = [x for x in r["alerts"] if x.get("id")]
     return r
+
+
+LAYER_EXTERNAL = cy("network_layer_external", "External stubs a bank sees around focus accounts", """
+MATCH (a:Account)-[:TRANSFERS]-(x:ExternalAccount) WHERE a.id IN $ids
+RETURN DISTINCT x.id AS id, x.bank_id AS bank LIMIT $limit
+""")
+
+LAYER_CASES = cy("network_layer_cases", "Cases and their claim summaries over focus accounts", """
+MATCH (c:Case)-[:CONCERNS]->(a:Account) WHERE a.id IN $ids
+WITH c, collect(DISTINCT a.id) AS accounts
+OPTIONAL MATCH (c)-[:HAS_CLAIM]->(cl:Claim)
+RETURN c.id AS id, c.title AS title, c.status AS status, accounts,
+       collect(DISTINCT {id:cl.id, kind:cl.kind, state:cl.state}) AS claims
+""")
+
+
+@router.get("/layers")
+def layers(limit: int = 220):
+    """Three planes for the 3D view: each bank's own slice (with the external stubs that wall
+    it in), the consortium where the slices join, and the cases and claims on top."""
+    ids = [r["id"] for r in db.ro(db.CONSORTIUM, FOCUS_CASES, {"case": None, "limit": limit})]
+    if len(ids) < 40:
+        ids += [r["id"] for r in db.ro(db.CONSORTIUM, FOCUS_TOP, {"limit": 80})
+                if r["id"] not in ids]
+    cons_nodes = db.ro(db.CONSORTIUM, CONS_NODES, {"ids": ids})
+    cons_edges = db.ro(db.CONSORTIUM, CONS_EDGES, {"ids": ids})
+    banks = sorted({n["bank"] for n in cons_nodes if n["bank"]})
+    bank_edges, externals = [], []
+    for b in banks:
+        g = db.bank_graph(b)
+        if g not in db.list_graphs():
+            continue
+        own = [n["id"] for n in cons_nodes if n["bank"] == b]
+        for e in db.ro(g, BANK_EDGES, {"ids": own}):
+            bank_edges.append({**e, "bank": b})
+        for x in db.ro(g, LAYER_EXTERNAL, {"ids": own, "limit": 40}):
+            externals.append({"id": x["id"], "seen_by": b, "bank": x["bank"]})
+    cases = db.ro(db.CONSORTIUM, LAYER_CASES, {"ids": ids})
+    for c in cases:
+        c["claims"] = [x for x in c["claims"] if x.get("id")]
+    return {"banks": banks, "accounts": cons_nodes, "consortium_edges": cons_edges,
+            "bank_edges": bank_edges, "externals": externals, "cases": cases,
+            "cypher": [FOCUS_CASES, CONS_NODES, CONS_EDGES, BANK_EDGES, LAYER_EXTERNAL, LAYER_CASES]}

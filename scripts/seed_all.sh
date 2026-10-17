@@ -9,7 +9,7 @@ TRANS="${1:-$DEFAULT}"; shift || true
 TOPN=()
 [[ "$TRANS" == *IBM_SLICE* ]] && TOPN=(--top-n 6)
 uv run python -m app.services.loader --trans "$TRANS" "${TOPN[@]}" "$@"
-uv run python -m app.services.kyc_synth
+uv run python -m app.services.kyc_synth ${KYC_ARGS:-}
 if uv run python -c "import detection.precompute" 2>/dev/null; then
   uv run python -m detection.precompute
 fi

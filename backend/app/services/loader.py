@@ -108,8 +108,9 @@ def _create_indexes(name: str, bank_graph: bool) -> None:
         "CREATE INDEX FOR (a:Account) ON (a.id)",
         "CREATE INDEX FOR (a:OtherBank) ON (a.id)",
         "CREATE INDEX FOR (b:Bank) ON (b.id)",
+        # transfers are reached from accounts; nothing looks one up by txn_id, and that
+        # index cost ~8 MB across seven graphs
         "CREATE INDEX FOR ()-[t:TRANSFERS]-() ON (t.ts)",
-        "CREATE INDEX FOR ()-[t:TRANSFERS]-() ON (t.txn_id)",
     ] + (["CREATE INDEX FOR (a:ExternalAccount) ON (a.id)"] if bank_graph else []):
         db.try_query(name, cypher)
     if not bank_graph:

@@ -107,7 +107,9 @@ def build(consortium: str, banks: list[str], attempts: list[dict], seed: int) ->
             "shared": shared, "by_id": by_id}
 
 
-def write_graph(name: str, data: dict, bank: str | None) -> None:
+def write_graph(name: str, data: dict, bank: str | None, compact: bool = False) -> None:
+    """compact drops attributes only one account uses: they can never be shared evidence,
+    and on a small cloud instance they are a third of the memory."""
     def keep(acct: str) -> bool:
         return bank is None or data["by_id"][acct]["bank"] == bank
 
@@ -134,7 +136,8 @@ def write_graph(name: str, data: dict, bank: str | None) -> None:
     db.q(name, """UNWIND $rows AS r MATCH (a:Account {id:r.a})
         MATCH (p {id:r.p}) WHERE p:Person OR p:Company
         CREATE (p)-[:OWNS {valid_from:0, name_on_account:r.n}]->(a)""", {"rows": owns})
-    links = [{"a": a, "rel": rel, "x": x} for a, rel, x in data["links"] if keep(a)]
+    links = [{"a": a, "rel": rel, "x": x} for a, rel, x in data["links"]
+             if keep(a) and not (compact and data["shared"][x] < 2)]
     used = {link["x"] for link in links}
     label_of = {"device": "Device", "ip": "IP", "address": "Address"}
     for kind, label in label_of.items():
@@ -186,7 +189,8 @@ def write_postgres(data: dict, seed: int) -> int:
     return len(rows)
 
 
-def run(prefix: str | None = None, with_postgres: bool = True, graphs: bool = True) -> dict:
+def run(prefix: str | None = None, with_postgres: bool = True, graphs: bool = True,
+        compact: bool = False) -> dict:
     s = get_settings()
     if prefix is None:
         prefix = s.graph_prefix
@@ -194,9 +198,9 @@ def run(prefix: str | None = None, with_postgres: bool = True, graphs: bool = Tr
     gt = json.loads(gt_file.read_text())
     data = build(prefix + "consortium", gt["banks"], gt["attempts"], s.synth_seed)
     if graphs:  # postgres-only mode reproduces the same seeded data for a new KYC database
-        write_graph(prefix + "consortium", data, None)
+        write_graph(prefix + "consortium", data, None, compact)
         for b in gt["banks"]:
-            write_graph(f"{prefix}bank_{b}", data, b)
+            write_graph(f"{prefix}bank_{b}", data, b, compact)
     n = write_postgres(data, s.synth_seed) if with_postgres else 0
     return {"persons": len(data["persons"]), "attributes": len(data["attrs"]),
             "links": len(data["links"]), "kyc_rows": n}
@@ -204,4 +208,4 @@ def run(prefix: str | None = None, with_postgres: bool = True, graphs: bool = Tr
 
 if __name__ == "__main__":
     import sys
-    print(run(graphs="--postgres-only" not in sys.argv))
+    print(run(graphs="--postgres-only" not in sys.argv, compact="--compact" in sys.argv))

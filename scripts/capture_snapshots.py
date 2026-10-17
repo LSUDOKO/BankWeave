@@ -11,7 +11,7 @@ from pathlib import Path
 
 API = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000").rstrip("/")
 PATHS = ["/overview", "/scenarios", "/lab/graphs", "/lab/algorithms", "/lab/tools", "/lab/udf",
-         "/eval", "/eval/curve", "/health"]
+         "/eval", "/eval/curve", "/health", "/network/layers", "/lab/memory"]
 OUT = Path(__file__).resolve().parents[1] / "frontend" / "src" / "snapshots" / "index.json"
 
 snap = {"_meta": {"captured_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),

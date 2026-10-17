@@ -362,7 +362,7 @@ def get_case_bundle(ctx: Ctx) -> dict:
     return {"result": gate.get_case_bundle(ctx.case_id)}
 
 
-def call(name: str, ctx: Ctx, **params) -> dict:
+def call(name: str, ctx: Ctx, /, **params) -> dict:
     """Run a tool, log it to the case timeline, return its JSON-able result."""
     t = REGISTRY[name]
     out = t.fn(ctx, **params)

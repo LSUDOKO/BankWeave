@@ -19,11 +19,17 @@ class Settings(BaseSettings):
     postgres_url: str = "postgresql://postgres:bankweave@localhost:5440/kyc"
 
     openrouter_api_key: str | None = None
-    llm_writer_model: str = "openrouter/google/gemini-3.8-flash"
-    llm_auditor_model: str = "openrouter/anthropic/claude-sonnet-5.5"
-    # tried in order when the primary model is out of credits / rate limited / overloaded
-    llm_writer_fallbacks: str = "openrouter/nvidia/nemotron-3-super-120b-a12b:free,openrouter/google/gemma-4-31b-it:free"
+    groq_api_key: str | None = None
+    # free tiers only. Writer and auditor are different models from different vendors, and
+    # the auditor is the larger one (the provenance gate needs a different, stronger auditor).
+    llm_writer_model: str = "groq/qwen/qwen3.8-27b"
+    llm_auditor_model: str = "groq/openai/gpt-oss-120b"
+    # tried in order when the primary model is rate limited / overloaded
+    llm_writer_fallbacks: str = ("openrouter/nvidia/nemotron-3-super-120b-a12b:free,"
+                                 "openrouter/google/gemma-4-31b-it:free")
     llm_auditor_fallbacks: str = "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
+    # which agents may call the LLM ("*" = all). Narrow it on a tight free quota.
+    llm_agents: str = "*"
 
     dataset: str = "HI-Small"
     data_dir: Path = ROOT / "data" / "raw"
@@ -40,7 +46,7 @@ class Settings(BaseSettings):
 
     @property
     def llm_enabled(self) -> bool:
-        return bool(self.openrouter_api_key)
+        return bool(self.groq_api_key or self.openrouter_api_key)
 
 
 @lru_cache

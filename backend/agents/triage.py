@@ -187,6 +187,12 @@ def risk_score(s: dict) -> float:
 
 def decide(s: dict, f: dict[str, float] | None = None) -> dict:
     public = {k: v for k, v in s.items() if not k.startswith("_")}
+    if s.get("high_volume_account"):
+        # clearing/processor-like accounts have no investigable ring around them in one case;
+        # they go to a periodic aggregate review instead of the agent queue
+        return {"decision": "clear", "mode": "graph", "score": 0.0,
+                "reason": f"high-volume account ({s['high_volume_account']:,} transfers): routed to "
+                          f"aggregate review, not single-alert triage"}
     w = _weights()
     prob = model_probability(f) if (f is not None and w) else None
     if prob is not None:

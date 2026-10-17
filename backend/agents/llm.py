@@ -76,7 +76,13 @@ def complete_json(role: str, system: str, user: str, max_tokens: int = 1500,
     """
     if not enabled():
         return None
-    os.environ.setdefault("OPENROUTER_API_KEY", get_settings().openrouter_api_key or "")
+    allowed = {a.strip() for a in get_settings().llm_agents.split(",") if a.strip()}
+    if allowed and "*" not in allowed and (agent or role) not in allowed:
+        return None  # this agent runs its deterministic graph policy
+    st = get_settings()
+    for env, val in (("OPENROUTER_API_KEY", st.openrouter_api_key), ("GROQ_API_KEY", st.groq_api_key)):
+        if val:
+            os.environ.setdefault(env, val)
     msgs = [{"role": "system", "content": system + "\nRespond with JSON only."},
             {"role": "user", "content": user}]
     # reasoning models spend completion tokens before answering; keep headroom for the answer

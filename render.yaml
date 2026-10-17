@@ -1,0 +1,55 @@
+# Render blueprint: API (+ agent worker), MCP server, Redis for live events.
+# FalkorDB runs on FalkorDB Cloud; set FALKORDB_* as secrets in the dashboard.
+services:
+  - type: web
+    name: bankweave-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: FALKORDB_HOST
+        sync: false
+      - key: FALKORDB_PORT
+        sync: false
+      - key: FALKORDB_USERNAME
+        sync: false
+      - key: FALKORDB_PASSWORD
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: POSTGRES_URL
+        fromDatabase: { name: bankweave-kyc, property: connectionString }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: bankweave-events, property: connectionString }
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: RUN_WORKER
+        value: "true"
+  - type: web
+    name: bankweave-mcp
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: starter
+    dockerCommand: python -m mcp_server.server --http 10000
+    envVars:
+      - fromGroup: bankweave-shared
+  - type: keyvalue
+    name: bankweave-events
+    plan: starter
+    ipAllowList: []
+databases:
+  - name: bankweave-kyc
+    plan: basic-256mb
+    databaseName: kyc
+envVarGroups:
+  - name: bankweave-shared
+    envVars:
+      - key: FALKORDB_HOST
+        sync: false
+      - key: FALKORDB_PORT
+        sync: false
+      - key: FALKORDB_PASSWORD
+        sync: false

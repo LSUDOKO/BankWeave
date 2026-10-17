@@ -108,6 +108,13 @@ def red_team(body: Inject):
     return simulator.inject_evasive_ring(body.size)
 
 
+@router.post("/red_team/smurf")
+def red_team_smurf():
+    """Inject a 25-transfer smurfing network (fan-out under the threshold, then fan-in)."""
+    from app.services import simulator
+    return simulator.inject_smurfing()
+
+
 @router.post("/hunt")
 def hunt():
     """Hunt mode: motif seeds + shortest-path subgraph raise alerts with no rule firing."""

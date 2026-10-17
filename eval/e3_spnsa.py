@@ -22,7 +22,7 @@ def main(k: int, r: int, random_runs: int) -> None:
     illicit = set(gt["illicit_accounts"])
     n_acc = db.ro(db.CONSORTIUM, "MATCH (a:Account) RETURN count(a) AS c")[0]["c"]
     res = {}
-    for method in ("motif", "degree"):
+    for method in ("motif", "degree", "motif_no_degree_penalty"):
         t0 = time.time()
         sub = spnsa.subgraph(db.CONSORTIUM, ms.seeds_from_graph(db.CONSORTIUM, k, method), r)
         nodes = sub["nodes"]
@@ -43,7 +43,10 @@ def main(k: int, r: int, random_runs: int) -> None:
                                         "SKIP $skip LIMIT $limit"))) / n_acc, 4)
     res["paper_hi_small_k200_r1"] = {"random": 0.024, "degree": 0.137, "motif": 0.226}
     write("E3_spnsa_hunt", db.PREFIX or "demo", {"k": k, "r": r, "accounts": n_acc}, res,
-          ["We use FalkorDB PageRank in place of eigenvector centrality (not available natively).",
+          ["motif uses the paper's HI-Small parameters (gamma=0.8). motif_no_degree_penalty "
+           "(gamma=0) is a post-hoc ablation added after seeing that the degree penalty inverts "
+           "the score on this slice (account-level AUC 0.373 vs 0.646); treat it as exploratory.",
+           "We use FalkorDB PageRank in place of eigenvector centrality (not available natively).",
            "Our graph is the top-20-bank consortium slice of HI-Small, not the paper's full "
            "largest WCC, so absolute ratios are not directly comparable."])
 

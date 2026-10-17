@@ -137,6 +137,9 @@ def seeds_from_graph(graph: str, k: int, method: str = "motif", rng_seed: int = 
     if method == "degree":
         ranked = sorted(nodes, key=lambda v: -abs(len(out_[v]) - len(in_[v])))
         return ranked[:k]
-    sc = scores(out_, in_, nodes)
+    params = dict(cfg()["motif"])
+    if method == "motif_no_degree_penalty":  # ablation: gamma = 0
+        params["gamma"] = 0.0
+    sc = scores(out_, in_, nodes, params)
     ranked = sorted(nodes, key=lambda v: -sc[v]["score"])
     return coherent_seeds(ranked, out_, in_, k)

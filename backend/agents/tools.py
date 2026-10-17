@@ -167,7 +167,12 @@ def typology_patterns(ctx: Ctx, account_id: str, which: list[str] | None = None)
       ("investigator",), records=True)
 def trace_flow(ctx: Ctx, src: str, dst: str, max_len: int = 6, path_count: int = 3,
                direction: str = "outgoing") -> dict:
-    r = al.trace_flow(ctx.graph, src, dst, max_len, path_count, direction)
+    # run on the copied case graph: bidirectional shortest paths across the whole consortium
+    # explode through hub accounts; outside a case only outgoing search is allowed
+    graph = ctx.case_graph or ctx.graph
+    if not ctx.case_graph:
+        direction = "outgoing"
+    r = al.trace_flow(graph, src, dst, max_len, path_count, direction)
     ids = []
     for p in r["result"]:
         hops = " -> ".join(short(a) for a in p["accounts"])

@@ -11,6 +11,8 @@ import os
 import re
 import time
 
+import litellm  # imported eagerly: lazy imports from several agent threads race
+
 from app import events
 from app.config import get_settings
 
@@ -44,8 +46,6 @@ def complete_json(role: str, system: str, user: str, max_tokens: int = 1500,
     """Return parsed JSON from the model, or None (disabled / error / unparseable)."""
     if not enabled():
         return None
-    import litellm
-
     os.environ.setdefault("OPENROUTER_API_KEY", get_settings().openrouter_api_key or "")
     model = model_for(role)
     t0 = time.time()

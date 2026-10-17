@@ -13,6 +13,8 @@ RESULTS = ROOT / "eval" / "results"
 def results():
     out = {}
     for p in sorted(RESULTS.glob("*.json")):
+        if p.stem.endswith("_scores"):  # raw score dumps are served by /eval/curve
+            continue
         try:
             d = json.loads(p.read_text())
         except ValueError:
@@ -22,6 +24,15 @@ def results():
         if not prev or d.get("generated_at", "") >= prev.get("generated_at", ""):
             out[d.get("experiment", p.stem)] = d
     return {"experiments": out}
+
+
+@router.get("/curve")
+def curve():
+    """E1 test-split scores: [calibrated probability, hand score, rules fired, illicit]."""
+    p = RESULTS / "E1_test_scores.json"
+    if not p.exists():
+        raise HTTPException(404, "run eval/e1_alert_triage.py to produce E1_test_scores.json")
+    return json.loads(p.read_text())
 
 
 @router.get("/{name}")

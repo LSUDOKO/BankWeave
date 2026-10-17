@@ -42,6 +42,9 @@ class Settings(BaseSettings):
 
     # agent runtime
     task_stale_seconds: int = 30
+    # case graphs the capacity guard never drops (comma separated case ids)
+    pinned_cases: str = ""
+    falkordb_region: str = "local"
     worker_concurrency: int = 3
 
     @property

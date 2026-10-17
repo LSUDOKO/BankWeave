@@ -145,6 +145,11 @@ def open_case(alert_id: str, account_id: str, banks: list[str], title: str,
     consortium = consortium or db.CONSORTIUM
     cid = case_id or new_id("C")
     g = case_graph(cid)
+    try:  # never let a full instance turn every new case into an OOM error
+        from app.services import capacity
+        capacity.prune()
+    except Exception:  # noqa: BLE001
+        pass
     for label in ("Claim", "Evidence", "Action", "Event", "Account", "SAR", "Sentence"):
         db.try_query(g, f"CREATE INDEX FOR (n:{label}) ON (n.id)")
     db.q(g, CREATE_CASE, {"id": cid, "alert": alert_id, "account": account_id,

@@ -32,6 +32,22 @@ def _triage(s: TaskState) -> TaskState:
     return {"result": triage.run(s["alert_id"])}
 
 
+def _case_exists(case_id: str | None) -> bool:
+    from app import db
+    g = db.case_graph(case_id or "")
+    return g in db.list_graphs() and bool(
+        db.ro(g, "MATCH (c:Case) RETURN count(c) AS n")[0]["n"])
+
+
+def _guard(fn):
+    """A task whose case was dropped (demo reset) is a no-op, not a crash."""
+    def run(s: TaskState) -> TaskState:
+        if not _case_exists(s.get("case_id")):
+            return {"result": {"next": [], "skipped": "case no longer exists"}}
+        return fn(s)
+    return run
+
+
 def _investigate(s: TaskState) -> TaskState:
     return {"result": investigator.run(s["case_id"], s.get("round") or 0)}
 
@@ -54,8 +70,9 @@ def build(bb: Blackboard):
         return {"scheduled": ids}
 
     g = StateGraph(TaskState)
-    nodes = {"triage": _triage, "investigate": _investigate, "challenge": _challenge,
-             "report": _report, "archive": _archive}
+    nodes = {"triage": _triage, "investigate": _guard(_investigate),
+             "challenge": _guard(_challenge), "report": _guard(_report),
+             "archive": _guard(_archive)}
     for name, fn in nodes.items():
         g.add_node(name, fn)
         g.add_edge(name, "schedule")

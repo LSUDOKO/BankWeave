@@ -73,8 +73,13 @@ class Worker:
             t.start()
         events.publish("worker", "consortium", self.name, {"status": "started", "n": self.n})
 
-    def stop(self) -> None:
+    def stop(self, wait: float = 0.0) -> None:
+        """Stop claiming new tasks. wait > 0 blocks until in-flight tasks finish (used by
+        reset, so no task writes into a case graph that is being dropped)."""
         self.stop_evt.set()
+        if wait:
+            for t in self.threads:
+                t.join(timeout=wait)
         events.publish("worker", "consortium", self.name, {"status": "stopped"})
 
     @property

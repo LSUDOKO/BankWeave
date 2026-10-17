@@ -64,8 +64,7 @@ def reset(request: Request):
     """Back to a known state: no cases, no tasks, fresh alerts. Data graphs stay."""
     w = _worker(request)
     if w:
-        w.stop()
-        time.sleep(1.5)
+        w.stop(wait=120)  # let in-flight tasks finish before dropping their graphs
     for g in db.case_graphs():
         db.drop_graph(g)
     db.q(db.CONSORTIUM, "MATCH (n) WHERE n:Task OR n:Case OR n:Claim OR n:Decision DETACH DELETE n")

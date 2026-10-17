@@ -15,6 +15,7 @@ from app.cypher import cy
 KIND_WEIGHT = {"typology_match": 1.0, "path": 1.0, "passthrough": 1.0, "algo_score": 0.6,
                "shared_attr": 0.8, "kyc_fact": 0.7, "behavior_similarity": 0.4, "doc": 0.3,
                "txnset": 0.8}
+SCALE = 0.5  # one strong independent source -> 0.39, three -> 0.78
 ORIGIN_KINDS = ["path", "typology_match", "algo_score", "shared_attr", "kyc_fact",
                 "passthrough", "behavior_similarity", "doc"]
 
@@ -81,8 +82,8 @@ def score(supports: list[dict], challenges: list[dict]) -> dict:
     chal = group_by_origin(challenges)
     s = sum(g["weight"] for g in sup)
     c = sum(g["weight"] for g in chal)
-    naive = 1 - math.exp(-sum(_weight(e) for e in supports))
-    return {"confidence": round(max(0.0, 1 - math.exp(-(s - c))) if s > c else 0.0, 3),
+    naive = 1 - math.exp(-SCALE * sum(_weight(e) for e in supports))
+    return {"confidence": round(1 - math.exp(-SCALE * (s - c)) if s > c else 0.0, 3),
             "naive_confidence": round(naive, 3), "paths": len(supports),
             "independent_sources": len(sup), "independent_challenges": len(chal),
             "groups": sup, "challenge_groups": chal,

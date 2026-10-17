@@ -1,0 +1,6 @@
+**/node_modules
+**/.next
+**/.venv
+data/raw
+.git
+.playwright-mcp

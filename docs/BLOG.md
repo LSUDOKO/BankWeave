@@ -168,11 +168,45 @@ reports. The cascade flagged exactly the true dependents in 50 scripted dependen
   one query per hop following only later transfers, is both faster and closer to what a
   laundering cycle is.
 
+## 2.0: more of the engine, more of the evidence
+
+The second version pushed more of the work into FalkorDB itself.
+
+- **Time-respecting reach as a UDF.** Money cannot leave an account before it arrives. Our
+  `aml_temporal` library is JavaScript loaded with `GRAPH.UDF LOAD`; it walks outgoing
+  `TRANSFERS` with `getNeighbors` and only follows later transfers. From one busy account it
+  returned 50 time-ordered reachable accounts in 44 ms, inside the database. FalkorDB's FLEX
+  library (loaded the same way) does the fuzzy name and attribute-set similarity.
+- **What-if on a copy.** "What happens if we freeze this account?" is `GRAPH.COPY` of the case
+  graph, a `DETACH DELETE` in the copy, and `algo.maxFlow` plus `algo.wcc` before and after. On
+  one four-bank case, freezing the account that carried the most flow took the ring's max flow
+  from 49,475 to 0 and split it into seven pieces. The copy took 94 ms and is deleted after.
+- **One query, three indexes.** A phonetic full-text match finds a person from a misspelt
+  name, the HNSW vector index finds accounts that behave like theirs, and `algo.SPpaths` over the
+  collapsed `FLOWS` edges shows how money connects them, all in one Cypher statement (about
+  10 ms). We learned the hard way to run that path search over `FLOWS`: undirected `SPpaths` over
+  multi-edge `TRANSFERS` on the whole consortium explodes, and procedure calls ignore the query
+  timeout, so the Lab clamps path depth and direction before it runs anything.
+- **A seal on every approval.** A case's claims, evidence (with the query that produced it and
+  its validity state) and report sentences are hashed into one Merkle root. Approvers sign that
+  root with a passkey (WebAuthn, ES256); if any evidence is superseded later, the root changes
+  and the UI shows "Merkle seal broken".
+- **Private set intersection.** Two banks find which devices, IPs and addresses their customers
+  share with ECDH over Curve25519 without revealing the rest: 241 and 261 items, 93 shared,
+  1,004 scalar multiplications, 80 ms.
+- **Fitting a 100 MB cloud tier.** `GRAPH.MEMORY USAGE` and `INFO memory` showed where the space
+  went: an edge index on transaction ids nothing looked up (about 8 MB), singleton identity
+  nodes that can never be shared evidence, and id indexes on ~100-node case graphs (about
+  110 KB each). Dropping them took a fresh load from 66.8 MB to 49.8 MB.
+
+The card terminals, enclave and security key in the Hardware Lab are simulations and say so;
+their EMV TLV encoding, hashes, signatures and key exchange are real.
+
 ## Limits and next steps
 
 Synthetic data only; our identity layer is generated (and its rules published so leakage can
-be audited). Consortium sharing is modelled with salted hashes, not real privacy technology.
-Clue-guided recovery uses graph signals, not the paper's GNN. Next: private set intersection
-for real cross-bank linking, a learned risk field, and a study with real analysts.
+be audited). Consortium ids are salted hashes; the PSI handshake is real cryptography but both sides run in
+one process for the demo. Clue-guided recovery uses graph signals, not the paper's GNN. Next:
+PSI across real separate deployments, a learned risk field, and a study with real analysts.
 
 *BankWeave is open source: github.com/LSUDOKO/BankWeave. Built with help from Claude Code.*

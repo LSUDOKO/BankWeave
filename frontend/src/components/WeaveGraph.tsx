@@ -47,15 +47,19 @@ export default function WeaveGraph({
       .map((e) => ({ source: byId.get(e.source)!, target: byId.get(e.target)!, amount: e.amount }));
     sim.current = { nodes: sn, links };
     const s = forceSimulation(sn)
-      .force("x", forceX<SimNode>((d) => lane(d.bank)).strength(0.35))
-      .force("y", forceY(height / 2).strength(0.04))
-      .force("charge", forceManyBody().strength(-18))
+      // lanes dominate: x is owned by the bank, y is free for the structure
+      .force("x", forceX<SimNode>((d) => lane(d.bank)).strength(1))
+      .force("y", forceY(height / 2).strength(0.03))
+      .force("charge", forceManyBody().strength(-22))
       .force("collide", forceCollide(7))
-      .force("link", forceLink(links).distance(40).strength(0.05))
+      .force("link", forceLink(links).distance(60).strength(0.02))
       .alpha(pos.size ? 0.4 : 1)
       .on("tick", () => {
+        const band = Math.min(70, width / Math.max(2, banks.length + 1) / 3);
         for (const n of sn) {
-          n.y = Math.max(12, Math.min(height - 12, n.y!));
+          n.y = Math.max(28, Math.min(height - 12, n.y!));
+          const lx = lane(n.bank);
+          n.x = Math.max(lx - band, Math.min(lx + band, n.x!));
           pos.set(n.id, { x: n.x!, y: n.y! });
         }
         draw();
@@ -78,10 +82,11 @@ export default function WeaveGraph({
     // lanes
     banks.forEach((b) => {
       const x = lane(b);
-      ctx.strokeStyle = bankHex(b) + "33"; ctx.lineWidth = 34;
+      ctx.strokeStyle = bankHex(b) + "26"; ctx.lineWidth = Math.min(140, width / Math.max(2, banks.length + 1) * 0.66);
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
-      ctx.fillStyle = bankHex(b); ctx.font = "600 13px var(--font-schibsted), sans-serif";
-      ctx.textAlign = "center"; ctx.fillText(`Bank ${b}`, x, 16);
+      ctx.fillStyle = "#e9e4d4"; ctx.font = "600 13px sans-serif";
+      ctx.textAlign = "center"; ctx.fillText(`Bank ${b}`, x, 18);
+      ctx.fillStyle = bankHex(b); ctx.fillRect(x - 18, 24, 36, 2);
     });
     // edges: same-lane quiet, cross-lane threads red when both ends are in a case
     for (const l of g.links) {

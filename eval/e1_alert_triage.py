@@ -21,8 +21,9 @@ def main(sample: int, seed: int) -> None:
     gt = ground_truth(db.PREFIX)
     illicit = set(gt["illicit_accounts"])
     gen = baseline.generate(db.CONSORTIUM)
-    alerts = db.ro(db.CONSORTIUM, "MATCH (al:Alert) RETURN al.id AS id, al.account_id AS a, "
-                                  "al.ts AS ts, al.rule AS rule")
+    alerts = db.ro_all(db.CONSORTIUM, "MATCH (al:Alert) RETURN al.id AS id, al.account_id AS a, "
+                                      "al.ts AS ts, al.rule AS rule ORDER BY id "
+                                      "SKIP $skip LIMIT $limit")
     ts = sorted(a["ts"] for a in alerts)
     split = ts[len(ts) // 2]
     by_acct: dict[str, dict] = {}

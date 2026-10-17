@@ -39,7 +39,8 @@ def main(k: int, r: int, random_runs: int) -> None:
                      "illicit_ratio": round(statistics.mean(irs), 4),
                      "illicit_ratio_sd": round(statistics.pstdev(irs), 4), "runs": random_runs}
     res["base_rate"] = round(len(illicit & set(
-        x["id"] for x in db.ro(db.CONSORTIUM, "MATCH (a:Account) RETURN a.id AS id"))) / n_acc, 4)
+        x["id"] for x in db.ro_all(db.CONSORTIUM, "MATCH (a:Account) RETURN a.id AS id ORDER BY id "
+                                        "SKIP $skip LIMIT $limit"))) / n_acc, 4)
     res["paper_hi_small_k200_r1"] = {"random": 0.024, "degree": 0.137, "motif": 0.226}
     write("E3_spnsa_hunt", db.PREFIX or "demo", {"k": k, "r": r, "accounts": n_acc}, res,
           ["We use FalkorDB PageRank in place of eigenvector centrality (not available natively).",

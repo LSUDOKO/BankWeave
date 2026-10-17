@@ -1,7 +1,7 @@
 {
   "experiment": "E2_consortium_vs_single_bank",
-  "commit": "9c7a23d",
-  "dataset": "connected_components_of_laundering_transfers",
+  "commit": "49f9388",
+  "dataset": "HI-Small_Trans.csv (20 banks, graph prefix 'ibm_')",
   "params": {
     "min_members": 3,
     "banks": [
@@ -409,6 +409,6 @@
     "A bank can only investigate (KYC, other transfers) its own customers; accounts held is the share of the ring it can actually work on.",
     "Attempt ground truth: connected_components_of_laundering_transfers; laundering transfers identified by IBM's per-transaction label."
   ],
-  "generated_at": "2026-10-17T21:13:00+0530",
+  "generated_at": "2026-10-17T21:47:01+0530",
   "graph_prefix": "ibm_"
 }

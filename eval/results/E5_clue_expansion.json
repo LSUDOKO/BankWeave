@@ -1,7 +1,7 @@
 {
   "experiment": "E5_clue_expansion",
-  "commit": "37d623c",
-  "dataset": "ibm_",
+  "commit": "706ae01",
+  "dataset": "HI-Small_Trans.csv (20 banks, graph prefix 'ibm_')",
   "params": {
     "attempts": 12,
     "rounds": 8,
@@ -81,6 +81,6 @@
     "No GNN: risk field = motif score, PageRank, pass-through pairs and behaviour-vector similarity; context = time/amount-consistent transfer pairs.",
     "theta=0 so every round adds nodes, exposing the precision/recall trade-off."
   ],
-  "generated_at": "2026-10-17T21:18:30+0530",
+  "generated_at": "2026-10-17T21:48:46+0530",
   "graph_prefix": "ibm_"
 }

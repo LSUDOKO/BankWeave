@@ -1,7 +1,7 @@
 {
   "experiment": "E3_spnsa_hunt",
-  "commit": "cab75ea",
-  "dataset": "ibm_",
+  "commit": "cc7037a",
+  "dataset": "HI-Small_Trans.csv (20 banks, graph prefix 'ibm_')",
   "params": {
     "k": 200,
     "r": 1,
@@ -12,13 +12,19 @@
       "nodes": 280,
       "illicit": 21,
       "illicit_ratio": 0.075,
-      "seconds": 1.9
+      "seconds": 2.3
     },
     "degree": {
       "nodes": 336,
       "illicit": 57,
       "illicit_ratio": 0.1696,
-      "seconds": 1.6
+      "seconds": 1.7
+    },
+    "motif_no_degree_penalty": {
+      "nodes": 378,
+      "illicit": 44,
+      "illicit_ratio": 0.1164,
+      "seconds": 2.3
     },
     "random": {
       "nodes": 249.5,
@@ -31,12 +37,19 @@
       "random": 0.024,
       "degree": 0.137,
       "motif": 0.226
+    },
+    "account_auc": {
+      "motif_paper_params": 0.3743,
+      "motif_no_degree_penalty": 0.638,
+      "degree": 0.6837,
+      "degree_imbalance": 0.6128
     }
   },
   "notes": [
+    "motif uses the paper's HI-Small parameters (gamma=0.8). motif_no_degree_penalty (gamma=0) is a post-hoc ablation added after seeing that the degree penalty inverts the score on this slice (see account_auc); treat it as exploratory.",
     "We use FalkorDB PageRank in place of eigenvector centrality (not available natively).",
     "Our graph is the top-20-bank consortium slice of HI-Small, not the paper's full largest WCC, so absolute ratios are not directly comparable."
   ],
-  "generated_at": "2026-10-17T21:10:06+0530",
+  "generated_at": "2026-10-17T21:49:47+0530",
   "graph_prefix": "ibm_"
 }

@@ -110,6 +110,8 @@ def write_graph(name: str, data: dict, bank: str | None) -> None:
     def keep(acct: str) -> bool:
         return bank is None or data["by_id"][acct]["bank"] == bank
 
+    db.q(name, "MATCH (n) WHERE n:Person OR n:Company OR n:Device OR n:IP OR n:Address "
+               "DETACH DELETE n")
     base = {p["id"]: p["name"] for p in data["persons"]}
     kinds = {}
     owns = []

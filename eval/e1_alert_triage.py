@@ -107,6 +107,7 @@ def main(sample: int, seed: int, workers: int) -> None:
 
     (ROOT / "backend" / "detection" / "triage_weights.json").write_text(json.dumps({
         "bias": float(b), "threshold": thr,
+        "escalation_rate": round(float((pd_ >= thr).mean()), 4),
         "coef": {k_: float(v) for k_, v in zip(keys, w)},
         "mean": {k_: float(v) for k_, v in zip(keys, mu)},
         "std": {k_: float(v) for k_, v in zip(keys, sd)},

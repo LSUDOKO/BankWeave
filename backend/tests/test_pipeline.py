@@ -17,7 +17,8 @@ def test_case_runs_to_sar_through_blackboard(loaded, monkeypatch):
     db.q(loaded["consortium"], "MERGE (al:Alert {id:'AL-PIPE'}) SET al.status='open', "
          "al.account_id=$a, al.rule='test', al.bank_id='x' WITH al MATCH (a:Account {id:$a}) "
          "MERGE (al)-[:RAISED_FOR]->(a)", {"a": acct})
-    monkeypatch.setattr(triage, "risk_score", lambda s: 5.0)  # force a case for this test
+    monkeypatch.setattr(triage, "decide", lambda s, f=None: {  # force a case for this test
+        "decision": "case", "reason": "test", "mode": "graph", "score": 1.0})
     bb = Blackboard("test_bb_pipe")
     f = flow.build(bb)
     out = f.invoke({"task_type": "triage", "alert_id": "AL-PIPE"})

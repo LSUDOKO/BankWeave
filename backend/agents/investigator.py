@@ -180,7 +180,9 @@ def build_claims(case_id: str, seed: str, members: list[dict]) -> list[str]:
             store.derive(case_id, hc, ring)
             made.append(hc)
         br_ev = [e for e in ev if e["origin"].startswith("algo:betweenness")]
-        if br_ev and "mule" not in existing:
+        hub_acct = next((e["accounts"][0] for e in hub_ev
+                         if e["origin"].startswith("algo:pagerank")), None)
+        if br_ev and "mule" not in existing and br_ev[0]["accounts"][0] != hub_acct:
             acct = br_ev[0]["accounts"][0]
             mc = store.add_claim(case_id, f"Account {acct[:6]} bridges the groups in the "
                                           f"structure (likely mule)", "mule",

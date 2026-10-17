@@ -12,17 +12,30 @@ from falkordb import FalkorDB, Graph
 
 from app.config import get_settings
 
-CONSORTIUM = "consortium"
-PROCEDURES = "procedures"
+PREFIX = get_settings().graph_prefix
+CONSORTIUM = PREFIX + "consortium"
+PROCEDURES = PREFIX + "procedures"
 TYPOLOGY_KB = "typology_kb"
 
 
 def bank_graph(bank_id: str) -> str:
-    return f"bank_{bank_id}"
+    return f"{PREFIX}bank_{bank_id}"
 
 
 def case_graph(case_id: str) -> str:
-    return f"case_{case_id}"
+    return f"{PREFIX}case_{case_id}"
+
+
+def is_case_graph(name: str) -> bool:
+    return name.startswith(PREFIX + "case_")
+
+
+def case_id_of(name: str) -> str:
+    return name[len(PREFIX + "case_"):]
+
+
+def case_graphs() -> list[str]:
+    return [g for g in list_graphs() if is_case_graph(g)]
 
 
 @lru_cache

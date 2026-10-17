@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     hash_salt: str = "bankweave-demo-salt"
     synth_seed: int = 42
 
+    # graph namespace: "" for the live demo, "ibm_" for the IBM HI-Small evaluation load
+    graph_prefix: str = ""
+
     # agent runtime
     task_stale_seconds: int = 30
     worker_concurrency: int = 3

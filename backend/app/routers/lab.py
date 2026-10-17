@@ -212,6 +212,8 @@ def graphs(include_cases: bool = True):
         out.append({"name": g, "kind": _kind(g), **_counts(g),
                     "memory_mb": mem.get("total_graph_sz_mb"),
                     "index_mb": mem.get("indices_sz_mb")})
+    order = {"consortium": 0, "bank": 1, "system": 2, "case": 3}
+    out.sort(key=lambda g: (order[g["kind"]], g["name"]))
     return {"graphs": out}
 
 

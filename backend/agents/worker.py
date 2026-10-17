@@ -16,6 +16,7 @@ from agents.blackboard import Blackboard
 from agents.flow import build
 from app import events
 from app.config import get_settings
+from app.services import telemetry
 
 TYPES = ["triage", "investigate", "challenge", "report", "archive"]
 
@@ -45,9 +46,11 @@ class Worker:
             threading.Thread(target=self._heartbeat, args=(t["id"], agent, done),
                              daemon=True).start()
             try:
-                self.flow.invoke({"task_type": t["type"], "task_id": t["id"],
-                                  "case_id": t["case_id"], "alert_id": t["alert_id"],
-                                  "round": t.get("round") or 0})
+                with telemetry.span(f"agent.{t['type']}", case_id=t["case_id"], task_id=t["id"],
+                                    worker=agent, round=t.get("round") or 0):
+                    self.flow.invoke({"task_type": t["type"], "task_id": t["id"],
+                                      "case_id": t["case_id"], "alert_id": t["alert_id"],
+                                      "round": t.get("round") or 0})
                 self.bb.done(t["id"])
                 self.processed += 1
             except Exception as exc:  # noqa: BLE001

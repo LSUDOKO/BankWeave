@@ -17,6 +17,7 @@ import litellm  # imported eagerly: lazy imports from several agent threads race
 
 from app import events
 from app.config import get_settings
+from app.services import telemetry
 
 log = logging.getLogger("bankweave.llm")
 litellm.suppress_debug_info = True  # one clear log line per failure instead of a banner
@@ -87,6 +88,12 @@ def complete_json(role: str, system: str, user: str, max_tokens: int = 1500,
             {"role": "user", "content": user}]
     # reasoning models spend completion tokens before answering; keep headroom for the answer
     budget = max(max_tokens, 1500) + 1500
+    with telemetry.span(f"llm.{role}", kind="client", agent=agent or role) as a:
+        out = _complete(role, msgs, budget, agent, case_graph, a)
+    return out
+
+
+def _complete(role, msgs, budget, agent, case_graph, a):
     t0 = time.time()
     text, used, errors = None, None, []
     for model in _chain(role):
@@ -108,10 +115,13 @@ def complete_json(role: str, system: str, user: str, max_tokens: int = 1500,
         if used:
             break
     if not used:
+        a.update(error="; ".join(errors)[:300], model=None)
         events.publish("agent_step", case_graph, "llm", {"error": "; ".join(errors)[:300],
                                                          "role": role}, agent=agent)
         return None
     out = _parse(text)
+    a.update(model=used, fallback=used != model_for(role), parsed=out is not None,
+             budget=budget)
     events.publish("agent_step", case_graph, "llm",
                    {"model": used, "role": role, "ms": int((time.time() - t0) * 1000),
                     "ok": out is not None, "fallback": used != model_for(role)}, agent=agent)

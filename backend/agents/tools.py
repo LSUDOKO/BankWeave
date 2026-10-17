@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from app import db
+from app.services import telemetry
 from detection import algorithms as al
 from detection import clue_expand, identity, motif_seeds, passthrough, spnsa
 from detection import typologies as ty
@@ -365,7 +366,11 @@ def get_case_bundle(ctx: Ctx) -> dict:
 def call(name: str, ctx: Ctx, /, **params) -> dict:
     """Run a tool, log it to the case timeline, return its JSON-able result."""
     t = REGISTRY[name]
-    out = t.fn(ctx, **params)
+    with telemetry.span(f"tool.{name}", kind="client", graph=ctx.graph, agent=ctx.agent) as a:
+        out = t.fn(ctx, **params)
+        r = out.get("result")
+        a["rows"] = len(r) if isinstance(r, list) else 1 if r else 0
+        a["evidence"] = len(out.get("evidence_ids", []))
     if ctx.case_id:
         cy = out.get("cypher")
         store.log_event(ctx.case_id, ctx.agent, f"tool:{name}",

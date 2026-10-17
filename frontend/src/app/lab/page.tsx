@@ -3,6 +3,9 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import ModeBadge from "@/components/ModeBadge";
 import { post } from "@/lib/api";
 import { live } from "@/lib/snapshot";
+import dynamic from "next/dynamic";
+
+const MemoryGraph = dynamic(() => import("@/components/MemoryGraph"), { ssr: false });
 
 type Graph = { name: string; kind: string; nodes: number; edges: number; labels: string[]; relationships: string[];
   indexes: { label: string; properties: string[]; types: Record<string, string[]>; entitytype: string }[];
@@ -11,7 +14,7 @@ type Algo = { key: string; family: string; title: string; cypher: string; defaul
 type PlanNode = { depth: number; op: string; detail: string; records: number | null; ms: number | null };
 type Tool = { name: string; description: string; agents: string[]; mode: string; input_schema: any };
 
-const TABS = ["Graphs", "Algorithms & indexes", "Inspector", "MCP tools", "Engine features"] as const;
+const TABS = ["Graphs", "Algorithms & indexes", "Inspector", "MCP tools", "Engine features", "Agent memory"] as const;
 
 export default function Lab() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Graphs");
@@ -41,6 +44,7 @@ export default function Lab() {
       {tab === "Inspector" && <Inspector />}
       {tab === "MCP tools" && <Tools onReplay={setReplay} />}
       {tab === "Engine features" && <Features />}
+      {tab === "Agent memory" && <Memory />}
     </div>
   );
 }
@@ -362,6 +366,28 @@ function Features() {
             <div><p className="text-muted mb-1">ACL LOG</p><pre className="rounded bg-ink/70 p-2 mono text-[11px]">{JSON.stringify(acl.acl_log, null, 2)}</pre></div>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function Memory() {
+  const [m, setM] = useState<any>(null);
+  useEffect(() => { live("/lab/memory").then(({ data }) => setM(data)).catch(() => setM({ procedures: [], episodic: [] })); }, []);
+  if (!m) return <p className="text-muted">Loading memory…</p>;
+  return (
+    <section className="space-y-4">
+      <div className="glass p-4 text-sm">
+        <h2>Procedural memory</h2>
+        <p className="mt-1 text-muted">When an analyst approves an action, the Archivist turns the tool sequence that produced the case into a reusable procedure in its own <span className="mono">procedures</span> graph, templated (<span className="mono">$seed</span>, <span className="mono">$hub</span>) so it applies to the next case of the same typology. Investigators load the best one before planning.</p>
+      </div>
+      {m.procedures.length ? <MemoryGraph procedures={m.procedures} /> : <p className="text-muted text-sm">No procedures yet: approve an action on the Approvals page and the Archivist will learn one.</p>}
+      <div className="glass p-4 text-sm">
+        <h2>Episodic memory</h2>
+        <p className="mt-1 text-muted">Each case keeps its own timeline (<span className="mono">HAD_EVENT</span> → <span className="mono">NEXT</span>): the record a resumed worker reads to continue, and the input to Replay.</p>
+        <div className="mt-2 flex flex-wrap gap-1.5 text-xs">{m.episodic.slice(0, 24).map((e: any) => (
+          <a key={e.case_id} href={`/cases/${e.case_id}`} className="glass-2 px-2 py-1 hover:border-cyan"><span className="mono">{e.case_id}</span> <span className="text-muted">{e.events} events</span></a>
+        ))}</div>
       </div>
     </section>
   );

@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     openrouter_api_key: str | None = None
     llm_writer_model: str = "openrouter/google/gemini-3.8-flash"
     llm_auditor_model: str = "openrouter/anthropic/claude-sonnet-5.5"
+    # tried in order when the primary model is out of credits / rate limited / overloaded
+    llm_writer_fallbacks: str = "openrouter/nvidia/nemotron-3-super-120b-a12b:free,openrouter/google/gemma-4-31b-it:free"
+    llm_auditor_fallbacks: str = "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 
     dataset: str = "HI-Small"
     data_dir: Path = ROOT / "data" / "raw"

@@ -11,11 +11,15 @@ import os
 import re
 import time
 
+import logging
+
 import litellm  # imported eagerly: lazy imports from several agent threads race
 
 from app import events
 from app.config import get_settings
 
+log = logging.getLogger("bankweave.llm")
+litellm.suppress_debug_info = True  # one clear log line per failure instead of a banner
 _JSON = re.compile(r"\{.*\}|\[.*\]", re.S)
 
 
@@ -41,32 +45,68 @@ def _parse(text: str):
     return None
 
 
+_AFFORD = re.compile(r"can only afford (\d+)")
+_RETRYABLE = ("RateLimit", "ServiceUnavailable", "APIError", "Timeout", "InternalServer")
+
+
+def _chain(role: str) -> list[str]:
+    s = get_settings()
+    extra = s.llm_auditor_fallbacks if role == "auditor" else s.llm_writer_fallbacks
+    return [model_for(role)] + [m.strip() for m in extra.split(",") if m.strip()]
+
+
+def _call(model: str, msgs: list[dict], budget: int) -> str | None:
+    resp = litellm.completion(model=model, max_tokens=budget, temperature=0.1, messages=msgs,
+                              response_format={"type": "json_object"}, timeout=90)
+    text = resp.choices[0].message.content
+    if not text:  # some providers return empty content in JSON mode: retry once plain
+        resp = litellm.completion(model=model, max_tokens=budget, temperature=0.1,
+                                  messages=msgs, timeout=90)
+        text = resp.choices[0].message.content
+    return text
+
+
 def complete_json(role: str, system: str, user: str, max_tokens: int = 1500,
                   agent: str | None = None, case_graph: str = "llm"):
-    """Return parsed JSON from the model, or None (disabled / error / unparseable)."""
+    """Return parsed JSON from the model, or None (disabled / all models failed / unparseable).
+
+    Degrades in order: primary model -> same model with the affordable token budget (credit
+    errors) -> fallback models -> None (the caller's deterministic policy). The auditor's
+    fallbacks never include the writer's models, so audits stay with a different model.
+    """
     if not enabled():
         return None
     os.environ.setdefault("OPENROUTER_API_KEY", get_settings().openrouter_api_key or "")
-    model = model_for(role)
-    t0 = time.time()
-    # reasoning models spend completion tokens before answering; keep headroom for the answer
-    budget = max(max_tokens, 1500) + 1500
     msgs = [{"role": "system", "content": system + "\nRespond with JSON only."},
             {"role": "user", "content": user}]
-    try:
-        resp = litellm.completion(model=model, max_tokens=budget, temperature=0.1, messages=msgs,
-                                  response_format={"type": "json_object"}, timeout=90)
-        text = resp.choices[0].message.content
-        if not text:  # some providers return empty content in JSON mode: retry once plain
-            resp = litellm.completion(model=model, max_tokens=budget, temperature=0.1,
-                                      messages=msgs, timeout=90)
-            text = resp.choices[0].message.content
-    except Exception as exc:  # noqa: BLE001 - provider errors fall back to deterministic mode
-        events.publish("agent_step", case_graph, "llm", {"error": str(exc)[:300],
-                                                         "model": model}, agent=agent)
+    # reasoning models spend completion tokens before answering; keep headroom for the answer
+    budget = max(max_tokens, 1500) + 1500
+    t0 = time.time()
+    text, used, errors = None, None, []
+    for model in _chain(role):
+        tries = [budget]
+        while tries:
+            b = tries.pop(0)
+            try:
+                text = _call(model, msgs, b)
+                used = model
+                break
+            except Exception as exc:  # noqa: BLE001
+                msg = str(exc)
+                m = _AFFORD.search(msg)
+                if m and int(m.group(1)) > 600 and not tries and b > int(m.group(1)):
+                    tries.append(int(m.group(1)) - 50)  # credit cap: retry within budget
+                    continue
+                errors.append(f"{model}: {type(exc).__name__}")
+                log.warning("llm %s %s failed: %s: %s", role, model, type(exc).__name__, msg[:200])
+        if used:
+            break
+    if not used:
+        events.publish("agent_step", case_graph, "llm", {"error": "; ".join(errors)[:300],
+                                                         "role": role}, agent=agent)
         return None
     out = _parse(text)
     events.publish("agent_step", case_graph, "llm",
-                   {"model": model, "role": role, "ms": int((time.time() - t0) * 1000),
-                    "ok": out is not None}, agent=agent)
+                   {"model": used, "role": role, "ms": int((time.time() - t0) * 1000),
+                    "ok": out is not None, "fallback": used != model_for(role)}, agent=agent)
     return out

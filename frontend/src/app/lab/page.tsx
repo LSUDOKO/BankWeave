@@ -26,7 +26,7 @@ export default function Lab() {
           <h1>FalkorDB Lab</h1>
           <p className="mt-1.5 max-w-[75ch] text-muted">
             The engine behind every agent decision, opened up: every graph in the instance, every algorithm and index the
-            agents use, the execution plan of any read query, and the 33 MCP tools.
+            agents use, the execution plan of any read query, and every MCP tool the agents use.
           </p>
         </div>
         <ModeBadge mode={replay ? "replay" : undefined} />

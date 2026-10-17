@@ -12,7 +12,7 @@ export default function MemoryGraph({ procedures }: { procedures: Procedure[] })
     const nodes: Node[] = [];
     const edges: Edge[] = [];
     procedures.forEach((p, row) => {
-      const y = row * 150;
+      const y = row * 210;
       nodes.push({ id: p.id, position: { x: 0, y }, data: { label: (
         <div className="text-left px-2 py-1"><p className="text-[10px] uppercase tracking-wider text-ok">procedure</p>
           <p className="text-[11px] font-semibold">{p.typology}</p>
@@ -21,7 +21,7 @@ export default function MemoryGraph({ procedures }: { procedures: Procedure[] })
       let prev = p.id;
       p.steps.filter((s) => s.tool).forEach((s, i) => {
         const id = `${p.id}-${i}`;
-        nodes.push({ id, position: { x: 260 + i * 190, y: y + (i % 2) * 36 }, data: { label: (
+        nodes.push({ id, position: { x: 260 + (i % 6) * 190, y: y + Math.floor(i / 6) * 80 }, data: { label: (
           <div className="text-left px-2 py-1"><p className="mono text-[11px] text-cyan">{s.tool}</p>
             <p className="mono text-[9px] text-muted truncate">{s.params}</p>
             {s.pitfalls?.length > 0 && <p className="text-[9px] text-ring">pitfall: {s.pitfalls[0]}</p>}</div>) },
@@ -35,7 +35,7 @@ export default function MemoryGraph({ procedures }: { procedures: Procedure[] })
     return { nodes, edges };
   }, [procedures]);
   return (
-    <div style={{ height: Math.max(240, procedures.length * 150 + 60) }} className="rounded-xl border border-line">
+    <div style={{ height: Math.max(260, procedures.length * 210 + 60) }} className="rounded-xl border border-line">
       <ReactFlow nodes={nodes} edges={edges} fitView proOptions={{ hideAttribution: true }} nodesConnectable={false} colorMode="dark" style={{ background: "transparent" }}>
         <Background color="#1e293b" gap={24} />
       </ReactFlow>

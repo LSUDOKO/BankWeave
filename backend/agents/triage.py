@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
+from pathlib import Path
 
 from agents import llm, prompts, tools
 from agents.tools import Ctx
@@ -101,6 +103,59 @@ def signals(account: str) -> dict:
     }
 
 
+PROFILE = cy("triage_feature_profile", "Graph features of an account for the triage model", """
+MATCH (a:Account {id:$id})
+RETURN a.in_deg AS in_deg, a.out_deg AS out_deg, coalesce(a.pagerank, 0.0) AS pagerank,
+       coalesce(a.motif_cycle3, 0) AS cycle3, coalesce(a.motif_recip, 0) AS recip,
+       coalesce(a.motif_relay, 0) AS relay, coalesce(a.motif_fanin, 0) AS fanin,
+       coalesce(a.motif_fanout, 0) AS fanout, coalesce(a.motif_leaf, 0) AS leaf,
+       a.behavior_vec AS vec
+""")
+TYPOLOGY_KEYS = ["circular_flow", "fan_out", "fan_in", "structuring", "rapid_passthrough"]
+WEIGHTS_FILE = Path(__file__).resolve().parents[1] / "detection" / "triage_weights.json"
+
+
+def features(account: str, s: dict) -> dict[str, float]:
+    """Numeric graph features for the calibrated triage model (no labels involved here)."""
+    import math
+    p = db.ro(db.CONSORTIUM, PROFILE, {"id": account})[0]
+    f = {
+        "log_component": math.log1p(s["component_size"] or 1),
+        "motif": s["motif_score"], "log_cross_bank": math.log1p(s["cross_bank_counterparties"]),
+        "shared_tight": float(s["shared_identity_tight"]),
+        "shared_broad": float(s["shared_identity_broad"]),
+        "log_passthrough": math.log1p(s["passthrough_pairs"] or 0),
+        "log_community": math.log1p(s["community_size"] or 1),
+        "prior_cases": float(len(s["prior_cases"])),
+        "pagerank_e4": (p["pagerank"] or 0) * 1e4,
+        "log_in": math.log1p(p["in_deg"] or 0), "log_out": math.log1p(p["out_deg"] or 0),
+        **{f"log_{k}": math.log1p(p[k] or 0) for k in ("cycle3", "recip", "relay", "fanin",
+                                                       "fanout", "leaf")},
+        **{f"typ_{k}": float(k in s["typologies"]) for k in TYPOLOGY_KEYS},
+    }
+    vec = list(p["vec"] or [0.0] * 16)
+    f.update({f"beh_{i}": float(v) for i, v in enumerate(vec)})
+    return f
+
+
+@lru_cache
+def _weights() -> dict | None:
+    if WEIGHTS_FILE.exists():
+        return json.loads(WEIGHTS_FILE.read_text())
+    return None
+
+
+def model_probability(f: dict[str, float]) -> float | None:
+    """Logistic model calibrated on the dev split by eval/e1_alert_triage.py."""
+    import math
+    w = _weights()
+    if not w:
+        return None
+    z = w["bias"] + sum(w["coef"].get(k, 0.0) * (v - w["mean"].get(k, 0.0)) / w["std"].get(k, 1.0)
+                        for k, v in f.items())
+    return 1 / (1 + math.exp(-max(-30, min(30, z))))
+
+
 def risk_score(s: dict) -> float:
     t = cfg()["triage"]
     if s["component_size"] < t["clear_if_component_size_below"]:
@@ -116,26 +171,36 @@ def risk_score(s: dict) -> float:
     return score
 
 
-def decide(s: dict) -> dict:
+def decide(s: dict, f: dict[str, float] | None = None) -> dict:
     public = {k: v for k, v in s.items() if not k.startswith("_")}
-    score = risk_score(s)
-    lo, hi = cfg()["triage"].get("llm_band", [1.0, 3.0])
+    w = _weights()
+    prob = model_probability(f) if (f is not None and w) else None
+    if prob is not None:
+        thr = w["threshold"]
+        score, lo, hi = prob, thr * 0.5, thr * 1.5
+        public["model_probability"] = round(prob, 4)
+    else:
+        score = risk_score(s)
+        lo, hi = cfg()["triage"].get("llm_band", [1.0, 3.0])
+        thr = 2.0
     # the graph score is decisive at the extremes; the LLM judges only the ambiguous band
     out = (llm.complete_json("writer", prompts.TRIAGE, json.dumps(public), 300, "triage")
            if lo <= score < hi else None)
     if isinstance(out, dict) and out.get("decision") in ("clear", "case"):
         return {"decision": out["decision"], "reason": str(out.get("reason", ""))[:240],
                 "mode": "llm", "score": score}
-    if score >= 2.0:
-        why = ", ".join(s["typologies"]) or "structural signals"
-        return {"decision": "case", "score": score, "mode": "deterministic",
-                "reason": f"risk {score:.1f}: {why}; {s['cross_bank_counterparties']} cross-bank "
+    why = ", ".join(s["typologies"]) or "structural signals"
+    basis = (f"model {prob:.2f} (threshold {thr:.2f})" if prob is not None
+             else f"risk {score:.1f}")
+    if score >= thr:
+        return {"decision": "case", "score": score, "mode": "graph",
+                "reason": f"{basis}: {why}; {s['cross_bank_counterparties']} cross-bank "
                           f"counterparties; motif {s['motif_score']}"}
-    reason = ("isolated cluster" if s["component_size"] < 3 else
-              f"no laundering motifs (risk {score:.1f})")
+    reason = ("isolated cluster" if (s["component_size"] or 1) < 3 else
+              f"no strong laundering structure ({basis})")
     if not s["cross_bank_counterparties"]:
         reason += ", no cross-bank links"
-    return {"decision": "clear", "score": score, "mode": "deterministic", "reason": reason}
+    return {"decision": "clear", "score": score, "mode": "graph", "reason": reason}
 
 
 def run(alert_id: str) -> dict:
@@ -150,7 +215,7 @@ def run(alert_id: str) -> dict:
                                                           "case": existing[0]["id"]})
         return {"next": [], "merged_into": existing[0]["id"]}
     s = signals(al["account"])
-    d = decide(s)
+    d = decide(s, features(al["account"], s))
     public = {k: v for k, v in s.items() if not k.startswith("_")}
     if d["decision"] == "clear":
         db.q(db.CONSORTIUM, CLEAR, {"id": alert_id, "reason": d["reason"], "by": "triage",

@@ -312,6 +312,24 @@ def kyc_lookup(ctx: Ctx, account_id: str) -> dict:
     return r
 
 
+@tool("sanctions_screen", "Screen the owners of an account against sanctions/PEP lists "
+      "(OpenSanctions with a key, a bundled synthetic slice without)", ("investigator", "skeptic",
+                                                                       "analyst"), records=True)
+def sanctions_screen(ctx: Ctx, account_id: str) -> dict:
+    from app.services import sanctions
+    r = sanctions.screen_accounts(ctx.graph, [account_id])
+    ids = []
+    for o in r["hits"]:
+        h = o["hits"][0]
+        ids.append(_ev(ctx, "sanctions", f"sanc:{h['provenance']['dataset']}:{h['entity_id']}",
+                       f"owner '{o['name']}' of {short(account_id)} matches watchlist entry "
+                       f"'{h['caption']}' ({h['program']}, score {h['score']}; source "
+                       f"{h['provenance']['source']})", o, r["cypher"], [account_id]))
+    return {"result": r["hits"], "screened": r["screened"], "mode": r["mode"],
+            "cypher": r["cypher"], "params": {"ids": [account_id]},
+            "evidence_ids": [i for i in ids if i]}
+
+
 @tool("address_occupancy", "How many customers are registered at an address (Postgres)",
       ("skeptic",), records=True)
 def address_occupancy(ctx: Ctx, address_id: str) -> dict:

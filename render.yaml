@@ -1,12 +1,14 @@
-# Render blueprint: API (+ agent worker), MCP server, Redis for live events.
-# FalkorDB runs on FalkorDB Cloud; set FALKORDB_* as secrets in the dashboard.
+# Render blueprint matching the live deployment: one free web service runs the API and the
+# agent worker. FalkorDB is FalkorDB Cloud, KYC Postgres is Neon; secrets are set in Render
+# (sync: false) and never committed.
 services:
   - type: web
     name: bankweave-api
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
+    region: singapore
+    plan: free
+    dockerfilePath: ./Dockerfile
     dockerContext: .
-    plan: starter
     healthCheckPath: /health
     envVars:
       - key: FALKORDB_HOST
@@ -17,39 +19,31 @@ services:
         sync: false
       - key: FALKORDB_PASSWORD
         sync: false
+      - key: FALKORDB_REGION
+        value: ap-south-1
+      - key: POSTGRES_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
       - key: OPENROUTER_API_KEY
         sync: false
-      - key: POSTGRES_URL
-        fromDatabase: { name: bankweave-kyc, property: connectionString }
-      - key: REDIS_URL
-        fromService: { type: keyvalue, name: bankweave-events, property: connectionString }
       - key: CORS_ORIGINS
         value: "*"
       - key: RUN_WORKER
         value: "true"
-  - type: web
-    name: bankweave-mcp
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: .
-    plan: starter
-    dockerCommand: python -m mcp_server.server --http 10000
-    envVars:
-      - fromGroup: bankweave-shared
-  - type: keyvalue
-    name: bankweave-events
-    plan: starter
-    ipAllowList: []
-databases:
-  - name: bankweave-kyc
-    plan: basic-256mb
-    databaseName: kyc
-envVarGroups:
-  - name: bankweave-shared
-    envVars:
-      - key: FALKORDB_HOST
+      - key: PINNED_CASES
+        value: C-44c08392
+      # pruning old case graphs deletes data: switch on deliberately on the 100 MB tier
+      - key: CAPACITY_PRUNE
+        value: "false"
+      # optional integrations; each has a keyless fallback
+      - key: OPENSANCTIONS_API_KEY
         sync: false
-      - key: FALKORDB_PORT
+      - key: HELIUS_API_KEY
         sync: false
-      - key: FALKORDB_PASSWORD
+      - key: OTEL_EXPORTER_OTLP_ENDPOINT
+        sync: false
+      - key: OTEL_EXPORTER_OTLP_HEADERS
+        sync: false
+      - key: DOSSIER_SIGNING_KEY
         sync: false

@@ -140,7 +140,7 @@ function Engine({ d }: { d: Overview | null }) {
       <dl className="mt-3 grid grid-cols-3 gap-3 text-sm">
         <div><dt className="text-muted text-xs">Graphs</dt><dd className="kpi text-xl">{d?.falkordb.graphs ?? "…"}</dd></div>
         <div><dt className="text-muted text-xs">Case graphs</dt><dd className="kpi text-xl">{d?.falkordb.case_graphs ?? "…"}</dd></div>
-        <div><dt className="text-muted text-xs">Engine</dt><dd className="kpi text-xl">{d?.falkordb.version ? `v${d.falkordb.version}` : "cloud"}</dd></div>
+        <div><dt className="text-muted text-xs">Engine</dt><dd className="kpi text-xl">{d?.falkordb.version ? `v${d.falkordb.version}` : "managed"}</dd></div>
       </dl>
       <div className="mt-4">
         <div className="flex justify-between text-xs text-muted">

@@ -41,9 +41,10 @@ RETURN k.id AS id, k.title AS title, k.status AS status, k.opened_at AS opened_a
 def _engine() -> dict:
     conn = db.get_db().connection
     try:
-        mods = conn.execute_command("MODULE", "LIST")
-        ver = next((m.get(b"ver") or m.get("ver") for m in mods
-                    if (m.get(b"name") or m.get("name")) in (b"graph", "graph")), None)
+        mods = [m if isinstance(m, dict) else dict(zip(m[::2], m[1::2]))
+                for m in conn.execute_command("MODULE", "LIST")]
+        mods = [{(k.decode() if isinstance(k, bytes) else k): v for k, v in m.items()} for m in mods]
+        ver = next((m.get("ver") for m in mods if m.get("name") in (b"graph", "graph")), None)
     except Exception:  # noqa: BLE001  (managed instances may not allow MODULE LIST)
         ver = None
     if isinstance(ver, int):

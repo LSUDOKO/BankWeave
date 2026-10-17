@@ -31,8 +31,12 @@ see data, and the same Cypher runs against any view. When we switch the UI from 
 only" to "Consortium", the same accounts go from scattered pieces to one connected structure
 across four banks.
 
-_(E2 numbers: how often a cross-bank attempt is connected in the consortium vs in the best
-single bank's view.)_
+We measured it on IBM HI-Small with the 20 busiest banks. Across 36 laundering groups
+that span banks (about 3.5 banks each), the best-placed single bank holds
+only **43.8%** of a ring's accounts, and in **0%** of cases does one bank
+hold the whole ring. It does see 95.7% of the laundering transfers, but most
+counterparties are other banks' customers it can't run KYC on or investigate. The consortium graph
+holds all of them.
 
 ## Algorithms as tools, not as a dashboard
 
@@ -118,12 +122,41 @@ shortest-path investigation subgraphs. We rebuilt it with FalkorDB: motif scores
 `Account`, ego networks copied into a scratch graph, `algo.betweenness` and `algo.pageRank`
 (standing in for eigenvector centrality) to pick intermediaries, `algo.SPpaths` for the paths.
 
-_(E3 numbers vs the paper's HI-Small figures.)_
+Our result is an honest miss. With 200 seeds and radius 1, random seeds give a
+3.4% illicit subgraph (paper: 2.4%) and degree-imbalance seeds 17.0%
+(paper: 13.7%), but the paper's motif score gives only 7.5% (paper: 22.6%). The diagnosis
+is in the data: on our 20-bank slice the illicit accounts are the busier ones, so the score's
+degree penalty inverts it (account-level AUC 0.3743). Without the penalty it rises to
+0.638, and that post-hoc variant gives 11.6%. Parameters tuned on one
+graph didn't transfer to another, and we report that rather than tune on the test labels.
 
 ## What we measured
 
-_(Tables from eval/results: E1 triage vs baselines, E2 consortium vs single bank, E3 hunt mode,
-E4 pass-through, E6 trust layer, E7 latency. Every number comes from a script in `eval/`.)_
+Every number here comes from a script in `eval/` and a JSON file in `eval/results/`.
+
+**Triage** (4,000 alerted accounts from the later half of the period, 129 of them illicit,
+a 3.2% base rate; everything tuned on the earlier half):
+
+| Method | Precision | Recall | F1 | Accounts escalated |
+|---|---|---|---|---|
+| Rule-based: escalate everything | 3.2% | 100% | 0.062 | 4,000 |
+| Rules without the graph | 33.3% | 7.8% | 0.126 | 30 |
+| Graph score, hand weights | 18.9% | 14.0% | 0.161 | 95 |
+| Graph score, calibrated | 17.8% | 24.0% | 0.205 | 174 |
+
+The graph-calibrated triage escalates 174 accounts instead of 4,000, at about
+5.5x the base rate's precision while keeping 24% recall. That is a real
+improvement and also clearly not a solved problem: most illicit accounts in IBM's data look
+locally ordinary, which is exactly why the consortium view matters.
+
+**Pass-through matching** flagged 708 accounts, 4.8% of them illicit against a 2.5% base rate.
+
+**Trust layer, on the 28 cases the agents actually built:** 27.8% of evidence items
+repeated an origin already seen, and 37 of 101 claims had more paths than independent
+sources; mean confidence fell from 48.8% (path counting) to 41.7% (distinct origins).
+25 of 28 SARs passed the provenance gate (mean fidelity 0.988) and 3 ended as divergence
+reports. The cascade flagged exactly the true dependents in 50 scripted dependency graphs
+(recall and precision 100%).
 
 ## What we learned building it
 

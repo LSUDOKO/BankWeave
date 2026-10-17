@@ -12,4 +12,5 @@ PY
 ../scripts/seed_all.sh
 uv run python -m knowledge.typology_kb >/dev/null
 uv run python -m app.services.baseline
+uv run python -m agents.calibrate
 echo "Demo reset. Start the agents from Demo control (or: uv run python -m agents.worker)."

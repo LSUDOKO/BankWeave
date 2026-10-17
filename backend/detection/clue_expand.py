@@ -24,14 +24,10 @@ RETURN n.id AS id, n.bank_id AS bank, coalesce(n.motif_score, 0.0) AS motif,
 LIMIT 3000
 """)
 
-CONSISTENT = cy("clue_consistent_edges", "Transfer pairs at a member that agree in time and amount", """
-MATCH (y:Account)-[a:TRANSFERS]-(g:Account)-[b:TRANSFERS]-(z:Account)
+MEMBER_TRANSFERS = cy("clue_member_transfers", "Transfers of group members (for consistency)", """
+MATCH (g:Account)-[t:TRANSFERS]-(y:Account)
 WHERE g.id IN $ids AND g.in_deg + g.out_deg <= $hub
-  AND y <> z AND a.txn_id < b.txn_id AND abs(a.ts - b.ts) <= $win
-  AND abs(a.amount - b.amount) <=
-      $tol * (CASE WHEN a.amount > b.amount THEN a.amount ELSE b.amount END)
-RETURN g.id AS g, y.id AS y, z.id AS z
-LIMIT 20000
+RETURN g.id AS g, y.id AS y, t.ts AS ts, t.amount AS amount
 """)
 
 SIMILAR = cy("clue_behavior_similarity", "Behaviour similarity of context accounts to a clue", """
@@ -72,17 +68,27 @@ def expand(graph: str, clues: list[str], negatives: list[str] | None = None,
     adj: dict[str, set] = {}
 
     def consistent_neighbors(members: set[str]) -> None:
-        # structure-aware context: only edges in a time/amount-consistent pair at a member
+        """Structure-aware context: counterparties linked through a pair of transfers at a
+        member that agree in time (<= win) and amount (within tol). Sliding window, O(n log n)."""
         todo = [m for m in members if m not in adj]
         for m in todo:
             adj[m] = set()
         if not todo:
             return
-        for e in db.ro(graph, CONSISTENT, {"ids": todo, "win": win, "tol": tol, "hub": hub},
-                       timeout=30000):
-            for x in (e["y"], e["z"]):
-                adj[e["g"]].add(x)
-                adj.setdefault(x, set()).add(e["g"])
+        by_g: dict[str, list] = {}
+        for r in db.ro(graph, MEMBER_TRANSFERS, {"ids": todo, "hub": hub}, timeout=30000):
+            by_g.setdefault(r["g"], []).append((r["ts"], r["amount"], r["y"]))
+        for g, txs in by_g.items():
+            txs.sort()
+            lo = 0
+            for i, (ts, amt, y) in enumerate(txs):
+                while txs[lo][0] < ts - win:
+                    lo += 1
+                for ts2, amt2, z in txs[lo:i]:
+                    if z != y and abs(amt - amt2) <= tol * max(amt, amt2):
+                        for x in (y, z):
+                            adj[g].add(x)
+                            adj.setdefault(x, set()).add(g)
 
     consistent_neighbors(set(negatives))
     for n in negatives:  # analyst said "innocent": down-weight its neighbourhood
@@ -109,4 +115,4 @@ def expand(graph: str, clues: list[str], negatives: list[str] | None = None,
     members = sorted(group - set(clues))
     return {"result": {"clues": clues, "members": members, "rounds": rounds,
                        "banks": sorted({ctx[m]["bank"] for m in members if m in ctx})},
-            "cypher": [CONTEXT, CONSISTENT, SIMILAR], "params": {"clues": clues}}
+            "cypher": [CONTEXT, MEMBER_TRANSFERS, SIMILAR], "params": {"clues": clues}}

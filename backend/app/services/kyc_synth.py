@@ -186,20 +186,22 @@ def write_postgres(data: dict, seed: int) -> int:
     return len(rows)
 
 
-def run(prefix: str | None = None, with_postgres: bool = True) -> dict:
+def run(prefix: str | None = None, with_postgres: bool = True, graphs: bool = True) -> dict:
     s = get_settings()
     if prefix is None:
         prefix = s.graph_prefix
     gt_file = ROOT / "eval" / (f"{prefix}ground_truth.json" if prefix else "ground_truth.json")
     gt = json.loads(gt_file.read_text())
     data = build(prefix + "consortium", gt["banks"], gt["attempts"], s.synth_seed)
-    write_graph(prefix + "consortium", data, None)
-    for b in gt["banks"]:
-        write_graph(f"{prefix}bank_{b}", data, b)
+    if graphs:  # postgres-only mode reproduces the same seeded data for a new KYC database
+        write_graph(prefix + "consortium", data, None)
+        for b in gt["banks"]:
+            write_graph(f"{prefix}bank_{b}", data, b)
     n = write_postgres(data, s.synth_seed) if with_postgres else 0
     return {"persons": len(data["persons"]), "attributes": len(data["attrs"]),
             "links": len(data["links"]), "kyc_rows": n}
 
 
 if __name__ == "__main__":
-    print(run())
+    import sys
+    print(run(graphs="--postgres-only" not in sys.argv))

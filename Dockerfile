@@ -8,6 +8,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY backend/ ./
 COPY data/kb /app/data/kb
 COPY data/demo /app/data/demo
+COPY data/sanctions /app/data/sanctions
 COPY scripts /app/scripts
 COPY eval /app/eval
 ENV PATH="/app/backend/.venv/bin:$PATH"

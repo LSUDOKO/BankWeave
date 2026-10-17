@@ -111,6 +111,7 @@ name = "bankweave"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "cryptography" },
     { name = "falkordb" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -137,6 +138,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cryptography", specifier = ">=43" },
     { name = "falkordb", specifier = ">=1.0.10" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27" },

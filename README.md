@@ -96,6 +96,8 @@ Screenshots from FalkorDB Browser connected to the production instance the live 
 | `algo.pageRank` on the consortium (4.3 ms) | ![](docs/img/cloud/04-pagerank.jpg) |
 | Vector similarity over behaviour profiles (0.5 ms) | ![](docs/img/cloud/05-vector-similarity.jpg) |
 | Double Metaphone full-text: "Hana Sharma" finds "Hannah Sharma" | ![](docs/img/cloud/06-phonetic-names.jpg) |
+| A ring the live agents opened: one hub paying accounts at four banks (consortium graph, 0.98 ms) | ![](docs/img/cloud/07-consortium-ring.jpg) |
+| That case's own graph: claims, `SUPPORTED_BY` and Skeptic `CHALLENGED_BY` evidence; SAR, Sentence, Event and Action live here too | ![](docs/img/cloud/08-case-claims-evidence.jpg) |
 
 ### Proof from local runs on the IBM data
 

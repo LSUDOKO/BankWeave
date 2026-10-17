@@ -184,14 +184,16 @@ def write_postgres(data: dict, seed: int) -> int:
     return len(rows)
 
 
-def run(prefix: str = "", with_postgres: bool = True) -> dict:
+def run(prefix: str | None = None, with_postgres: bool = True) -> dict:
     s = get_settings()
+    if prefix is None:
+        prefix = s.graph_prefix
     gt_file = ROOT / "eval" / (f"{prefix}ground_truth.json" if prefix else "ground_truth.json")
     gt = json.loads(gt_file.read_text())
-    data = build(prefix + db.CONSORTIUM, gt["banks"], gt["attempts"], s.synth_seed)
-    write_graph(prefix + db.CONSORTIUM, data, None)
+    data = build(prefix + "consortium", gt["banks"], gt["attempts"], s.synth_seed)
+    write_graph(prefix + "consortium", data, None)
     for b in gt["banks"]:
-        write_graph(prefix + db.bank_graph(b), data, b)
+        write_graph(f"{prefix}bank_{b}", data, b)
     n = write_postgres(data, s.synth_seed) if with_postgres else 0
     return {"persons": len(data["persons"]), "attributes": len(data["attrs"]),
             "links": len(data["links"]), "kyc_rows": n}

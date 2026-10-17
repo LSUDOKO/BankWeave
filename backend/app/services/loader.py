@@ -215,23 +215,26 @@ def ground_truth(df: pd.DataFrame, patterns_path: Path | None, banks: list[str],
 
 
 def load(trans_path: Path, patterns_path: Path | None = None, top_n: int | None = None,
-         limit: int | None = None, prefix: str = "") -> dict:
+         limit: int | None = None, prefix: str | None = None) -> dict:
+    """Graph names: prefix + consortium / bank_<id>. prefix defaults to GRAPH_PREFIX."""
+    if prefix is None:
+        prefix = get_settings().graph_prefix
     s = get_settings()
     t0 = time.time()
     raw = read_transactions(trans_path, limit)
     banks = select_banks(raw, top_n or s.top_n_banks)
     df = prepare(raw, banks, s.hash_salt)
     vectors = behavior_vectors(df)
-    stats = [write_graph(prefix + db.CONSORTIUM, df, None, vectors)]
+    stats = [write_graph(prefix + "consortium", df, None, vectors)]
     for b in banks:
-        stats.append(write_graph(prefix + db.bank_graph(b), df, b, {}))
+        stats.append(write_graph(f"{prefix}bank_{b}", df, b, {}))
     gt = ground_truth(df, patterns_path, banks, s.hash_salt)
     gt_path = ROOT / "eval" / (f"{prefix}ground_truth.json" if prefix else "ground_truth.json")
     gt_path.parent.mkdir(parents=True, exist_ok=True)
     gt_path.write_text(json.dumps(gt))
     meta = {"source": trans_path.name, "banks": banks, "graphs": stats,
             "seconds": round(time.time() - t0, 1)}
-    db.q(prefix + db.CONSORTIUM, "MERGE (m:Meta {id:'dataset'}) SET m.json = $j",
+    db.q(prefix + "consortium", "MERGE (m:Meta {id:'dataset'}) SET m.json = $j",
          {"j": json.dumps(meta)})
     return meta
 

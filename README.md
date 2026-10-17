@@ -40,6 +40,52 @@ FalkorDB's QueryWeaver or Weights & Biases Weave.
 4. A **trust layer** built from three 2026 papers keeps the agents honest (below).
 5. Humans approve every action. Everything is measured against IBM's labels on a scoreboard.
 
+## What's new in 2.0
+
+| Area | What you can do | Where |
+|---|---|---|
+| **Command Center** | Live alerts, open cases, independently supported claims, evidence awaiting review, FalkorDB health (memory, graphs, engine) in one view | `/` |
+| **Golden scenarios** | A: an innocent alert cleared by `algo.wcc`. B: a ring across 4 banks (best single bank holds 50% of it; E2: 43.8% on average, 0% of rings whole). C: a shared 200-unit building behind a claim, with the cascade a KYC update would trigger. Computed live; bundled snapshots load instantly when the free-tier API sleeps | `/scenarios` |
+| **Mode badge** | Every page says whether it is live with LLM agents, live with deterministic agents, or a seeded replay | rail, page headers |
+| **FalkorDB Lab** | Every graph with counts, indexes and `GRAPH.MEMORY USAGE`; 17 one-click runs (10 algorithms, phonetic and stemmed full-text, vector KNN, JS UDFs, FLEX, a tri-modal query); a read-only `GRAPH.PROFILE`/`GRAPH.EXPLAIN` inspector; the MCP tool explorer with schemas, live payloads, the Cypher each tool ran and an Engine X-Ray of it; per-bank ACLs; procedural memory as a graph | `/lab` |
+| **Case workspace** | Evidence Independence Explorer ("15 paths → 12 origins"), revoke any evidence and watch the cascade, provenance DAG (React Flow), Replay Investigation, bi-temporal time machine, Simulate Freeze on a `GRAPH.COPY` sandbox, sanctions screening, crypto off-ramp linking, agent trace waterfall | `/cases/<id>` |
+| **Signed exports** | FinCEN-style SAR XML and a printable audit dossier: every sentence, the evidence it cites, each query with an execution hash, and an Ed25519-signed Merkle root over the case | `/cases/<id>/dossier` |
+| **3D consortium** | Bank slices walled in by external stubs, the consortium where they join (flow particles, PageRank hub), cases and claims on top; fly-through, echo collapse, invalidation shockwave, kill-and-resume with a heartbeat countdown | `/consortium-3d` |
+| **Evaluation** | E2 hero, E1 table plus a threshold explorer, E6 scorecard, E3-E5 with misses labelled, E7 badged as a local benchmark | `/evaluation` |
+| **Hardware Lab** (simulated devices, real cryptography) | POS/ATM digital twin emitting ISO 8583 with real EMV TLV into the graph; a Wokwi ESP32 terminal; approvals signed with WebAuthn or a virtual security key over the Merkle root ("Merkle seal broken" if evidence changes later); an enclave with PCR attestation that quarantines itself when tampered with; ECDH-PSI between banks | `/hardware-lab`, `hardware/wokwi/` |
+| **Integrations** (optional, keyless fallback) | OpenSanctions screening (bundled synthetic slice without a key), on-chain wallet facts, OpenTelemetry-shaped spans with OTLP export | `/integrations/*`, case tabs |
+
+Everything simulated says so on screen: the enclave, card terminals, VaultKey and Wokwi
+circuit are simulations; the hashes, signatures, key exchange and graph writes are real.
+
+| Command Center | Golden scenarios |
+|---|---|
+| ![](docs/img/v2/01-command-center.png) | ![](docs/img/v2/02-golden-scenarios.png) |
+
+| FalkorDB Lab: 17 live runs | Read-only `GRAPH.PROFILE` inspector |
+|---|---|
+| ![](docs/img/v2/04-lab-algorithms.png) | ![](docs/img/v2/05-lab-profile.png) |
+
+| JS UDFs, tri-modal query, per-bank ACL with `ACL LOG` | Procedural memory as a graph |
+|---|---|
+| ![](docs/img/v2/06-lab-engine-features.png) | ![](docs/img/v2/07-lab-memory.png) |
+
+| Evidence Independence Explorer | Provenance DAG |
+|---|---|
+| ![](docs/img/v2/08-evidence-independence.png) | ![](docs/img/v2/09-provenance-dag.png) |
+
+| Simulate Freeze (`GRAPH.COPY` sandbox, `algo.maxFlow`, `algo.wcc`) | Agent trace waterfall |
+|---|---|
+| ![](docs/img/v2/10-simulate-freeze.png) | ![](docs/img/v2/12-agent-trace.png) |
+
+| 3D consortium | Card terminals with EMV TLV |
+|---|---|
+| ![](docs/img/v2/16-consortium-3d.png) | ![](docs/img/v2/17-hardware-terminals.png) |
+
+| Enclave quarantined after tampering | Approval signed over the Merkle root |
+|---|---|
+| ![](docs/img/v2/18-enclave-quarantined.png) | ![](docs/img/v2/20-approval-signing.png) |
+
 ## Why FalkorDB is essential
 
 Turn FalkorDB off and BankWeave can't do any of its core work:
@@ -57,8 +103,10 @@ FalkorDB features in use: **multigraph** (per-bank, consortium, per-case, proced
 graphs in one instance), **native algorithms** (`algo.wcc`, `algo.labelPropagation`,
 `algo.pageRank`, `algo.betweenness`, `algo.HarmonicCentrality`, `algo.SPpaths`, `algo.SSpaths`,
 `algo.maxFlow`, `algo.bfs`, `algo.MSF`), **full-text indexes** with Double Metaphone phonetic
-matching and English stemming, a **vector index** (HNSW) on behaviour profiles, and the Redis
-protocol for live pub/sub.
+matching and English stemming, a **vector index** (HNSW) on behaviour profiles, **JavaScript
+UDFs** (FalkorDB's FLEX library and our own `aml_temporal`), **`GRAPH.COPY`** sandboxes,
+**`GRAPH.PROFILE`/`GRAPH.EXPLAIN`**, **`GRAPH.MEMORY USAGE`**, **ACLs** scoped to one graph, and
+the Redis protocol for live pub/sub.
 
 ## Proof: every FalkorDB feature BankWeave uses
 
@@ -77,7 +125,14 @@ protocol for live pub/sub.
 | Full-text index + **Double Metaphone** | `Person.name`, `Company.name` (`detection/identity.py`) | `test_identity.py`: a spelling variant finds its original identity |
 | Full-text index + **English stemming** | typology knowledge graph (`knowledge/typology_kb.py`) | cited answers; abstains on unrelated questions |
 | **Vector index (HNSW, cosine)** | 16-dim behaviour profiles (`app/services/loader.py`) | `behavior_neighbors`, triage features, clue expansion |
-| Range indexes incl. **relationship property index** | `TRANSFERS.ts`, `TRANSFERS.txn_id` | `CALL db.indexes()` |
+| Range indexes incl. **relationship property index** | `TRANSFERS.ts` (the `txn_id` edge index was dropped in 2.0: nothing looks it up, and it cost ~8 MB) | `CALL db.indexes()` |
+| **JavaScript UDFs** (`GRAPH.UDF LOAD`) | `aml_temporal.timeRespectingReach` walks `TRANSFERS` with `getNeighbors`, following only later transfers (`backend/udf/aml_temporal.js`) | `test_lab.py::test_udf_libraries_load_and_run`; Lab → Engine features |
+| **FLEX** (FalkorDB's UDF library, vendored 1.0.1) | `flex.text.jaroWinkler`, `flex.text.levenshtein` for names, `flex.sim.jaccard` for shared identity attributes | Lab runs `flex_names`, `flex_jaccard` |
+| **`GRAPH.COPY`** | Simulate Freeze copies the case graph, deletes the account in the copy, reruns `algo.maxFlow` + `algo.wcc` (`app/routers/workspace.py`) | `test_workspace.py`: flow 80 → 0, sandbox deleted |
+| **`GRAPH.PROFILE` / `GRAPH.EXPLAIN`** | read-only inspector and Engine X-Ray per tool call; a query must pass `GRAPH.RO_QUERY` first (`app/services/engine.py`) | `test_lab.py::test_inspect_refuses_writes` |
+| **`GRAPH.MEMORY USAGE`** | per-graph memory in the Lab and Command Center; capacity guard for the 100 MB cloud tier (`app/services/capacity.py`) | `/lab/graphs` |
+| **ACL** (`~graph` key patterns, `ACL LOG`) | a bank user that can only `GRAPH.RO_QUERY` its own graph (`/lab/acl-demo`) | consortium, other banks and writes denied, logged (screenshot above). The FalkorDB Cloud user cannot manage ACLs, so this runs on Docker |
+| Several `CALL`s in one query | tri-modal query: phonetic full-text → HNSW vector twins → `algo.SPpaths` over `FLOWS` | Lab `trimodal` (about 10 ms) |
 | Parameterised Cypher, `ro_query` for reads | every query (`docs/QUERIES.md`, 190 queries) | read-only MCP tool `cypher_readonly` |
 | Concurrent writers on one graph | task blackboard (`agents/blackboard.py`) | `test_blackboard.py`: 6 threads, 20 tasks, each claimed once |
 | FalkorDB Browser | visual inspection of every graph | screenshots below |
@@ -124,7 +179,7 @@ flowchart TB
     H[Human approval] --> AR[Archivist]
   end
   W -- tools --> TOOLS[Tool registry]
-  MCP[MCP server: 33 tools] --> TOOLS
+  MCP[MCP server: 34 tools] --> TOOLS
   TOOLS -- Cypher / algo.* --> F[(FalkorDB: consortium, bank_*, case_*, procedures, typology_kb)]
   TOOLS -- SQL --> PG[(Postgres KYC)]
   W -- events --> RD[(Redis pub/sub)] --> API
@@ -194,7 +249,7 @@ Things FalkorDB doesn't ship natively, done in plain Cypher (and said so): degre
 | Reporter + Auditor | SAR through the provenance gate; a different, stronger model audits |
 | Archivist | saves the tool sequence that worked (procedural memory), closes the case |
 
-The MCP server (`python -m mcp_server.server`, stdio or `--http PORT`) exposes all 33 tools,
+The MCP server (`python -m mcp_server.server`, stdio or `--http PORT`) exposes all 34 tools (32 agent tools plus `cypher_readonly` and `list_graphs`),
 including `trace_flow`, `find_hub`, `find_bridges`, `money_at_risk`, `typology_patterns`,
 `passthrough_check`, `clue_expand`, `hunt_regions`, `resolve_entity`, `behavior_neighbors`,
 `kyc_lookup`, `kb_query`, `echo_check`, `invalidate_evidence`, `premise_check`, plus
@@ -332,7 +387,19 @@ Consortium graph: 28,307 accounts, 1,315,597 transfers.
 | LLMs | Groq free tier (writer `qwen/qwen3.8-27b`, auditor `openai/gpt-oss-120b`), OpenRouter free models as fallback | `backend/agents/llm.py` |
 
 Render's free plan sleeps after 15 minutes idle; the first request wakes it (about a minute) and
-the agents resume from the graph blackboard.
+the agents resume from the graph blackboard. While it wakes, the Command Center, Golden scenarios,
+Lab and Evaluation pages render from snapshots of real API responses (`scripts/capture_snapshots.py`)
+and say so with the "Seeded replay" badge.
+
+FalkorDB Cloud's free tier has 100 MB and `noeviction`. Since 2.0 the graphs load in compact form
+(`KYC_ARGS=--compact`, no unused `txn_id` edge index, no id indexes on ~100-node case graphs),
+`/health` reports used memory, and `scripts/cloud_reseed.sh` rebuilds the cloud graphs while keeping
+pinned cases. Old case graphs are pruned automatically only when `CAPACITY_PRUNE=true`.
+
+Optional environment variables: `OPENSANCTIONS_API_KEY` (live sanctions screening),
+`HELIUS_API_KEY` (Solana wallet lookups), `EVM_RPC_URL`, `OTEL_EXPORTER_OTLP_ENDPOINT` and
+`OTEL_EXPORTER_OTLP_HEADERS` (export agent spans to Langfuse, Jaeger or any OTLP collector),
+`DOSSIER_SIGNING_KEY` (hex Ed25519 seed for dossier signatures), `PINNED_CASES`, `CAPACITY_PRUNE`.
 
 ## Run it locally
 
@@ -352,7 +419,10 @@ IBM data for evaluation: `scripts/download_ibm.sh` (Kaggle token) or the public 
 `GRAPH_PREFIX=ibm_ scripts/seed_all.sh data/raw/HI-Small_Trans.csv --top-n 20` and
 `GRAPH_PREFIX=ibm_ eval/run_all.sh`.
 
-Tests: `cd backend && uv run pytest` (runs against the local FalkorDB).
+Tests: `cd backend && uv run pytest` (55 tests, against the local FalkorDB).
+
+Hardware: the ESP32 terminal in `hardware/wokwi/` runs in the free Wokwi simulator and posts
+taps to `POST /hardware/pos-tap` (see its README).
 
 ## Data
 
@@ -380,7 +450,16 @@ a different and larger model from a different vendor), with OpenRouter free mode
 - Without IBM's Patterns file, laundering attempts are approximated as connected groups of
   laundering transfers (stated in each result file).
 - Clue-guided recovery uses graph signals, not the paper's GNN.
-- Consortium sharing is modelled with salted hashes, not real privacy-preserving computation.
+- Consortium sharing is modelled with salted hashes. The ECDH-PSI handshake is real X25519
+  arithmetic, but both banks' sides run in one process for the demo.
+- The enclave, card terminals, VaultKey and Wokwi circuit are simulations. Their cryptography is
+  real (HMAC, SHA-384 PCRs, ECDSA P-384/P-256, Ed25519, X25519); their hardware is not. The EMV
+  application cryptogram (9F26) is an HMAC, not a card's 3DES/AES MAC.
+- The SAR export is FinCEN-*style* XML for review, not a BSA E-Filing submission.
+- The bundled sanctions slice is synthetic; name-only screening produces common-name matches
+  that need date of birth or country to confirm.
+- The threshold explorer on the Evaluation page runs on the live slice, which overlaps the
+  model's training data, so its numbers are optimistic; the held-out result is E1's table.
 
 ## License
 

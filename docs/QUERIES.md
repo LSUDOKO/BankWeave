@@ -977,6 +977,7 @@ Accounts with enough in and out transfers to scan
 
 ```cypher
 MATCH (x:Account) WHERE x.in_deg >= $m AND x.out_deg >= $m
+  AND x.in_deg <= $max_deg AND x.out_deg <= $max_deg
 RETURN x.id AS id
 ```
 
@@ -1674,3 +1675,283 @@ MATCH (e:Evidence {id:$id})
 SET e.state = 'superseded', e.superseded_at = timestamp(), e.superseded_reason = $reason
 RETURN e.id AS id
 ```
+
+## Inline queries
+
+46 short queries are written inline (data loading, small lookups, DDL). f-string templates only interpolate labels and relationship types from fixed sets in code, never user input; values are always bound parameters.
+
+- `backend/agents/archivist.py:33`
+
+  ```cypher
+  MATCH (c:Case) RETURN c.seed_account AS s
+  ```
+
+- `backend/agents/blackboard.py:65`
+
+  ```cypher
+  CREATE INDEX FOR (t:Task) ON (t.status)
+  ```
+
+- `backend/agents/blackboard.py:66`
+
+  ```cypher
+  CREATE INDEX FOR (t:Task) ON (t.id)
+  ```
+
+- `backend/agents/investigator.py:211`
+
+  ```cypher
+  MATCH (c:Claim {kind:'ring'}) RETURN c.id AS id LIMIT 1
+  ```
+
+- `backend/agents/investigator.py:214`
+
+  ```cypher
+  MATCH (e:Evidence {kind:'typology_match'}) RETURN split(e.origin, ':')[1] AS p
+  ```
+
+- `backend/agents/tools.py:77`
+
+  ```cypher
+  MATCH (c:Case) OPTIONAL MATCH (cl:Claim) WITH c, collect(cl) AS cls OPTIONAL MATCH (e:Evidence) WITH c, cls, collect(e) AS evs OPTIONAL MATCH (a:Action) RETURN c.id AS id, c.status AS status, c.title AS title, size(cls) AS claims, size(evs) AS evidence, collect(a.kind) AS actions
+  ```
+
+- `backend/agents/tools.py:130`
+
+  ```cypher
+  MATCH (c:Case) OPTIONAL MATCH (cl:Claim) WITH c, collect(cl) AS cls OPTIONAL MATCH (e:Evidence) WITH c, cls, collect(e) AS evs OPTIONAL MATCH (a:Action) RETURN c.id AS id, c.status AS status, c.title AS title, size(cls) AS claims, size(evs) AS evidence, collect(a.kind) AS actions
+  ```
+
+- `backend/agents/tools.py:350`
+
+  ```cypher
+  MATCH (c:Case) OPTIONAL MATCH (cl:Claim) WITH c, collect(cl) AS cls OPTIONAL MATCH (e:Evidence) WITH c, cls, collect(e) AS evs OPTIONAL MATCH (a:Action) RETURN c.id AS id, c.status AS status, c.title AS title, size(cls) AS claims, size(evs) AS evidence, collect(a.kind) AS actions
+  ```
+
+- `backend/agents/tools.py:256`
+
+  ```cypher
+  MATCH (a:Account) RETURN a.id AS id
+  ```
+
+- `backend/agents/triage.py:54`
+
+  ```cypher
+  MATCH (a:Account {id:$id}) RETURN a.component_size AS size
+  ```
+
+- `backend/agents/triage.py:65`
+
+  ```cypher
+  MATCH (a:Account {id:$id}) RETURN coalesce(a.passthrough_pairs,0) AS pt, a.community_size AS community
+  ```
+
+- `backend/agents/triage.py:143`
+
+  ```cypher
+  MATCH (a:Account) WHERE a.id IN $ids RETURN DISTINCT a.bank_id AS bank
+  ```
+
+- `backend/app/routers/cases.py:93`
+
+  ```cypher
+  MATCH (c:Case) RETURN c.id AS id, c.status AS status, c.title AS title, c.seed_account AS seed, c.seed_alert AS alert, c.bank_scope AS banks, c.opened_at AS opened_at
+  ```
+
+- `backend/app/routers/demo.py:71`
+
+  ```cypher
+  MATCH (n) WHERE n:Task OR n:Case OR n:Claim OR n:Decision DETACH DELETE n
+  ```
+
+- `backend/app/routers/demo.py:85`
+
+  ```cypher
+  MATCH (al:Alert {status:'open'}) WHERE al.tasked IS NULL SET al.tasked = -1 RETURN al.id AS id
+  ```
+
+- `backend/app/routers/demo.py:93`
+
+  ```cypher
+  MATCH (al:Alert {id:$id}) REMOVE al.tasked
+  ```
+
+- `backend/app/routers/network.py:64`
+
+  ```cypher
+  MATCH (m:Meta {id:'dataset'}) RETURN m.json AS j
+  ```
+
+- `backend/app/routers/trust.py:70`
+
+  ```cypher
+  MATCH (e:Evidence {kind:'shared_attr'}) WHERE e.state <> 'superseded' AND e.origin STARTS WITH 'attr:A' RETURN e.origin AS o
+  ```
+
+- `backend/app/services/baseline.py:68`
+
+  ```cypher
+  CREATE INDEX FOR (al:Alert) ON (al.id)
+  ```
+
+- `backend/app/services/baseline.py:69`
+
+  ```cypher
+  CREATE INDEX FOR (al:Alert) ON (al.status)
+  ```
+
+- `backend/app/services/kyc_synth.py:45`
+
+  ```cypher
+  MATCH (a:Account) RETURN a.id AS id, a.bank_id AS bank
+  ```
+
+- `backend/app/services/kyc_synth.py:113`
+
+  ```cypher
+  MATCH (n) WHERE n:Person OR n:Company OR n:Device OR n:IP OR n:Address DETACH DELETE n
+  ```
+
+- `backend/app/services/kyc_synth.py:132`
+
+  ```cypher
+  UNWIND $rows AS r MATCH (a:Account {id:r.a}) MATCH (p {id:r.p}) WHERE p:Person OR p:Company CREATE (p)-[:OWNS {valid_from:0, name_on_account:r.n}]->(a)
+  ```
+
+- `backend/app/services/kyc_synth.py:129`
+
+  ```cypher
+  f'UNWIND $rows AS r CREATE (:{label} {{id:r.id, name:r.name, name_norm:r.norm, kyc_id:r.id}})'
+  ```
+
+- `backend/app/services/kyc_synth.py:141`
+
+  ```cypher
+  f"UNWIND $rows AS r CREATE (x:{label} {{id:r.id, kind:r.kind,\n shared_count:r.shared, units:coalesce(r.units, 1),\n text:coalesce(r.text, '')}})"
+  ```
+
+- `backend/app/services/kyc_synth.py:144`
+
+  ```cypher
+  f'CREATE INDEX FOR (x:{label}) ON (x.id)'
+  ```
+
+- `backend/app/services/kyc_synth.py:147`
+
+  ```cypher
+  f'UNWIND $rows AS r MATCH (a:Account {{id:r.a}})\n MATCH (x {{id:r.x}}) WHERE x:Device OR x:IP OR x:Address\n CREATE (a)-[:{rel} {{first_seen:0}}]->(x)'
+  ```
+
+- `backend/app/services/kyc_synth.py:151`
+
+  ```cypher
+  f"CALL db.idx.fulltext.createNodeIndex('{label}', {{field:'name', phonetic:'dm:en'}})"
+  ```
+
+- `backend/app/services/kyc_synth.py:153`
+
+  ```cypher
+  f'CREATE INDEX FOR (p:{label}) ON (p.id)'
+  ```
+
+- `backend/app/services/loader.py:146`
+
+  ```cypher
+  UNWIND $b AS b MERGE (:Bank {id:b, name:'Bank '+b})
+  ```
+
+- `backend/app/services/loader.py:264`
+
+  ```cypher
+  MERGE (m:Meta {id:'dataset'}) SET m.json = $j
+  ```
+
+- `backend/app/services/loader.py:116`
+
+  ```cypher
+  CREATE VECTOR INDEX FOR (a:Account) ON (a.behavior_vec) OPTIONS {dimension:16, similarityFunction:'cosine'}
+  ```
+
+- `backend/app/services/loader.py:190`
+
+  ```cypher
+  UNWIND $rows AS r MATCH (s:Account {id:r.s}), (d:Account {id:r.d}) CREATE (s)-[:FLOWS {capacity:r.cap, n_txn:r.n}]->(d)
+  ```
+
+- `backend/app/services/loader.py:154`
+
+  ```cypher
+  f'UNWIND $rows AS r\n CREATE (a:{label} {{id:r.id, bank_id:r.bank_id, in_deg:r.in_deg, out_deg:r.out_deg,\n first_seen:r.first_seen, last_seen:r.last_seen}})\n WITH a, r MATCH (b:Bank {{id:r.bank_id}}) CREATE (a)-[:HELD_AT]->(b)'
+  ```
+
+- `backend/app/services/loader.py:162`
+
+  ```cypher
+  UNWIND $rows AS r MATCH (a:Account {id:r.id}) SET a.behavior_vec = vecf32(r.v)
+  ```
+
+- `backend/app/services/loader.py:176`
+
+  ```cypher
+  f'UNWIND $rows AS r\n MATCH (s:{ls} {{id:r.s}}) MATCH (d:{ld} {{id:r.d}})\n CREATE (s)-[:TRANSFERS {{txn_id:r.id, ts:r.ts, amount:r.amt, amount_recv:r.recv,\n cur:r.cur, cur_recv:r.cur_recv, format:r.fmt, capacity:r.amt}}]->(d)'
+  ```
+
+- `backend/app/services/loader.py:193`
+
+  ```cypher
+  MATCH (n) WHERE n:Account OR n:ExternalAccount OR n:OtherBank RETURN count(n) AS c
+  ```
+
+- `backend/detection/casegraph.py:60`
+
+  ```cypher
+  CREATE INDEX FOR (a:Account) ON (a.id)
+  ```
+
+- `backend/detection/casegraph.py:66`
+
+  ```cypher
+  f"UNWIND $rows AS r MATCH (a:Account {{id:r.a}})\n MERGE (x:{label} {{id:r.id}}) SET x.shared_count = r.shared_count, x.units = r.units\n MERGE (a)-[:{('USES_DEVICE' if label == 'Device' else 'USES_IP' if label == 'IP' else 'REGISTERED_AT')}]->(x)"
+  ```
+
+- `backend/detection/precompute.py:53`
+
+  ```cypher
+  MERGE (m:Meta {id:'precompute'}) SET m.json = $j
+  ```
+
+- `backend/knowledge/typology_kb.py:62`
+
+  ```cypher
+  CALL db.idx.fulltext.createNodeIndex({label:'Chunk', language:'English'}, 'text', 'title')
+  ```
+
+- `backend/knowledge/typology_kb.py:64`
+
+  ```cypher
+  CREATE INDEX FOR (t:Typology) ON (t.id)
+  ```
+
+- `backend/trust/gate.py:87`
+
+  ```cypher
+  MATCH (c:Case) RETURN c.id AS id, c.title AS title, c.seed_account AS seed, c.bank_scope AS banks
+  ```
+
+- `backend/trust/gate.py:213`
+
+  ```cypher
+  MATCH (s:SAR) RETURN count(s) AS c
+  ```
+
+- `backend/trust/store.py:149`
+
+  ```cypher
+  f'CREATE INDEX FOR (n:{label}) ON (n.id)'
+  ```
+
+- `backend/trust/store.py:178`
+
+  ```cypher
+  MATCH (e:Evidence) WHERE e.id IN $ids RETURN count(e) AS c
+  ```

@@ -1,0 +1,298 @@
+{
+ "dataset": "bankweave_synthetic_watchlist",
+ "version": "2026-10-18",
+ "note": "SYNTHETIC. Names drawn from the same generator as BankWeave's synthetic customers so screening has something to find. Not real sanctions data; country codes XA-XD are ISO user-assigned codes.",
+ "entities": [
+  {
+   "id": "syn-000",
+   "schema": "Person",
+   "name": "Aisha Tanaka",
+   "aliases": [
+    "Tanaka, Aisha"
+   ],
+   "program": "SYN-TERR-01",
+   "country": "XB",
+   "listed": "2024-09-16"
+  },
+  {
+   "id": "syn-001",
+   "schema": "Person",
+   "name": "Tomas Sharma",
+   "aliases": [
+    "Sharma, Tomas"
+   ],
+   "program": "SYN-PEP-04",
+   "country": "XD",
+   "listed": "2018-01-19"
+  },
+  {
+   "id": "syn-002",
+   "schema": "Person",
+   "name": "Wei Khan",
+   "aliases": [
+    "Khan, Wei"
+   ],
+   "program": "SYN-FRAUD-03",
+   "country": "XA",
+   "listed": "2022-01-17"
+  },
+  {
+   "id": "syn-003",
+   "schema": "Person",
+   "name": "Lucia Tanaka",
+   "aliases": [
+    "Tanaka, Lucia"
+   ],
+   "program": "SYN-NARCO-02",
+   "country": "XD",
+   "listed": "2019-06-15"
+  },
+  {
+   "id": "syn-004",
+   "schema": "Person",
+   "name": "Pierre Wong",
+   "aliases": [
+    "Wong, Pierre"
+   ],
+   "program": "SYN-TERR-01",
+   "country": "XC",
+   "listed": "2016-09-18"
+  },
+  {
+   "id": "syn-005",
+   "schema": "Person",
+   "name": "Sofia Rossi",
+   "aliases": [
+    "Rossi, Sofia"
+   ],
+   "program": "SYN-PEP-04",
+   "country": "XB",
+   "listed": "2025-05-10"
+  },
+  {
+   "id": "syn-006",
+   "schema": "Person",
+   "name": "Omar Okafor",
+   "aliases": [
+    "Okafor, Omar"
+   ],
+   "program": "SYN-FRAUD-03",
+   "country": "XD",
+   "listed": "2021-02-16"
+  },
+  {
+   "id": "syn-007",
+   "schema": "Person",
+   "name": "Tomas Sharma",
+   "aliases": [
+    "Sharma, Tomas"
+   ],
+   "program": "SYN-PEP-04",
+   "country": "XA",
+   "listed": "2021-09-19"
+  },
+  {
+   "id": "syn-008",
+   "schema": "Person",
+   "name": "Elena Dubois",
+   "aliases": [
+    "Dubois, Elena"
+   ],
+   "program": "SYN-FRAUD-03",
+   "country": "XD",
+   "listed": "2024-08-18"
+  },
+  {
+   "id": "syn-009",
+   "schema": "Person",
+   "name": "David Smith",
+   "aliases": [
+    "Smith, David"
+   ],
+   "program": "SYN-NARCO-02",
+   "country": "XB",
+   "listed": "2015-09-11"
+  },
+  {
+   "id": "syn-010",
+   "schema": "Person",
+   "name": "Omar Kim",
+   "aliases": [
+    "Kim, Omar"
+   ],
+   "program": "SYN-PEP-04",
+   "country": "XD",
+   "listed": "2017-08-13"
+  },
+  {
+   "id": "syn-011",
+   "schema": "Person",
+   "name": "Aisha Brown",
+   "aliases": [
+    "Brown, Aisha"
+   ],
+   "program": "SYN-PEP-04",
+   "country": "XD",
+   "listed": "2023-05-18"
+  },
+  {
+   "id": "syn-012",
+   "schema": "Person",
+   "name": "Pierre Moreno",
+   "aliases": [
+    "Moreno, Pierre"
+   ],
+   "program": "SYN-FRAUD-03",
+   "country": "XD",
+   "listed": "2021-07-13"
+  },
+  {
+   "id": "syn-013",
+   "schema": "Person",
+   "name": "Sofia Murphy",
+   "aliases": [
+    "Murphy, Sofia"
+   ],
+   "program": "SYN-TERR-01",
+   "country": "XA",
+   "listed": "2017-08-18"
+  },
+  {
+   "id": "syn-014",
+   "schema": "Person",
+   "name": "Elena Okafor",
+   "aliases": [
+    "Okafor, Elena"
+   ],
+   "program": "SYN-NARCO-02",
+   "country": "XC",
+   "listed": "2022-08-18"
+  },
+  {
+   "id": "syn-015",
+   "schema": "Person",
+   "name": "Hannah Petrova",
+   "aliases": [
+    "Petrova, Hannah"
+   ],
+   "program": "SYN-PEP-04",
+   "country": "XA",
+   "listed": "2019-06-17"
+  },
+  {
+   "id": "syn-016",
+   "schema": "Person",
+   "name": "Aisha Ali",
+   "aliases": [
+    "Ali, Aisha"
+   ],
+   "program": "SYN-FRAUD-03",
+   "country": "XD",
+   "listed": "2017-07-17"
+  },
+  {
+   "id": "syn-017",
+   "schema": "Person",
+   "name": "Wei Brown",
+   "aliases": [
+    "Brown, Wei"
+   ],
+   "program": "SYN-FRAUD-03",
+   "country": "XD",
+   "listed": "2020-02-13"
+  },
+  {
+   "id": "syn-018",
+   "schema": "Person",
+   "name": "Chen Silva",
+   "aliases": [
+    "Silva, Chen"
+   ],
+   "program": "SYN-NARCO-02",
+   "country": "XD",
+   "listed": "2015-02-10"
+  },
+  {
+   "id": "syn-019",
+   "schema": "Person",
+   "name": "Mohammed Novak",
+   "aliases": [
+    "Novak, Mohammed"
+   ],
+   "program": "SYN-TERR-01",
+   "country": "XB",
+   "listed": "2018-02-19"
+  },
+  {
+   "id": "syn-020",
+   "schema": "Person",
+   "name": "Maria Fischer",
+   "aliases": [
+    "Fischer, Maria"
+   ],
+   "program": "SYN-FRAUD-03",
+   "country": "XC",
+   "listed": "2017-01-15"
+  },
+  {
+   "id": "syn-021",
+   "schema": "Person",
+   "name": "Lucia Novak",
+   "aliases": [
+    "Novak, Lucia"
+   ],
+   "program": "SYN-PEP-04",
+   "country": "XB",
+   "listed": "2023-04-17"
+  },
+  {
+   "id": "syn-022",
+   "schema": "Person",
+   "name": "Tomas Garcia",
+   "aliases": [
+    "Garcia, Tomas"
+   ],
+   "program": "SYN-FRAUD-03",
+   "country": "XA",
+   "listed": "2021-03-12"
+  },
+  {
+   "id": "syn-023",
+   "schema": "Person",
+   "name": "Tomas Rossi",
+   "aliases": [
+    "Rossi, Tomas"
+   ],
+   "program": "SYN-PEP-04",
+   "country": "XD",
+   "listed": "2017-09-13"
+  },
+  {
+   "id": "syn-024",
+   "schema": "Company",
+   "name": "Garcia Holdings Ltd",
+   "aliases": [],
+   "program": "SYN-FRAUD-03",
+   "country": "XB",
+   "listed": "2024-03-01"
+  },
+  {
+   "id": "syn-025",
+   "schema": "Company",
+   "name": "Petrova Imports Ltd",
+   "aliases": [],
+   "program": "SYN-FRAUD-03",
+   "country": "XB",
+   "listed": "2024-03-01"
+  },
+  {
+   "id": "syn-026",
+   "schema": "Company",
+   "name": "Wong Logistics Ltd",
+   "aliases": [],
+   "program": "SYN-FRAUD-03",
+   "country": "XB",
+   "listed": "2024-03-01"
+  }
+ ]
+}

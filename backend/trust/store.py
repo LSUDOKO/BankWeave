@@ -141,7 +141,8 @@ def case_graph(case_id: str) -> str:
 
 
 def open_case(alert_id: str, account_id: str, banks: list[str], title: str,
-              consortium: str = db.CONSORTIUM, case_id: str | None = None) -> str:
+              consortium: str | None = None, case_id: str | None = None) -> str:
+    consortium = consortium or db.CONSORTIUM
     cid = case_id or new_id("C")
     g = case_graph(cid)
     for label in ("Claim", "Evidence", "Action", "Event", "Account", "SAR", "Sentence"):
@@ -169,7 +170,8 @@ def add_evidence(case_id: str, kind: str, origin: str, summary: str, payload: di
 
 
 def add_claim(case_id: str, text: str, kind: str, evidence_ids: list[str], agent: str,
-              about: list[str], consortium: str = db.CONSORTIUM) -> str:
+              about: list[str], consortium: str | None = None) -> str:
+    consortium = consortium or db.CONSORTIUM
     if not evidence_ids:
         raise ValueError("a claim needs at least one evidence id")
     g = case_graph(case_id)
@@ -227,7 +229,8 @@ def log_event(case_id: str, agent: str, action: str, payload: dict | None = None
     return eid
 
 
-def set_status(case_id: str, status: str, consortium: str = db.CONSORTIUM) -> None:
+def set_status(case_id: str, status: str, consortium: str | None = None) -> None:
+    consortium = consortium or db.CONSORTIUM
     db.q(case_graph(case_id), SET_CASE_STATUS, {"id": case_id, "status": status})
     db.q(consortium, SET_CASE_STATUS, {"id": case_id, "status": status})
     events.publish("case", case_graph(case_id), case_id, {"status": status})

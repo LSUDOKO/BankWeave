@@ -119,7 +119,10 @@ def risk_score(s: dict) -> float:
 def decide(s: dict) -> dict:
     public = {k: v for k, v in s.items() if not k.startswith("_")}
     score = risk_score(s)
-    out = llm.complete_json("writer", prompts.TRIAGE, json.dumps(public), 300, "triage")
+    lo, hi = cfg()["triage"].get("llm_band", [1.0, 3.0])
+    # the graph score is decisive at the extremes; the LLM judges only the ambiguous band
+    out = (llm.complete_json("writer", prompts.TRIAGE, json.dumps(public), 300, "triage")
+           if lo <= score < hi else None)
     if isinstance(out, dict) and out.get("decision") in ("clear", "case"):
         return {"decision": out["decision"], "reason": str(out.get("reason", ""))[:240],
                 "mode": "llm", "score": score}

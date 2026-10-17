@@ -9,7 +9,7 @@ through. It also knows how many *independent* reasons it has for each belief, no
 of them dies, and refuses to file a report it can't prove.
 
 - **Tracks:** 01 Agents That Act on Connected Data (primary), 02 Agent Memory and Coordination, Best blog post
-- **Live demo:** _link added at deployment_
+- **Live demo:** https://bankweave.vercel.app (UI on Vercel) · API https://bankweave-api.onrender.com/docs (Render) · graph: FalkorDB Cloud (ap-south-1)
 - **Demo video:** _link added after recording_
 - **Blog post:** [`docs/BLOG.md`](docs/BLOG.md)
 
@@ -83,6 +83,22 @@ protocol for live pub/sub.
 | FalkorDB Browser | visual inspection of every graph | screenshots below |
 | FalkorDB Cloud | live instance (ap-south-1) seeded with the IBM slice | `scripts/make_slice.py` + seed log |
 
+### Proof from the live FalkorDB Cloud instance
+
+Screenshots from FalkorDB Browser connected to the production instance the live demo uses
+(`docs/img/cloud/`):
+
+| What | Screenshot |
+|---|---|
+| Multigraph: consortium, six bank graphs and case graphs in one instance | ![](docs/img/cloud/01-multigraph.jpg) |
+| Index types in use: 1 vector (HNSW), 2 full-text (phonetic), 14 range | ![](docs/img/cloud/03-index-types.jpg) |
+| Every index, by label and property | ![](docs/img/cloud/02-indexes-list.jpg) |
+| `algo.pageRank` on the consortium (4.3 ms) | ![](docs/img/cloud/04-pagerank.jpg) |
+| Vector similarity over behaviour profiles (0.5 ms) | ![](docs/img/cloud/05-vector-similarity.jpg) |
+| Double Metaphone full-text: "Hana Sharma" finds "Hannah Sharma" | ![](docs/img/cloud/06-phonetic-names.jpg) |
+
+### Proof from local runs on the IBM data
+
 | The consortium ring in FalkorDB Browser | A case graph: claims and their evidence |
 |---|---|
 | ![ring](docs/img/falkordb-browser-consortium-ring.png) | ![claims](docs/img/falkordb-browser-case-claims.png) |
@@ -110,7 +126,7 @@ flowchart TB
   TOOLS -- Cypher / algo.* --> F[(FalkorDB: consortium, bank_*, case_*, procedures, typology_kb)]
   TOOLS -- SQL --> PG[(Postgres KYC)]
   W -- events --> RD[(Redis pub/sub)] --> API
-  W -- LiteLLM --> LLM[OpenRouter: writer model + different auditor model]
+  W -- LiteLLM --> LLM[Groq free tier: writer qwen3.8-27b + different, larger auditor gpt-oss-120b]
 ```
 
 The LLMs plan, choose tools and write prose. Cypher and `algo.*` do the computation. With no
@@ -302,11 +318,25 @@ Consortium graph: 28,307 accounts, 1,315,597 transfers.
 
 <!-- results:end -->
 
+## Deployment (live)
+
+| Piece | Where | How |
+|---|---|---|
+| Graph database | FalkorDB Cloud, AWS ap-south-1 | seeded with `scripts/make_slice.py` + `scripts/seed_all.sh` (real IBM slice: 24,990 transactions, 6 banks) |
+| API + agent worker | Render web service `bankweave-api` (Singapore) | root `Dockerfile`; created with the Render CLI; agents run in the API process |
+| Live events | in-process event bus (no Redis needed on a single service) | `backend/app/events.py` |
+| KYC Postgres | Neon (`aws-ap-southeast-1`) | `python -m app.services.kyc_synth --postgres-only` |
+| UI | Vercel `bankweave.vercel.app` | `vercel deploy --prod` from `frontend/` |
+| LLMs | Groq free tier (writer `qwen/qwen3.8-27b`, auditor `openai/gpt-oss-120b`), OpenRouter free models as fallback | `backend/agents/llm.py` |
+
+Render's free plan sleeps after 15 minutes idle; the first request wakes it (about a minute) and
+the agents resume from the graph blackboard.
+
 ## Run it locally
 
 ```bash
 docker compose up -d                       # FalkorDB (6390, Browser 3030), Redis (6391), Postgres (5440)
-cp .env.example .env                       # add OPENROUTER_API_KEY for LLM agents (optional)
+cp .env.example .env                       # add GROQ_API_KEY (free) for LLM agents (optional)
 cd backend && uv sync && cd ..
 scripts/seed_all.sh                        # synthetic demo dataset -> graphs, identity, precompute
 cd backend && uv run python -m app.services.baseline && uv run uvicorn app.main:app --port 8000
@@ -339,7 +369,8 @@ Tests: `cd backend && uv run pytest` (runs against the local FalkorDB).
 
 Built with help from **Claude Code** (Anthropic), which wrote much of the code under the
 team's direction; every module was reviewed and is understood by the team. At runtime the
-agents use LLMs through OpenRouter (a writer model and a different auditor model).
+agents use free-tier LLMs through Groq (writer `qwen/qwen3.8-27b`, auditor `openai/gpt-oss-120b`,
+a different and larger model from a different vendor), with OpenRouter free models as fallback.
 
 ## Limitations
 

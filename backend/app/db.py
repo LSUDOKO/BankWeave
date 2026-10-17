@@ -71,12 +71,15 @@ def _plain(v: Any) -> Any:
     return v
 
 
-def q(graph_name: str, cypher: str, params: dict | None = None) -> list[dict[str, Any]]:
-    return _rows(graph(graph_name).query(cypher, params or {}))
+def q(graph_name: str, cypher: str, params: dict | None = None,
+      timeout: int | None = None) -> list[dict[str, Any]]:
+    """timeout in ms; FalkorDB's server default (1 s in the image) applies when None."""
+    return _rows(graph(graph_name).query(cypher, params or {}, timeout=timeout))
 
 
-def ro(graph_name: str, cypher: str, params: dict | None = None) -> list[dict[str, Any]]:
-    return _rows(graph(graph_name).ro_query(cypher, params or {}))
+def ro(graph_name: str, cypher: str, params: dict | None = None,
+       timeout: int | None = None) -> list[dict[str, Any]]:
+    return _rows(graph(graph_name).ro_query(cypher, params or {}, timeout=timeout))
 
 
 def list_graphs() -> list[str]:

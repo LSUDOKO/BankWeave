@@ -19,9 +19,9 @@ CREATE (t:Task {id:$id, type:$type, case_id:$case, alert_id:$alert, status:'todo
 RETURN t.id AS id
 """)
 
-CLAIM = cy("task_claim_atomic", "Claim the oldest todo task of the given types (one winner)", """
+CLAIM = cy("task_claim_atomic", "Claim the next task: open cases before new triage (one winner)", """
 MATCH (t:Task {status:'todo'}) WHERE t.type IN $types
-WITH t ORDER BY t.created_at LIMIT 1
+WITH t ORDER BY CASE t.type WHEN 'triage' THEN 1 ELSE 0 END, t.created_at LIMIT 1
 SET t.status = 'claimed', t.assignee = $agent, t.claimed_at = timestamp(),
     t.hb = timestamp(), t.attempts = t.attempts + 1
 RETURN t.id AS id, t.type AS type, t.case_id AS case_id, t.alert_id AS alert_id,

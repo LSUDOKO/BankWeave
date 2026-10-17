@@ -33,6 +33,23 @@ SET al.status = 'case', al.case_id = $case, al.reason_cleared = null
 MERGE (c)-[:OPENED_FROM]->(al)
 """)
 
+CLAIM_ACCOUNT = cy("case_claim_account", "Atomically claim an account for a new case", """
+MERGE (l:CaseLock {account:$account})
+ON CREATE SET l.case_id = $case, l.at = timestamp()
+WITH l
+OPTIONAL MATCH (c:Case {id:l.case_id})
+FOREACH (_ IN CASE WHEN c IS NOT NULL AND c.status = 'closed' THEN [1] ELSE [] END |
+         SET l.case_id = $case, l.at = timestamp())
+RETURN l.case_id AS case_id
+""")
+
+JOIN_CASE = cy("alert_join_claimed_case", "Attach an alert to the case that claimed its account", """
+MATCH (al:Alert {id:$alert})
+MERGE (c:Case {id:$case})
+SET al.status = 'case', al.case_id = $case, al.reason_cleared = null
+MERGE (c)-[:OPENED_FROM]->(al)
+""")
+
 CONCERNS = cy("case_concerns_accounts", "Link a case to the accounts it covers", """
 MATCH (c:Case {id:$case})
 UNWIND $ids AS aid
@@ -254,7 +271,15 @@ def run(alert_id: str) -> dict:
     banks = sorted({r["bank"] for r in db.ro(db.CONSORTIUM, "MATCH (a:Account) WHERE a.id IN $ids"
                                              " RETURN DISTINCT a.bank_id AS bank",
                                              {"ids": members})})
-    cid = store.open_case(alert_id, al["account"], banks,
+    # two workers can triage two alerts of one account at once: one MERGE decides the owner
+    cid = store.new_id("C")
+    owner = db.q(db.CONSORTIUM, CLAIM_ACCOUNT, {"account": al["account"], "case": cid})[0]
+    if owner["case_id"] != cid:
+        db.q(db.CONSORTIUM, JOIN_CASE, {"alert": alert_id, "case": owner["case_id"]})
+        events.publish("alert", db.CONSORTIUM, alert_id, {"status": "case",
+                                                          "case": owner["case_id"]})
+        return {"next": [], "merged_into": owner["case_id"]}
+    cid = store.open_case(alert_id, al["account"], banks, case_id=cid, title=
                           f"{RULE_LABEL.get(al['rule'], al['rule'])} by {al['account'][:6]}, "
                           f"{len(members)} accounts across {len(banks)} banks")
     db.q(db.CONSORTIUM, CONCERNS, {"case": cid, "ids": members})

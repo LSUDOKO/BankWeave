@@ -34,6 +34,7 @@ def drop_case(case_id: str) -> None:
     db.drop_graph(db.case_graph(case_id))
     db.q(db.CONSORTIUM, "MATCH (k:Case {id:$id}) OPTIONAL MATCH (k)-[:HAS_CLAIM]->(c:Claim) "
                         "DETACH DELETE k, c", {"id": case_id})
+    db.q(db.CONSORTIUM, "MATCH (l:CaseLock {case_id:$id}) DELETE l", {"id": case_id})
 
 
 def prune(high: float = HIGH, target: float = TARGET) -> dict:

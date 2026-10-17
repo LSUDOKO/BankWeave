@@ -67,7 +67,8 @@ def reset(request: Request):
         w.stop(wait=120)  # let in-flight tasks finish before dropping their graphs
     for g in db.case_graphs():
         db.drop_graph(g)
-    db.q(db.CONSORTIUM, "MATCH (n) WHERE n:Task OR n:Case OR n:Claim OR n:Decision DETACH DELETE n")
+    db.q(db.CONSORTIUM, "MATCH (n) WHERE n:Task OR n:Case OR n:Claim OR n:Decision OR n:CaseLock "
+                         "DETACH DELETE n")
     res = baseline.generate()
     events.publish("demo", db.CONSORTIUM, "reset", res)
     return res

@@ -49,13 +49,18 @@ def complete_json(role: str, system: str, user: str, max_tokens: int = 1500,
     os.environ.setdefault("OPENROUTER_API_KEY", get_settings().openrouter_api_key or "")
     model = model_for(role)
     t0 = time.time()
+    # reasoning models spend completion tokens before answering; keep headroom for the answer
+    budget = max(max_tokens, 1500) + 1500
+    msgs = [{"role": "system", "content": system + "\nRespond with JSON only."},
+            {"role": "user", "content": user}]
     try:
-        resp = litellm.completion(
-            model=model, max_tokens=max_tokens, temperature=0.1,
-            messages=[{"role": "system", "content": system + "\nRespond with JSON only."},
-                      {"role": "user", "content": user}],
-            response_format={"type": "json_object"}, timeout=60)
+        resp = litellm.completion(model=model, max_tokens=budget, temperature=0.1, messages=msgs,
+                                  response_format={"type": "json_object"}, timeout=90)
         text = resp.choices[0].message.content
+        if not text:  # some providers return empty content in JSON mode: retry once plain
+            resp = litellm.completion(model=model, max_tokens=budget, temperature=0.1,
+                                      messages=msgs, timeout=90)
+            text = resp.choices[0].message.content
     except Exception as exc:  # noqa: BLE001 - provider errors fall back to deterministic mode
         events.publish("agent_step", case_graph, "llm", {"error": str(exc)[:300],
                                                          "model": model}, agent=agent)

@@ -24,3 +24,8 @@ def test_ground_truth_has_cross_bank_attempts(loaded):
     gt = loaded["gt"]
     assert gt["illicit_accounts"]
     assert any(a["cross_bank"] for a in gt["attempts"])
+
+
+def test_timestamps_are_epoch_seconds(loaded):
+    ts = db.q(loaded["consortium"], "MATCH ()-[t:TRANSFERS]->() RETURN min(t.ts) AS lo")[0]["lo"]
+    assert 1_600_000_000 < ts < 1_800_000_000

@@ -36,7 +36,8 @@ def read_transactions(path: Path, limit: int | None = None) -> pd.DataFrame:
     df = pd.read_csv(path, header=0, names=COLS, nrows=limit,
                      dtype={"src_bank": str, "src_acct": str, "dst_bank": str, "dst_acct": str,
                             "cur_recv": str, "cur_paid": str, "format": str})
-    df["ts"] = (pd.to_datetime(df["ts"], format="%Y/%m/%d %H:%M").astype("int64") // 10**9)
+    dt = pd.to_datetime(df["ts"], format="%Y/%m/%d %H:%M")
+    df["ts"] = (dt - pd.Timestamp("1970-01-01")) // pd.Timedelta(seconds=1)  # resolution-safe
     df["txn_id"] = "t" + df.index.astype(str)
     return df
 

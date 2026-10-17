@@ -46,7 +46,12 @@ MATCH (al:Alert {id:$id}) RETURN al.id AS id, al.account_id AS account, al.bank_
 
 def signals(account: str) -> dict:
     ctx = Ctx(agent="triage", record=False)
-    comp = tools.call("find_islands", ctx, account_id=account)["result"] or {}
+    pre = db.ro(db.CONSORTIUM, "MATCH (a:Account {id:$id}) RETURN a.component_size AS size",
+                {"id": account})
+    if pre and pre[0]["size"] is not None:  # precomputed by algo.wcc (detection/precompute)
+        comp = {"size": pre[0]["size"], "n_banks": 0}
+    else:
+        comp = tools.call("find_islands", ctx, account_id=account)["result"] or {}
     motif = tools.call("motif_score", ctx, account_id=account)["result"] or {}
     xb = tools.call("cross_bank_links", ctx, account_id=account)["result"]
     shared = tools.call("shared_identity", ctx, account_id=account)["matches"]

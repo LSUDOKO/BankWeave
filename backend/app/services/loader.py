@@ -173,6 +173,17 @@ def write_graph(name: str, df: pd.DataFrame, bank: str | None,
             CREATE (s)-[:TRANSFERS {txn_id:r.id, ts:r.ts, amount:r.amt, amount_recv:r.recv,
                     cur:r.cur, cur_recv:r.cur_recv, format:r.fmt, capacity:r.amt}]->(d)""",
              {"rows": chunk})
+    # FLOWS: one edge per ordered account pair (simple digraph). algo.maxFlow rejects
+    # multi-edge relationship types, and the motif score is defined on a simple digraph.
+    agg = (df[df["src_inside"] & df["dst_inside"] & (df["src"] != df["dst"])]
+           .groupby(["src", "dst"]).agg(cap=("amount_paid", "sum"), n=("txn_id", "size"))
+           .reset_index())
+    frows = [{"s": s_, "d": d_, "cap": float(c), "n": int(k)}
+             for s_, d_, c, k in zip(agg["src"], agg["dst"], agg["cap"], agg["n"])]
+    for chunk in _batches(frows):
+        db.q(name, """UNWIND $rows AS r
+            MATCH (s:Account {id:r.s}), (d:Account {id:r.d})
+            CREATE (s)-[:FLOWS {capacity:r.cap, n_txn:r.n}]->(d)""", {"rows": chunk})
     n = db.q(name, "MATCH (n) WHERE n:Account OR n:ExternalAccount OR n:OtherBank "
                    "RETURN count(n) AS c")[0]["c"]
     return {"graph": name, "nodes": n, "edges": len(erows)}

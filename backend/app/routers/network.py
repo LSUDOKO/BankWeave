@@ -76,10 +76,11 @@ def network(view: str = "consortium", case: str | None = None, limit: int = 250)
         edges = db.ro(db.CONSORTIUM, CONS_EDGES, {"ids": ids})
         cypher = [CONS_NODES, CONS_EDGES]
     elif view.startswith("bank_"):
-        if view not in db.list_graphs():
+        view_graph = db.PREFIX + view
+        if view_graph not in db.list_graphs():
             raise HTTPException(404, "unknown bank graph")
-        nodes = db.ro(view, BANK_NODES, {"ids": ids})
-        edges = db.ro(view, BANK_EDGES, {"ids": ids})
+        nodes = db.ro(view_graph, BANK_NODES, {"ids": ids})
+        edges = db.ro(view_graph, BANK_EDGES, {"ids": ids})
         cypher = [BANK_NODES, BANK_EDGES]
     else:
         raise HTTPException(400, "view must be consortium or bank_<id>")

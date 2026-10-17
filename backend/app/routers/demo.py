@@ -29,8 +29,8 @@ def status(request: Request):
             "blackboard": Blackboard().stats(),
             "llm": {"enabled": llm.enabled(), "writer": llm.model_for("writer"),
                     "auditor": llm.model_for("auditor")},
-            "graphs": {"total": len(graphs), "cases": sum(g.startswith("case_") for g in graphs),
-                       "banks": sorted(g for g in graphs if g.startswith("bank_"))}}
+            "graphs": {"total": len(graphs), "cases": sum(db.is_case_graph(g) for g in graphs),
+                       "banks": sorted(g for g in graphs if g.startswith(db.PREFIX + "bank_"))}}
 
 
 @router.post("/worker/start")
@@ -66,9 +66,8 @@ def reset(request: Request):
     if w:
         w.stop()
         time.sleep(1.5)
-    for g in db.list_graphs():
-        if g.startswith("case_"):
-            db.drop_graph(g)
+    for g in db.case_graphs():
+        db.drop_graph(g)
     db.q(db.CONSORTIUM, "MATCH (n) WHERE n:Task OR n:Case OR n:Claim OR n:Decision DETACH DELETE n")
     res = baseline.generate()
     events.publish("demo", db.CONSORTIUM, "reset", res)

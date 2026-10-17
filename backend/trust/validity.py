@@ -139,10 +139,8 @@ def invalidate_evidence(case_id: str, evidence_id: str, reason: str,
 def invalidate_origin(origin: str, reason: str, new_fact: dict | None = None) -> list[dict]:
     """A new fact about an origin (e.g. KYC update about an address) hits every case."""
     results = []
-    for g in db.list_graphs():
-        if not g.startswith("case_"):
-            continue
-        case_id = g[len("case_"):]
+    for g in db.case_graphs():
+        case_id = db.case_id_of(g)
         for row in db.q(g, FIND_BY_ORIGIN, {"origin": origin}):
             new_id = None
             if new_fact:

@@ -46,7 +46,7 @@ def tool(name: str, description: str, agents: tuple[str, ...], records: bool = F
 @dataclass
 class Ctx:
     """Execution context: which graph to read, which case to record into, who is calling."""
-    graph: str = db.CONSORTIUM
+    graph: str = field(default_factory=lambda: db.CONSORTIUM)
     case_id: str | None = None
     agent: str = "analyst"
     record: bool = True

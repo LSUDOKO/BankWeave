@@ -46,21 +46,19 @@ def kyc_update(body: KycUpdate):
 @router.get("/echo")
 def echo_overview():
     out = []
-    for g in db.list_graphs():
-        if g.startswith("case_"):
-            for r in db.ro(g, ECHO_OVERVIEW):
-                out.append({**r, "case_id": g[5:]})
+    for g in db.case_graphs():
+        for r in db.ro(g, ECHO_OVERVIEW):
+            out.append({**r, "case_id": db.case_id_of(g)})
     return {"claims": out}
 
 
 @router.get("/states")
 def states():
     out: dict[str, dict[str, int]] = {}
-    for g in db.list_graphs():
-        if g.startswith("case_"):
-            for r in db.ro(g, STATE_COUNTS):
-                key = f"{r['label']}:{r['state']}"
-                out[key] = out.get(key, 0) + r["n"]
+    for g in db.case_graphs():
+        for r in db.ro(g, STATE_COUNTS):
+            key = f"{r['label']}:{r['state']}"
+            out[key] = out.get(key, 0) + r["n"]
     return {"states": out}
 
 
@@ -68,9 +66,7 @@ def states():
 def kyc_candidates():
     """Shared addresses that agents are currently relying on (for the demo button)."""
     seen: dict[str, int] = {}
-    for g in db.list_graphs():
-        if not g.startswith("case_"):
-            continue
+    for g in db.case_graphs():
         for r in db.ro(g, "MATCH (e:Evidence {kind:'shared_attr'}) WHERE e.state <> 'superseded' "
                           "AND e.origin STARTS WITH 'attr:A' RETURN e.origin AS o"):
             seen[r["o"][5:]] = seen.get(r["o"][5:], 0) + 1

@@ -401,3 +401,21 @@ def kb_query(ctx: Ctx, question: str) -> dict:
                        f"typology guidance '{c['name']}' ({c['sources']})", c, r["cypher"], []))
     r["evidence_ids"] = [i for i in ids if i]
     return r
+
+
+@tool("reach", "Accounts money from one account can reach (algo.SSpaths)",
+      ("investigator", "analyst"))
+def reach(ctx: Ctx, account_id: str, max_len: int = 4) -> dict:
+    return al.reach(ctx.case_graph or ctx.graph, account_id, max_len)
+
+
+@tool("bfs_reach", "Breadth-first reach along outgoing transfers (algo.bfs)",
+      ("investigator", "analyst"))
+def bfs_reach(ctx: Ctx, account_id: str, depth: int = 2) -> dict:
+    return al.bfs(ctx.case_graph or ctx.graph, account_id, depth)
+
+
+@tool("backbone", "Minimum spanning forest of the case graph: the ring's backbone (algo.MSF)",
+      ("investigator", "reporter", "analyst"))
+def backbone(ctx: Ctx) -> dict:
+    return al.backbone(ctx.case_graph or ctx.graph)

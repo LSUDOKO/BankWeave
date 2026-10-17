@@ -71,9 +71,9 @@ protocol for live pub/sub.
 | `algo.betweenness` (seeded) | mule bridges; SPNSA | ![betweenness](docs/img/falkordb-browser-betweenness.png) |
 | `algo.HarmonicCentrality` | orchestrator candidates | `find_orchestrator` tool, rebuttal rounds |
 | `algo.SPpaths` | money paths: the primary evidence of a claim | `path` evidence in every case, with its query |
-| `algo.SSpaths`, `algo.bfs` | reach / neighbourhood tools | MCP tools `reach`-style queries, `bfs` |
+| `algo.SSpaths`, `algo.bfs` | `reach`, `bfs_reach` tools (case graph) | available to the Investigator and over MCP |
 | `algo.maxFlow` | money at risk over collapsed `FLOWS` edges | hub claims cite max-flow evidence |
-| `algo.MSF` | ring backbone | `algo_msf_backbone` in QUERIES.md |
+| `algo.MSF` | `backbone` tool: a ring's spanning backbone | available to the Investigator, Reporter and over MCP |
 | Full-text index + **Double Metaphone** | `Person.name`, `Company.name` (`detection/identity.py`) | `test_identity.py`: a spelling variant finds its original identity |
 | Full-text index + **English stemming** | typology knowledge graph (`knowledge/typology_kb.py`) | cited answers; abstains on unrelated questions |
 | **Vector index (HNSW, cosine)** | 16-dim behaviour profiles (`app/services/loader.py`) | `behavior_neighbors`, triage features, clue expansion |

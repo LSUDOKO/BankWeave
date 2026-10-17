@@ -39,7 +39,7 @@ MATCH (c:Claim) RETURN c.id AS id, c.kind AS kind, c.text AS text, c.about AS ab
 INVESTIGATOR_TOOLS = ["typology_patterns", "cross_bank_links", "find_hub", "find_bridges",
                       "find_orchestrator", "trace_flow", "money_at_risk", "shared_identity",
                       "passthrough_check", "behavior_neighbors", "find_rings",
-                      "recall_similar_cases"]
+                      "recall_similar_cases", "reach", "bfs_reach", "backbone", "kb_query"]
 MAX_LLM_STEPS = 8
 
 

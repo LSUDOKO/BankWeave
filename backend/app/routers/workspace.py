@@ -301,3 +301,13 @@ def fincen_xml(case_id: str):
     xml = ET.tostring(root, encoding="unicode", xml_declaration=True)
     return Response(xml, media_type="application/xml", headers={
         "Content-Disposition": f'attachment; filename="bankweave-{case_id}-sar.xml"'})
+
+
+@router.get("/{case_id}/trace")
+def trace(case_id: str):
+    """OpenTelemetry-shaped spans of every agent task, tool call and LLM call in the case."""
+    from app.services import telemetry
+    _g(case_id)
+    spans = telemetry.case_trace(case_id)
+    return {"trace_id": telemetry.trace_id_for(case_id), "spans": spans,
+            "cypher": telemetry.READ}

@@ -15,9 +15,11 @@ import { useLiveReload } from "@/lib/useEvents";
 const ProvenanceDag = dynamic(() => import("@/components/ProvenanceDag"), { ssr: false, loading: () => <p className="text-muted">Loading DAG…</p> });
 const Replay = dynamic(() => import("@/components/Replay"), { ssr: false });
 const TraceWaterfall = dynamic(() => import("@/components/TraceWaterfall"), { ssr: false });
+const TimeMachine = dynamic(() => import("@/components/TimeMachine"), { ssr: false });
+const Screening = dynamic(() => import("@/components/Screening"), { ssr: false });
 
 const KIND: Record<string, string> = { ring: "Ring", hub: "Hub", mule: "Mule", structuring: "Structuring", innocent: "Innocent explanation", layering: "Layering" };
-const TABS = { claims: "Claims", evidence: "Evidence independence", dag: "Provenance DAG", replay: "Replay", sar: "Report", freeze: "Simulate freeze", trace: "Agent trace" } as const;
+const TABS = { claims: "Claims", evidence: "Evidence independence", dag: "Provenance DAG", replay: "Replay", time: "Time machine", sar: "Report", freeze: "Simulate freeze", screening: "Sanctions", trace: "Agent trace" } as const;
 type Tab = keyof typeof TABS;
 
 export default function CaseWorkspace({ params }: { params: Promise<{ id: string }> }) {
@@ -150,6 +152,8 @@ export default function CaseWorkspace({ params }: { params: Promise<{ id: string
         {tab === "sar" && <div className="mt-4"><SarView caseId={id} version={version} onCite={(accts) => setLit(new Set(accts))} /></div>}
         {tab === "freeze" && <div className="mt-4"><FreezeSim caseId={id} accounts={nodes.map((n: any) => n.id)} /></div>}
         {tab === "trace" && <div className="mt-4"><TraceWaterfall caseId={id} /></div>}
+        {tab === "time" && <div className="mt-4"><TimeMachine caseId={id} graph={graph} banks={banks} /></div>}
+        {tab === "screening" && <div className="mt-4"><Screening caseId={id} /></div>}
 
         {c.actions.length > 0 && (
           <section className="mt-8">

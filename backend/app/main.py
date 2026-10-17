@@ -38,9 +38,13 @@ for r in (alerts, cases, sar, actions, network, trust, evals, demo, tools_api):
 
 @app.get("/health")
 def health():
+    from app.services import capacity
+    s = get_settings()
     try:
         graphs = db.list_graphs()
-        return {"ok": True, "falkordb": True, "graphs": len(graphs)}
+        return {"ok": True, "falkordb": True, "graphs": len(graphs),
+                "region": s.falkordb_region, "memory": capacity.memory(),
+                "llm": s.llm_enabled, "worker": bool(app.state.worker)}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "falkordb": False, "error": str(exc)[:200]}
 

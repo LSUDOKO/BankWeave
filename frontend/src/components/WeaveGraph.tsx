@@ -93,7 +93,7 @@ export default function WeaveGraph({
       const cross = l.source.bank !== l.target.bank;
       const inCase = (l.source.cases?.length ?? 0) > 0 && (l.target.cases?.length ?? 0) > 0;
       const hot = highlight && highlight.has(l.source.id) && highlight.has(l.target.id);
-      ctx.strokeStyle = hot ? "#e5484d" : cross ? (inCase ? "rgba(229,72,77,.75)" : "rgba(233,228,212,.28)") : "rgba(154,167,184,.35)";
+      ctx.strokeStyle = hot ? "#ef4444" : cross ? (inCase ? "rgba(239,68,68,.75)" : "rgba(6,182,212,.30)") : "rgba(148,163,184,.30)";
       ctx.lineWidth = hot ? 2.4 : cross ? 1.4 : 0.8;
       ctx.beginPath();
       const mx = (l.source.x! + l.target.x!) / 2, my = (l.source.y! + l.target.y!) / 2 - (cross ? 18 : 0);

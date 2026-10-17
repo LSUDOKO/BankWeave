@@ -281,7 +281,8 @@ def run(alert_id: str) -> dict:
         return {"next": [], "merged_into": owner["case_id"]}
     cid = store.open_case(alert_id, al["account"], banks, case_id=cid, title=
                           f"{RULE_LABEL.get(al['rule'], al['rule'])} by {al['account'][:6]}, "
-                          f"{len(members)} accounts across {len(banks)} banks")
+                          f"{len(members)} accounts across {len(banks)} "
+                          f"{'bank' if len(banks) == 1 else 'banks'}")
     db.q(db.CONSORTIUM, CONCERNS, {"case": cid, "ids": members})
     copy_to_case(db.CONSORTIUM, members, db.case_graph(cid))
     store.log_event(cid, "triage", "open_case", {"alert": alert_id, "decision": d,

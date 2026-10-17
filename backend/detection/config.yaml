@@ -23,6 +23,7 @@ motif:                          # paper 2610.13280 parameters for IBM HI-Small
   centers: 5
   d_max: 2
 triage:
+  hub_degree: 2000              # above this, use the precomputed profile only
   clear_if_component_size_below: 3
   case_if_motif_score_above: 1.0
 algorithms:

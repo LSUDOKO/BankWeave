@@ -49,21 +49,42 @@ RULE_LABEL = {"large_transfer": "Large transfer", "near_threshold_burst": "Near-
               "high_risk_format": "Cash or crypto transfer"}
 
 
+HUB = cy("triage_hub_profile", "Precomputed profile for a high-volume account", """
+MATCH (a:Account {id:$id})
+OPTIONAL MATCH (a)-[f:FLOWS]-(b:Account) WHERE b.bank_id <> a.bank_id
+RETURN a.in_deg + a.out_deg AS degree, a.component_size AS component,
+       coalesce(a.motif_score, 0.0) AS motif, coalesce(a.passthrough_pairs, 0) AS pt,
+       a.community_size AS community, count(DISTINCT b) AS cross_bank
+""")
+
+
+def _safe(fn, default):
+    try:
+        return fn()
+    except Exception:  # noqa: BLE001 - one slow or failing signal must not fail the alert
+        return default
+
+
 def signals(account: str) -> dict:
     ctx = Ctx(agent="triage", record=False)
-    pre = db.ro(db.CONSORTIUM, "MATCH (a:Account {id:$id}) RETURN a.component_size AS size",
-                {"id": account})
-    if pre and pre[0]["size"] is not None:  # precomputed by algo.wcc (detection/precompute)
-        comp = {"size": pre[0]["size"], "n_banks": 0}
-    else:
-        comp = tools.call("find_islands", ctx, account_id=account)["result"] or {}
-    motif = tools.call("motif_score", ctx, account_id=account)["result"] or {}
-    xb = tools.call("cross_bank_links", ctx, account_id=account)["result"]
-    shared = tools.call("shared_identity", ctx, account_id=account)["matches"]
-    typ = tools.call("typology_patterns", ctx, account_id=account)["result"]
-    prior = tools.call("recall_similar_cases", ctx, account_id=account)["result"]
-    pt = db.ro(db.CONSORTIUM, "MATCH (a:Account {id:$id}) RETURN coalesce(a.passthrough_pairs,0) "
-               "AS pt, a.community_size AS community", {"id": account})[0]
+    prof = db.ro(db.CONSORTIUM, HUB, {"id": account})[0]
+    hub_deg = cfg()["triage"].get("hub_degree", 2000)
+    if (prof["degree"] or 0) > hub_deg:
+        # high-volume (clearing / processor-like) account: per-transfer typology scans are
+        # skipped; triage uses the precomputed graph profile instead
+        return {"component_size": prof["component"] or 1, "component_banks": 0,
+                "motif_score": round(prof["motif"], 3),
+                "cross_bank_counterparties": prof["cross_bank"], "typologies": [],
+                "shared_identity_tight": 0, "shared_identity_broad": 0, "prior_cases": [],
+                "passthrough_pairs": prof["pt"], "community_size": prof["community"],
+                "high_volume_account": prof["degree"], "_members": [], "_typology_detail": {}}
+    comp = {"size": prof["component"], "n_banks": 0} if prof["component"] is not None else \
+        (_safe(lambda: tools.call("find_islands", ctx, account_id=account)["result"], None) or {})
+    motif = _safe(lambda: tools.call("motif_score", ctx, account_id=account)["result"], None) or {}
+    xb = _safe(lambda: tools.call("cross_bank_links", ctx, account_id=account)["result"], [])
+    shared = _safe(lambda: tools.call("shared_identity", ctx, account_id=account)["matches"], [])
+    typ = _safe(lambda: tools.call("typology_patterns", ctx, account_id=account)["result"], {})
+    prior = _safe(lambda: tools.call("recall_similar_cases", ctx, account_id=account)["result"], [])
     small_shared = [s for s in shared if (s.get("shared") or 0) <= 5 and (s.get("units") or 1) <= 5]
     return {
         "component_size": comp.get("size", 1), "component_banks": comp.get("n_banks", 1),
@@ -72,8 +93,8 @@ def signals(account: str) -> dict:
         "typologies": [k for k, v in typ.items() if v["found"]],
         "shared_identity_tight": len(small_shared),
         "shared_identity_broad": len(shared) - len(small_shared),
-        "prior_cases": [p["case_id"] for p in prior], "passthrough_pairs": pt["pt"],
-        "community_size": pt["community"],
+        "prior_cases": [p["case_id"] for p in prior], "passthrough_pairs": prof["pt"],
+        "community_size": prof["community"],
         "_members": sorted({x["account"] for x in xb[:8]}
                            | {o for s in small_shared for o in s["others"]}),
         "_typology_detail": typ,

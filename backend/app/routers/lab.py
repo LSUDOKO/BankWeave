@@ -401,3 +401,27 @@ def acl_demo(body: AclDemo):
     admin.execute_command("ACL", "DELUSER", user)
     return {"supported": True, "user": user, "rule": ["on", f"~{own}", "+GRAPH.RO_QUERY", "+PING"],
             "attempts": attempts, "acl_log": log}
+
+
+MEMORY = cy("lab_procedural_memory", "Procedures the Archivist learned, with their ordered steps", """
+MATCH (p:Procedure)
+OPTIONAL MATCH (p)-[r:STEP]->(s:Step)
+OPTIONAL MATCH (s)-[:FAILED_BEFORE]->(x:Pitfall)
+WITH p, r, s, collect(x.note) AS pitfalls ORDER BY r.order
+RETURN p.id AS id, p.name AS name, p.typology AS typology, p.success_count AS success,
+       p.fail_count AS fail, p.learned_from AS learned_from,
+       collect({order:r.order, tool:s.tool, params:s.params_template, why:s.why,
+                pitfalls:pitfalls}) AS steps
+""")
+
+
+@router.get("/memory")
+def memory():
+    """Procedural memory (the `procedures` graph) and episodic memory sizes per case."""
+    procs = db.ro(db.PROCEDURES, MEMORY) if db.PROCEDURES in db.list_graphs() else []
+    episodic = []
+    for g in db.case_graphs()[:40]:
+        n = db.ro(g, "MATCH (e:Event) RETURN count(e) AS n")[0]["n"]
+        episodic.append({"case_id": db.case_id_of(g), "events": n})
+    return {"procedures": procs, "episodic": sorted(episodic, key=lambda x: -x["events"]),
+            "cypher": MEMORY}

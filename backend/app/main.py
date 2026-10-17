@@ -14,7 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import db, events
 from app.config import get_settings
 from app.events import CHANNEL_PREFIX
-from app.routers import (actions, alerts, cases, demo, evals, hardware, lab, network, overview, sar,
+from app.routers import (actions, alerts, cases, demo, evals, hardware, integrations, lab, network,
+                         overview, sar,
                          scenarios, tools_api, trust, workspace)
 
 
@@ -34,7 +35,7 @@ app = FastAPI(title="BankWeave", version="1.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
                    allow_methods=["*"], allow_headers=["*"])
 for r in (alerts, cases, sar, actions, network, trust, evals, demo, tools_api, overview, lab,
-          workspace, scenarios, hardware):
+          workspace, scenarios, hardware, integrations):
     app.include_router(r.router)
 
 

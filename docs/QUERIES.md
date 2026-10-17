@@ -2,7 +2,7 @@
 
 Generated from the query registry (`backend/app/cypher.py`) by `scripts/gen_queries_md.py`. Every query the product runs is declared with `cy(name, purpose, text)`, so this file matches the code.
 
-**144 queries** across 29 modules. Native algorithms used: `algo.wcc`, `algo.labelPropagation`, `algo.pageRank`, `algo.betweenness`, `algo.HarmonicCentrality`, `algo.SPpaths`, `algo.SSpaths`, `algo.maxFlow`, `algo.bfs`, `algo.MSF`; indexes: range, full-text (Double Metaphone phonetic, English stemming), vector (HNSW, cosine).
+**153 queries** across 31 modules. Native algorithms used: `algo.wcc`, `algo.labelPropagation`, `algo.pageRank`, `algo.betweenness`, `algo.HarmonicCentrality`, `algo.SPpaths`, `algo.SSpaths`, `algo.maxFlow`, `algo.bfs`, `algo.MSF`; indexes: range, full-text (Double Metaphone phonetic, English stemming), vector (HNSW, cosine).
 
 Not native in FalkorDB, done in plain Cypher instead: degree (precomputed), cycles (time-respecting iterative expansion), triangles / 3-cycles (motif score).
 
@@ -29,11 +29,11 @@ RETURN DISTINCT split(e.origin, ':')[1] AS typology
 
 ### task_claim_atomic
 
-Claim the oldest todo task of the given types (one winner)
+Claim the next task: open cases before new triage (one winner)
 
 ```cypher
 MATCH (t:Task {status:'todo'}) WHERE t.type IN $types
-WITH t ORDER BY t.created_at LIMIT 1
+WITH t ORDER BY CASE t.type WHEN 'triage' THEN 1 ELSE 0 END, t.created_at LIMIT 1
 SET t.status = 'claimed', t.assignee = $agent, t.claimed_at = timestamp(),
     t.hb = timestamp(), t.attempts = t.attempts + 1
 RETURN t.id AS id, t.type AS type, t.case_id AS case_id, t.alert_id AS alert_id,
@@ -102,6 +102,24 @@ Blackboard counts by type and status
 
 ```cypher
 MATCH (t:Task) RETURN t.type AS type, t.status AS status, count(t) AS n
+```
+
+## `agents.calibrate`
+
+### calibrate_alerted_accounts
+
+Distinct alerted accounts in the current graph
+
+```cypher
+MATCH (al:Alert) RETURN DISTINCT al.account_id AS id ORDER BY id SKIP $skip LIMIT $limit
+```
+
+### calibrate_store_cutoff
+
+Store the triage cutoff for this graph
+
+```cypher
+MERGE (m:Meta {id:'triage_cutoff'}) SET m.json = $j
 ```
 
 ## `agents.investigator`
@@ -232,6 +250,31 @@ MATCH (c:Case {id:$case})
 UNWIND $ids AS aid
 MATCH (a:Account {id:aid})
 MERGE (c)-[:CONCERNS]->(a)
+```
+
+### triage_feature_profile
+
+Graph features of an account for the triage model
+
+```cypher
+MATCH (a:Account {id:$id})
+RETURN a.in_deg AS in_deg, a.out_deg AS out_deg, coalesce(a.pagerank, 0.0) AS pagerank,
+       coalesce(a.motif_cycle3, 0) AS cycle3, coalesce(a.motif_recip, 0) AS recip,
+       coalesce(a.motif_relay, 0) AS relay, coalesce(a.motif_fanin, 0) AS fanin,
+       coalesce(a.motif_fanout, 0) AS fanout, coalesce(a.motif_leaf, 0) AS leaf,
+       a.behavior_vec AS vec
+```
+
+### triage_hub_profile
+
+Precomputed profile for a high-volume account
+
+```cypher
+MATCH (a:Account {id:$id})
+OPTIONAL MATCH (a)-[f:FLOWS]-(b:Account) WHERE b.bank_id <> a.bank_id
+RETURN a.in_deg + a.out_deg AS degree, a.component_size AS component,
+       coalesce(a.motif_score, 0.0) AS motif, coalesce(a.passthrough_pairs, 0) AS pt,
+       a.community_size AS community, count(DISTINCT b) AS cross_bank
 ```
 
 ## `app.routers.actions`
@@ -564,6 +607,7 @@ Baseline rule: transfer above threshold
 MATCH (a:Account)-[t:TRANSFERS]->()
 WHERE t.amount > $thr
 RETURN a.id AS account, a.bank_id AS bank, min(t.ts) AS ts, count(t) AS hits
+ORDER BY account SKIP $skip LIMIT $limit
 ```
 
 ### baseline_r2_near_threshold
@@ -576,7 +620,7 @@ WHERE t.amount >= $thr * 0.85 AND t.amount < $thr
 WITH a, t ORDER BY t.ts
 WITH a, collect(t.ts) AS ts
 WHERE size(ts) >= 3
-RETURN a.id AS account, a.bank_id AS bank, ts
+RETURN a.id AS account, a.bank_id AS bank, ts ORDER BY account SKIP $skip LIMIT $limit
 ```
 
 ### baseline_r3_new_counterparty
@@ -588,6 +632,7 @@ MATCH (a:Account)-[f:FLOWS]->(b:Account)
 WHERE f.n_txn = 1 AND f.capacity >= $thr * 0.5
 MATCH (a)-[t:TRANSFERS]->(b)
 RETURN a.id AS account, a.bank_id AS bank, min(t.ts) AS ts, count(DISTINCT b) AS hits
+ORDER BY account SKIP $skip LIMIT $limit
 ```
 
 ### baseline_r4_high_risk_format
@@ -598,6 +643,68 @@ Baseline rule: cash / crypto above 30% of threshold
 MATCH (a:Account)-[t:TRANSFERS]->()
 WHERE t.format IN ['Cash', 'Bitcoin'] AND t.amount >= $thr * 0.3
 RETURN a.id AS account, a.bank_id AS bank, min(t.ts) AS ts, count(t) AS hits
+ORDER BY account SKIP $skip LIMIT $limit
+```
+
+## `app.services.simulator`
+
+### sim_covered_accounts
+
+Accounts already alerted or in a case
+
+```cypher
+MATCH (a:Account) WHERE a.id IN $ids
+OPTIONAL MATCH (al:Alert)-[:RAISED_FOR]->(a)
+OPTIONAL MATCH (c:Case)-[:CONCERNS]->(a)
+RETURN a.id AS id, count(al) + count(c) AS covered
+```
+
+### sim_hunt_alert
+
+Raise a hunt-mode alert on an uncovered suspicious account
+
+```cypher
+MATCH (a:Account {id:$id})
+MERGE (al:Alert {id:$aid})
+ON CREATE SET al.account_id = $id, al.bank_id = a.bank_id, al.rule = 'hunt', al.ts = $ts,
+              al.status = 'open', al.reason = $reason, al.hits = 1
+MERGE (al)-[:RAISED_FOR]->(a)
+```
+
+### sim_pick_accounts
+
+Quiet accounts at different banks for a red-team ring
+
+```cypher
+MATCH (a:Account) WHERE a.bank_id IN $banks AND a.out_deg < 20 AND a.in_deg < 20
+RETURN a.id AS id, a.bank_id AS bank
+```
+
+### sim_write_transfers
+
+Insert simulated transfers (consortium)
+
+```cypher
+UNWIND $rows AS r
+MATCH (s:Account {id:r.s}), (d:Account {id:r.d})
+CREATE (s)-[:TRANSFERS {txn_id:r.id, ts:r.ts, amount:r.amt, amount_recv:r.amt, cur:'US Dollar',
+        cur_recv:'US Dollar', format:'ACH', capacity:r.amt, simulated:true}]->(d)
+MERGE (s)-[f:FLOWS]->(d)
+ON CREATE SET f.capacity = r.amt, f.n_txn = 1
+ON MATCH SET f.capacity = f.capacity + r.amt, f.n_txn = f.n_txn + 1
+SET s.out_deg = s.out_deg + 1, d.in_deg = d.in_deg + 1
+```
+
+### sim_write_transfers_bank
+
+Insert simulated transfers into one bank's view
+
+```cypher
+UNWIND $rows AS r
+MERGE (s:Account {id:r.s}) ON CREATE SET s.bank_id = r.sb
+MERGE (d:Account {id:r.d}) ON CREATE SET d.bank_id = r.db
+CREATE (s)-[:TRANSFERS {txn_id:r.id, ts:r.ts, amount:r.amt, amount_recv:r.amt, cur:'US Dollar',
+        cur_recv:'US Dollar', format:'ACH', capacity:r.amt, simulated:true}]->(d)
 ```
 
 ## `detection.algorithms`
@@ -834,30 +941,30 @@ YIELD node, score
 RETURN node.id AS id, score
 ```
 
-### clue_consistent_edges
-
-Transfer pairs at a member that agree in time and amount
-
-```cypher
-MATCH (y:Account)-[a:TRANSFERS]-(g:Account)-[b:TRANSFERS]-(z:Account)
-WHERE g.id IN $ids AND y <> z AND a.txn_id < b.txn_id AND abs(a.ts - b.ts) <= $win
-  AND abs(a.amount - b.amount) <=
-      $tol * (CASE WHEN a.amount > b.amount THEN a.amount ELSE b.amount END)
-RETURN g.id AS g, y.id AS y, z.id AS z
-LIMIT 20000
-```
-
 ### clue_context
 
 Two-hop context around clue accounts with risk signals
 
 ```cypher
 MATCH (c:Account) WHERE c.id IN $clues
-MATCH (c)-[:FLOWS*1..2]-(n:Account)
+MATCH (c)-[:FLOWS]-(m:Account) WHERE m.in_deg + m.out_deg <= $hub
+OPTIONAL MATCH (m)-[:FLOWS]-(x:Account) WHERE x.in_deg + x.out_deg <= $hub
+WITH collect(DISTINCT m) + collect(DISTINCT x) AS ns
+UNWIND ns AS n
 WITH DISTINCT n
 RETURN n.id AS id, n.bank_id AS bank, coalesce(n.motif_score, 0.0) AS motif,
        coalesce(n.pagerank, 0.0) AS pagerank, coalesce(n.passthrough_pairs, 0) AS pt
 LIMIT 3000
+```
+
+### clue_member_transfers
+
+Transfers of group members (for consistency)
+
+```cypher
+MATCH (g:Account)-[t:TRANSFERS]-(y:Account)
+WHERE g.id IN $ids AND g.in_deg + g.out_deg <= $hub
+RETURN g.id AS g, y.id AS y, t.ts AS ts, t.amount AS amount
 ```
 
 ## `detection.identity`
@@ -926,7 +1033,7 @@ Export the simple digraph for motif precompute
 
 ```cypher
 MATCH (a:Account)-[:FLOWS]->(b:Account)
-RETURN a.id AS s, b.id AS d
+RETURN a.id AS s, b.id AS d ORDER BY s, d SKIP $skip LIMIT $limit
 ```
 
 ### motif_all_accounts
@@ -934,7 +1041,7 @@ RETURN a.id AS s, b.id AS d
 Accounts for motif precompute
 
 ```cypher
-MATCH (a:Account) RETURN a.id AS id
+MATCH (a:Account) RETURN a.id AS id ORDER BY id SKIP $skip LIMIT $limit
 ```
 
 ### motif_read_score
@@ -978,7 +1085,7 @@ Accounts with enough in and out transfers to scan
 ```cypher
 MATCH (x:Account) WHERE x.in_deg >= $m AND x.out_deg >= $m
   AND x.in_deg <= $max_deg AND x.out_deg <= $max_deg
-RETURN x.id AS id
+RETURN x.id AS id ORDER BY id SKIP $skip LIMIT $limit
 ```
 
 ### passthrough_edges
@@ -1680,7 +1787,7 @@ RETURN e.id AS id
 
 46 short queries are written inline (data loading, small lookups, DDL). f-string templates only interpolate labels and relationship types from fixed sets in code, never user input; values are always bound parameters.
 
-- `backend/agents/archivist.py:33`
+- `backend/agents/archivist.py:47`
 
   ```cypher
   MATCH (c:Case) RETURN c.seed_account AS s
@@ -1696,6 +1803,12 @@ RETURN e.id AS id
 
   ```cypher
   CREATE INDEX FOR (t:Task) ON (t.id)
+  ```
+
+- `backend/agents/flow.py:39`
+
+  ```cypher
+  MATCH (c:Case) RETURN count(c) AS n
   ```
 
 - `backend/agents/investigator.py:211`
@@ -1722,31 +1835,25 @@ RETURN e.id AS id
   MATCH (c:Case) OPTIONAL MATCH (cl:Claim) WITH c, collect(cl) AS cls OPTIONAL MATCH (e:Evidence) WITH c, cls, collect(e) AS evs OPTIONAL MATCH (a:Action) RETURN c.id AS id, c.status AS status, c.title AS title, size(cls) AS claims, size(evs) AS evidence, collect(a.kind) AS actions
   ```
 
-- `backend/agents/tools.py:350`
+- `backend/agents/tools.py:355`
 
   ```cypher
   MATCH (c:Case) OPTIONAL MATCH (cl:Claim) WITH c, collect(cl) AS cls OPTIONAL MATCH (e:Evidence) WITH c, cls, collect(e) AS evs OPTIONAL MATCH (a:Action) RETURN c.id AS id, c.status AS status, c.title AS title, size(cls) AS claims, size(evs) AS evidence, collect(a.kind) AS actions
   ```
 
-- `backend/agents/tools.py:256`
+- `backend/agents/tools.py:261`
 
   ```cypher
   MATCH (a:Account) RETURN a.id AS id
   ```
 
-- `backend/agents/triage.py:54`
+- `backend/agents/triage.py:150`
 
   ```cypher
-  MATCH (a:Account {id:$id}) RETURN a.component_size AS size
+  MATCH (m:Meta {id:'triage_cutoff'}) RETURN m.json AS j
   ```
 
-- `backend/agents/triage.py:65`
-
-  ```cypher
-  MATCH (a:Account {id:$id}) RETURN coalesce(a.passthrough_pairs,0) AS pt, a.community_size AS community
-  ```
-
-- `backend/agents/triage.py:143`
+- `backend/agents/triage.py:248`
 
   ```cypher
   MATCH (a:Account) WHERE a.id IN $ids RETURN DISTINCT a.bank_id AS bank
@@ -1758,19 +1865,19 @@ RETURN e.id AS id
   MATCH (c:Case) RETURN c.id AS id, c.status AS status, c.title AS title, c.seed_account AS seed, c.seed_alert AS alert, c.bank_scope AS banks, c.opened_at AS opened_at
   ```
 
-- `backend/app/routers/demo.py:71`
+- `backend/app/routers/demo.py:70`
 
   ```cypher
   MATCH (n) WHERE n:Task OR n:Case OR n:Claim OR n:Decision DETACH DELETE n
   ```
 
-- `backend/app/routers/demo.py:85`
+- `backend/app/routers/demo.py:84`
 
   ```cypher
   MATCH (al:Alert {status:'open'}) WHERE al.tasked IS NULL SET al.tasked = -1 RETURN al.id AS id
   ```
 
-- `backend/app/routers/demo.py:93`
+- `backend/app/routers/demo.py:92`
 
   ```cypher
   MATCH (al:Alert {id:$id}) REMOVE al.tasked
@@ -1788,70 +1895,64 @@ RETURN e.id AS id
   MATCH (e:Evidence {kind:'shared_attr'}) WHERE e.state <> 'superseded' AND e.origin STARTS WITH 'attr:A' RETURN e.origin AS o
   ```
 
-- `backend/app/services/baseline.py:68`
+- `backend/app/services/baseline.py:71`
 
   ```cypher
   CREATE INDEX FOR (al:Alert) ON (al.id)
   ```
 
-- `backend/app/services/baseline.py:69`
+- `backend/app/services/baseline.py:72`
 
   ```cypher
   CREATE INDEX FOR (al:Alert) ON (al.status)
   ```
 
-- `backend/app/services/kyc_synth.py:45`
-
-  ```cypher
-  MATCH (a:Account) RETURN a.id AS id, a.bank_id AS bank
-  ```
-
-- `backend/app/services/kyc_synth.py:113`
+- `backend/app/services/kyc_synth.py:114`
 
   ```cypher
   MATCH (n) WHERE n:Person OR n:Company OR n:Device OR n:IP OR n:Address DETACH DELETE n
   ```
 
-- `backend/app/services/kyc_synth.py:132`
+- `backend/app/services/kyc_synth.py:134`
 
   ```cypher
   UNWIND $rows AS r MATCH (a:Account {id:r.a}) MATCH (p {id:r.p}) WHERE p:Person OR p:Company CREATE (p)-[:OWNS {valid_from:0, name_on_account:r.n}]->(a)
   ```
 
-- `backend/app/services/kyc_synth.py:129`
-
-  ```cypher
-  f'UNWIND $rows AS r CREATE (:{label} {{id:r.id, name:r.name, name_norm:r.norm, kyc_id:r.id}})'
-  ```
-
-- `backend/app/services/kyc_synth.py:141`
+- `backend/app/services/kyc_synth.py:143`
 
   ```cypher
   f"UNWIND $rows AS r CREATE (x:{label} {{id:r.id, kind:r.kind,\n shared_count:r.shared, units:coalesce(r.units, 1),\n text:coalesce(r.text, '')}})"
   ```
 
-- `backend/app/services/kyc_synth.py:144`
+- `backend/app/services/kyc_synth.py:146`
 
   ```cypher
   f'CREATE INDEX FOR (x:{label}) ON (x.id)'
   ```
 
-- `backend/app/services/kyc_synth.py:147`
+- `backend/app/services/kyc_synth.py:149`
 
   ```cypher
   f'UNWIND $rows AS r MATCH (a:Account {{id:r.a}})\n MATCH (x {{id:r.x}}) WHERE x:Device OR x:IP OR x:Address\n CREATE (a)-[:{rel} {{first_seen:0}}]->(x)'
   ```
 
-- `backend/app/services/kyc_synth.py:151`
+- `backend/app/services/kyc_synth.py:153`
 
   ```cypher
   f"CALL db.idx.fulltext.createNodeIndex('{label}', {{field:'name', phonetic:'dm:en'}})"
   ```
 
-- `backend/app/services/kyc_synth.py:153`
+- `backend/app/services/kyc_synth.py:155`
 
   ```cypher
   f'CREATE INDEX FOR (p:{label}) ON (p.id)'
+  ```
+
+- `backend/app/services/kyc_synth.py:131`
+
+  ```cypher
+  f'UNWIND $rows AS r CREATE (:{label} {{id:r.id, name:r.name, name_norm:r.norm, kyc_id:r.id}})'
   ```
 
 - `backend/app/services/loader.py:146`
@@ -1900,6 +2001,12 @@ RETURN e.id AS id
 
   ```cypher
   MATCH (n) WHERE n:Account OR n:ExternalAccount OR n:OtherBank RETURN count(n) AS c
+  ```
+
+- `backend/app/services/simulator.py:61`
+
+  ```cypher
+  MATCH (m:Meta {id:'dataset'}) RETURN m.json AS j
   ```
 
 - `backend/detection/casegraph.py:60`

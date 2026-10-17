@@ -14,7 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import db, events
 from app.config import get_settings
 from app.events import CHANNEL_PREFIX
-from app.routers import actions, alerts, cases, demo, evals, network, sar, tools_api, trust
+from app.routers import (actions, alerts, cases, demo, evals, network, overview, sar,
+                         tools_api, trust)
 
 
 @asynccontextmanager
@@ -32,7 +33,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="BankWeave", version="1.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
                    allow_methods=["*"], allow_headers=["*"])
-for r in (alerts, cases, sar, actions, network, trust, evals, demo, tools_api):
+for r in (alerts, cases, sar, actions, network, trust, evals, demo, tools_api, overview):
     app.include_router(r.router)
 
 

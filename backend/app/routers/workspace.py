@@ -103,6 +103,17 @@ YIELD maxFlow
 RETURN maxFlow
 """)
 
+FREEZE_FLOW_EDGES = cy("freeze_flow_decomposition", "Max-flow edges and their flows (who carries the money)", """
+MATCH (s:Account) WHERE s.id IN $sources
+WITH collect(s) AS srcs
+MATCH (t:Account) WHERE t.id IN $sinks
+WITH srcs, collect(t) AS tgts
+CALL algo.maxFlow({sourceNodes:srcs, targetNodes:tgts, relationshipTypes:['FLOWS'],
+                   capacityProperty:'capacity', nodeLabels:['Account']})
+YIELD maxFlow, edges, edgeFlows
+RETURN maxFlow, [e IN edges | endNode(e).id] AS heads, edgeFlows
+""")
+
 FREEZE_WCC = cy("freeze_components", "Connected components of the case money graph", """
 CALL algo.wcc({nodeLabels:['Account'], relationshipTypes:['FLOWS']})
 YIELD node, componentId
@@ -135,13 +146,25 @@ def simulate_freeze(case_id: str, body: Freeze):
     if not account:
         rec = db.ro(g, "MATCH (a:Action {kind:'freeze_rec'}) RETURN a.target AS t LIMIT 1")
         account = rec[0]["t"] if rec else None
+    ends = db.ro(g, FLOW_ENDS)
+    if not any(e["outs"] for e in ends):
+        raise HTTPException(400, "this case graph has no money-flow (FLOWS) edges to simulate on")
+    if not account:  # the intermediary that carries the most money in the max-flow solution
+        src = [e["id"] for e in ends if e["outs"] and not e["ins"]]
+        snk = [e["id"] for e in ends if e["ins"] and not e["outs"]]
+        if src and snk:
+            r = db.ro(g, FREEZE_FLOW_EDGES, {"sources": src, "sinks": snk}, timeout=10000)
+            carried: dict[str, float] = {}
+            for head, f in zip(r[0]["heads"], r[0]["edgeFlows"]) if r else []:
+                carried[head] = carried.get(head, 0.0) + f
+            inner = {k: v for k, v in carried.items() if k not in snk} or carried
+            account = max(inner, key=inner.get) if inner else None
     if not account:
         pr = db.ro(g, "CALL algo.pageRank('Account', 'FLOWS') YIELD node, score "
                       "RETURN node.id AS id ORDER BY score DESC LIMIT 1")
         account = pr[0]["id"] if pr else None
     if not account:
         raise HTTPException(400, "case graph has no accounts")
-    ends = db.ro(g, FLOW_ENDS)
     sources = [e["id"] for e in ends if e["outs"] and not e["ins"] and e["id"] != account]
     sinks = [e["id"] for e in ends if e["ins"] and not e["outs"] and e["id"] != account]
     if not sources or not sinks:  # a closed cycle has no pure sources or sinks

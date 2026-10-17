@@ -42,10 +42,29 @@ def main(k: int, r: int, random_runs: int) -> None:
         x["id"] for x in db.ro_all(db.CONSORTIUM, "MATCH (a:Account) RETURN a.id AS id ORDER BY id "
                                         "SKIP $skip LIMIT $limit"))) / n_acc, 4)
     res["paper_hi_small_k200_r1"] = {"random": 0.024, "degree": 0.137, "motif": 0.226}
+    # account-level ranking quality of each score (why the feeds behave as they do)
+    import numpy as np
+    from detection.settings import cfg
+    out_, in_, nodes = ms.load_digraph(db.CONSORTIUM)
+    y = np.array([n in illicit for n in nodes])
+
+    def auc(score):
+        sc = np.array(score, float)
+        ranks = np.empty(len(sc))
+        ranks[np.argsort(sc, kind="mergesort")] = np.arange(len(sc))
+        return round(float((ranks[y].mean() - (y.sum() - 1) / 2) / (len(sc) - y.sum())), 4)
+    p0 = dict(cfg()["motif"])
+    p1 = {**p0, "gamma": 0.0}
+    m0, m1 = ms.scores(out_, in_, nodes, p0), ms.scores(out_, in_, nodes, p1)
+    res["account_auc"] = {
+        "motif_paper_params": auc([m0[n]["score"] for n in nodes]),
+        "motif_no_degree_penalty": auc([m1[n]["score"] for n in nodes]),
+        "degree": auc([len(out_[n]) + len(in_[n]) for n in nodes]),
+        "degree_imbalance": auc([abs(len(out_[n]) - len(in_[n])) for n in nodes])}
     write("E3_spnsa_hunt", dataset_label(), {"k": k, "r": r, "accounts": n_acc}, res,
           ["motif uses the paper's HI-Small parameters (gamma=0.8). motif_no_degree_penalty "
            "(gamma=0) is a post-hoc ablation added after seeing that the degree penalty inverts "
-           "the score on this slice (account-level AUC 0.373 vs 0.646); treat it as exploratory.",
+           "the score on this slice (see account_auc); treat it as exploratory.",
            "We use FalkorDB PageRank in place of eigenvector centrality (not available natively).",
            "Our graph is the top-20-bank consortium slice of HI-Small, not the paper's full "
            "largest WCC, so absolute ratios are not directly comparable."])

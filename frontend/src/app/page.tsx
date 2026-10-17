@@ -1,103 +1,121 @@
-import Image from "next/image";
+"use client";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import ActivityFeed from "@/components/ActivityFeed";
+import { get, short } from "@/lib/api";
+import { bankColor, setBankOrder } from "@/lib/banks";
+import { useLiveReload } from "@/lib/useEvents";
 
-export default function Home() {
+type Alert = { id: string; account: string; bank: string; rule: string; reason: string; status: string;
+  case_id?: string; cleared_reason?: string };
+
+const FILTERS = [["all", "All"], ["open", "Waiting"], ["cleared", "Cleared"], ["case", "Escalated to a case"]] as const;
+
+export default function Queue() {
+  const [data, setData] = useState<{ alerts: Alert[]; counts: Record<string, number>; total: number } | null>(null);
+  const [filter, setFilter] = useState<string>("all");
+  const [open, setOpen] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    get(`/alerts?limit=300${filter === "all" ? "" : `&status=${filter}`}`)
+      .then((d) => { setData(d); setError(null); })
+      .catch(() => setError("The API isn't reachable. Start the backend with `uvicorn app.main:app`."));
+  }, [filter]);
+  useEffect(() => { load(); get("/network/banks").then((b) => setBankOrder(b.banks ?? [])).catch(() => {}); }, [load]);
+  useLiveReload(load, (e) => e.type === "alert" || e.type === "case");
+
+  const c = data?.counts ?? {};
+  const escalated = c.case ?? 0;
+  const decided = (c.cleared ?? 0) + escalated;
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="min-w-0">
+        <h1>Alert queue</h1>
+        <p className="mt-2 max-w-[65ch] text-muted">
+          Rule-based monitoring would send all <b className="text-paper">{data?.total ?? "…"}</b> alerts to analysts.
+          BankWeave has decided <b className="text-paper">{decided}</b> so far and escalated{" "}
+          <b className="text-ring">{escalated}</b>, each with a reason you can open.
+        </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        <div role="tablist" className="mt-6 flex flex-wrap gap-2 text-sm">
+          {FILTERS.map(([k, label]) => (
+            <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}
+              className={`rounded px-3 py-1.5 border ${filter === k ? "border-paper text-paper" : "border-line text-muted hover:text-paper"}`}>
+              {label} <span className="text-muted">{k === "all" ? data?.total ?? "" : c[k] ?? 0}</span>
+            </button>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {error && <p className="mt-6 text-verify">{error}</p>}
+        <table className="mt-4 w-full text-sm">
+          <thead className="text-left text-muted">
+            <tr className="border-b border-line">
+              <th className="py-2 pr-3 font-normal">Account</th>
+              <th className="py-2 pr-3 font-normal">Rule that fired</th>
+              <th className="py-2 font-normal">Outcome</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data?.alerts.map((a) => (
+              <AlertRow key={a.id} a={a} open={open === a.id} toggle={() => setOpen(open === a.id ? null : a.id)} />
+            ))}
+          </tbody>
+        </table>
+        {data && !data.alerts.length && <p className="mt-6 text-muted">No alerts here. Generate alerts from Demo control.</p>}
+      </div>
+      <ActivityFeed />
     </div>
   );
 }
+
+function AlertRow({ a, open, toggle }: { a: Alert; open: boolean; toggle: () => void }) {
+  const [detail, setDetail] = useState<any>(null);
+  useEffect(() => { if (open && !detail) get(`/alerts/${a.id}`).then(setDetail).catch(() => {}); }, [open, detail, a.id]);
+  const signals = detail?.signals ? JSON.parse(detail.signals) : null;
+  return (
+    <>
+      <tr className="border-b border-line/60 hover:bg-panel/60 cursor-pointer" onClick={toggle}>
+        <td className="py-2 pr-3 whitespace-nowrap">
+          <span className="inline-block size-2 rounded-full mr-2 align-middle" style={{ background: bankColor(a.bank) }} />
+          <span className="mono">{short(a.account, 8)}</span>
+          <span className="ml-2 text-muted">bank {a.bank}</span>
+        </td>
+        <td className="py-2 pr-3 text-paper/85">{a.reason}</td>
+        <td className="py-2">
+          {a.status === "open" && <span className="text-muted">Waiting for triage</span>}
+          {a.status === "cleared" && <span className="text-ok">Cleared: <span className="text-paper/80">{a.cleared_reason}</span></span>}
+          {a.status === "case" && (
+            <Link href={`/cases/${a.case_id}`} onClick={(e) => e.stopPropagation()} className="text-ring hover:underline">
+              Case <span className="mono">{a.case_id}</span>
+            </Link>
+          )}
+        </td>
+      </tr>
+      {open && (
+        <tr className="bg-panel/40">
+          <td colSpan={3} className="px-4 py-3 text-sm">
+            {!signals && <span className="text-muted">{a.status === "open" ? "Not triaged yet." : "Loading the signals triage used…"}</span>}
+            {signals && (
+              <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2">
+                <Sig k="Connected component" v={`${signals.component_size} accounts, ${signals.component_banks} bank(s)`} />
+                <Sig k="Motif score" v={signals.motif_score} />
+                <Sig k="Cross-bank counterparties" v={signals.cross_bank_counterparties} />
+                <Sig k="Typologies" v={signals.typologies.join(", ") || "none"} />
+                <Sig k="Tight shared identity" v={signals.shared_identity_tight} />
+                <Sig k="Broad shared identity" v={signals.shared_identity_broad} />
+                <Sig k="Pass-through pairs" v={signals.passthrough_pairs} />
+                <Sig k="Prior cases" v={signals.prior_cases.join(", ") || "none"} />
+              </dl>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+const Sig = ({ k, v }: { k: string; v: any }) => (
+  <div><dt className="text-muted text-xs">{k}</dt><dd>{String(v)}</dd></div>
+);

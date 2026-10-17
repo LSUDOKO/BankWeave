@@ -39,6 +39,10 @@ export default function Demo() {
             <button onClick={() => act("/demo/worker/start", {}, "Start agents")} className="btn">Start agents</button>
             <button onClick={() => act("/demo/stream", { rate_per_sec: 3, seconds: 60 }, "Stream alerts")} className="btn-quiet">Stream alerts in gradually</button>
           </Step>
+          <Step title="Red team, then hunt" body="Inject a new cross-bank ring that keeps every amount under the alert rules, so no alert fires. Then run hunt mode: motif seeds and shortest-path subgraphs find suspicious regions with no alert at all and hand them to the agents.">
+            <button onClick={() => act("/demo/red_team", { size: 5 }, "Inject evasive ring")} className="rounded border border-ring text-ring px-3 py-1.5">Inject evasive ring</button>
+            <button onClick={() => act("/demo/hunt", {}, "Hunt")} className="btn-quiet">Run hunt mode</button>
+          </Step>
           <Step title="Kill and resume" body="Stops the agents mid-task without releasing their claims. Restart them: stale tasks are reset from their heartbeats and the work continues from the graph.">
             <button onClick={() => act("/demo/worker/kill", {}, "Kill agents")} className="rounded border border-ring text-ring px-3 py-1.5">Kill agents</button>
             <button onClick={() => act("/demo/worker/start", {}, "Restart agents")} className="btn-quiet">Restart agents</button>

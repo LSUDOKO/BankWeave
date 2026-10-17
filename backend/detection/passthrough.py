@@ -26,6 +26,7 @@ RETURN ins, collect({txn:o.txn_id, ts:o.ts, amt:o.amount, cur:o.cur, cp:d.id}) A
 
 CANDIDATES = cy("passthrough_candidates", "Accounts with enough in and out transfers to scan", """
 MATCH (x:Account) WHERE x.in_deg >= $m AND x.out_deg >= $m
+  AND x.in_deg <= $max_deg AND x.out_deg <= $max_deg
 RETURN x.id AS id
 """)
 
@@ -66,7 +67,7 @@ def match_pairs(ins: list[dict], outs: list[dict], p: dict | None = None) -> lis
 
 def check(graph: str, account_id: str) -> dict:
     p = cfg()["passthrough"]
-    rows = db.ro(graph, EDGES, {"id": account_id})
+    rows = db.ro(graph, EDGES, {"id": account_id}, timeout=30000)
     if not rows:
         return {"result": {"pairs": [], "flagged": False, "value": 0.0}, "cypher": EDGES,
                 "params": {"id": account_id}}
@@ -101,7 +102,9 @@ def chain_value(pairs_by_account: dict[str, list[dict]]) -> dict:
 def scan(graph: str = db.CONSORTIUM) -> dict:
     p = cfg()["passthrough"]
     flagged: dict[str, list[dict]] = {}
-    for r in db.ro(graph, CANDIDATES, {"m": p["min_pairs"]}):
+    # hubs (payroll, merchants) are skipped: pair matching is quadratic and hubs aren't relays
+    for r in db.ro(graph, CANDIDATES, {"m": p["min_pairs"], "max_deg": p.get("max_degree", 500)},
+                   timeout=60000):
         res = check(graph, r["id"])["result"]
         db.q(graph, WRITE, {"id": r["id"], "pairs": res["n_pairs"] if res["pairs"] else 0,
                             "value": res["value"]})

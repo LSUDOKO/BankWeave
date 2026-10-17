@@ -48,10 +48,10 @@ RETURN a.id AS id, a.motif_score AS score ORDER BY score DESC LIMIT $k
 
 def load_digraph(graph: str) -> tuple[dict[str, set], dict[str, set], list[str]]:
     out_, in_ = defaultdict(set), defaultdict(set)
-    for r in db.ro(graph, ADJACENCY):
+    for r in db.ro(graph, ADJACENCY, timeout=300000):
         out_[r["s"]].add(r["d"])
         in_[r["d"]].add(r["s"])
-    nodes = [r["id"] for r in db.ro(graph, ALL_ACCOUNTS)]
+    nodes = [r["id"] for r in db.ro(graph, ALL_ACCOUNTS, timeout=120000)]
     return out_, in_, nodes
 
 

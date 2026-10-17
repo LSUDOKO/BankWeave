@@ -41,10 +41,11 @@ RETURN count(n) AS n
 def run(graph: str = db.CONSORTIUM) -> dict:
     t0 = time.time()
     out = {
-        "pagerank": db.q(graph, STORE_PAGERANK)[0]["n"],
-        "wcc": db.q(graph, STORE_WCC)[0]["n"],
+        "pagerank": db.q(graph, STORE_PAGERANK, timeout=300000)[0]["n"],
+        "wcc": db.q(graph, STORE_WCC, timeout=300000)[0]["n"],
         "community": db.q(graph, STORE_COMMUNITY,
-                          {"iters": cfg()["algorithms"]["label_propagation_iterations"]})[0]["n"],
+                          {"iters": cfg()["algorithms"]["label_propagation_iterations"]},
+                          timeout=300000)[0]["n"],
         "motif": motif_seeds.compute_and_store(graph),
         "passthrough": passthrough.scan(graph),
     }

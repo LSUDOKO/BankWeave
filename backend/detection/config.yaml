@@ -10,6 +10,7 @@ passthrough:
   min_similarity: 0.98          # epsilon_sim
   min_amount: 1000              # p_min
   min_pairs: 3                  # m_min
+  max_degree: 500               # skip hub accounts in the graph-wide scan
 motif:                          # paper 2610.13280 parameters for IBM HI-Small
   alpha: 0.2
   beta: 0.3

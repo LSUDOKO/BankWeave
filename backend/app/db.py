@@ -82,6 +82,22 @@ def ro(graph_name: str, cypher: str, params: dict | None = None,
     return _rows(graph(graph_name).ro_query(cypher, params or {}, timeout=timeout))
 
 
+PAGE = 10000  # FalkorDB's default RESULTSET_SIZE; larger results are silently truncated
+
+
+def ro_all(graph_name: str, cypher: str, params: dict | None = None,
+           timeout: int | None = 120000) -> list[dict[str, Any]]:
+    """Read every row of a query that ends with `SKIP $skip LIMIT $limit` (and an ORDER BY)."""
+    out: list[dict[str, Any]] = []
+    skip = 0
+    while True:
+        page = ro(graph_name, cypher, {**(params or {}), "skip": skip, "limit": PAGE}, timeout)
+        out += page
+        if len(page) < PAGE:
+            return out
+        skip += PAGE
+
+
 def list_graphs() -> list[str]:
     return list(get_db().list_graphs())
 

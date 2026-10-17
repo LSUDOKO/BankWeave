@@ -9,16 +9,22 @@ from app import db
 from app.cypher import cy
 from detection.settings import cfg
 
-CIRCULAR = cy("typology_circular_flow", "Money returns to its origin in time order", """
-MATCH p = (a:Account {id:$id})-[:TRANSFERS*2..6]->(a)
-WITH p, relationships(p) AS ts
-WHERE all(i IN range(0, size(ts)-2) WHERE ts[i].ts < ts[i+1].ts)
-  AND ts[size(ts)-1].ts - ts[0].ts <= $window
-RETURN [t IN ts | t.txn_id] AS txn_ids,
-       [t IN ts | startNode(t).id] AS srcs,
-       [t IN ts | t.amount] AS amounts
-LIMIT 20
+CIRCULAR_START = cy("typology_circular_start", "Outgoing transfers that may open a cycle", """
+MATCH (a:Account {id:$id})-[t:TRANSFERS]->(b:Account)
+WHERE b.id <> $id
+RETURN b.id AS node, t.ts AS ts, t.txn_id AS txn, t.amount AS amount
+ORDER BY t.ts LIMIT $cap
 """)
+
+CIRCULAR_STEP = cy("typology_circular_step", "One time-respecting hop of cycle search", """
+UNWIND $frontier AS f
+MATCH (x:Account {id:f.node})-[t:TRANSFERS]->(y:Account)
+WHERE t.ts > f.ts AND t.ts <= f.t0 + $window
+RETURN f.pid AS pid, y.id AS node, t.ts AS ts, t.txn_id AS txn, t.amount AS amount
+LIMIT $cap
+""")
+
+CIRCULAR = CIRCULAR_STEP
 
 FAN_OUT_EDGES = cy("typology_fan_out_edges", "Outgoing transfers ordered by time (fan-out)", """
 MATCH (a:Account {id:$id})-[t:TRANSFERS]->(b)
@@ -75,12 +81,47 @@ def _out(found, matches, cypher, params):
     return {"found": bool(found), "matches": matches, "cypher": cypher, "params": params}
 
 
-def circular_flow(graph: str, account_id: str, window: int | None = None) -> dict:
-    p = {"id": account_id, "window": window or cfg()["cycle_window_seconds"]}
-    rows = db.ro(graph, CIRCULAR, p)
-    matches = [{"accounts": r["srcs"] + [r["srcs"][0]], "txn_ids": r["txn_ids"],
-                "amounts": r["amounts"]} for r in rows]
-    return _out(matches, matches, CIRCULAR, p)
+def circular_flow(graph: str, account_id: str, window: int | None = None,
+                  max_hops: int | None = None, cap: int = 4000) -> dict:
+    """Time-ordered cycles back to the account, found by iterative temporal expansion.
+
+    Each hop is one Cypher query over the frontier, following only transfers later than the
+    previous hop and inside the window - so the search stays small even at hub accounts.
+    """
+    window = window or cfg()["cycle_window_seconds"]
+    max_hops = max_hops or cfg()["cycle_max_hops"]
+    p = {"id": account_id, "window": window, "cap": cap}
+    paths = {}
+    frontier = []
+    for i, r in enumerate(db.ro(graph, CIRCULAR_START, p)):
+        pid = f"p{i}"
+        paths[pid] = {"nodes": [account_id, r["node"]], "txns": [r["txn"]],
+                      "amounts": [r["amount"]], "t0": r["ts"]}
+        frontier.append({"pid": pid, "node": r["node"], "ts": r["ts"], "t0": r["ts"]})
+    matches = []
+    for _ in range(max_hops - 1):
+        if not frontier:
+            break
+        nxt = []
+        for r in db.ro(graph, CIRCULAR_STEP, {"frontier": frontier, "window": window,
+                                              "cap": cap}):
+            base = paths[r["pid"]]
+            if r["node"] == account_id:
+                matches.append({"accounts": base["nodes"] + [account_id],
+                                "txn_ids": base["txns"] + [r["txn"]],
+                                "amounts": base["amounts"] + [r["amount"]]})
+                continue
+            if r["node"] in base["nodes"]:
+                continue  # simple cycles only
+            pid = f"{r['pid']}.{len(paths)}"
+            paths[pid] = {"nodes": base["nodes"] + [r["node"]], "txns": base["txns"] + [r["txn"]],
+                          "amounts": base["amounts"] + [r["amount"]], "t0": base["t0"]}
+            nxt.append({"pid": pid, "node": r["node"], "ts": r["ts"], "t0": base["t0"]})
+        frontier = nxt[:cap]
+        if len(matches) >= 20:
+            break
+    matches.sort(key=lambda m: len(m["txn_ids"]))
+    return _out(matches, matches[:20], CIRCULAR_STEP, p)
 
 
 def _burst(rows: list[dict], window: int, min_fan: int) -> list[dict]:

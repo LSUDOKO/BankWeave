@@ -21,3 +21,5 @@ eval/ground_truth.json
 # OS
 .DS_Store
 eval/*ground_truth.json
+.playwright-mcp/
+.vscode/

@@ -150,8 +150,8 @@ def open_case(alert_id: str, account_id: str, banks: list[str], title: str,
         capacity.prune()
     except Exception:  # noqa: BLE001
         pass
-    for label in ("Claim", "Evidence", "Action", "Event", "Account", "SAR", "Sentence"):
-        db.try_query(g, f"CREATE INDEX FOR (n:{label}) ON (n.id)")
+    # no id indexes here: a case graph holds ~100 nodes, a label scan is instant, and each
+    # index costs ~110 KB, which matters on a 100 MB cloud instance
     db.q(g, CREATE_CASE, {"id": cid, "alert": alert_id, "account": account_id,
                           "banks": banks, "title": title})
     db.q(consortium, MIRROR_CASE, {"id": cid, "alert": alert_id, "account": account_id,

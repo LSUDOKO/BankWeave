@@ -1,0 +1,30 @@
+# Detection thresholds. Tuned on the dev split only; documented in README.
+reporting_threshold: 10000      # structuring: amounts in [0.85*thr, thr)
+structuring_min_count: 3
+fan_window_seconds: 86400       # fan-in / fan-out burst window
+fan_min_degree: 5
+cycle_max_hops: 6
+cycle_window_seconds: 604800    # 7 days
+passthrough:
+  max_gap_seconds: 86400        # T-bar (paper used ~3.5h on Ethereum)
+  min_similarity: 0.98          # epsilon_sim
+  min_amount: 1000              # p_min
+  min_pairs: 3                  # m_min
+motif:                          # paper 2610.13280 parameters for IBM HI-Small
+  alpha: 0.2
+  beta: 0.3
+  gamma: 0.8
+  tau: 15.0
+  s_in: 0.3
+  s_out: 0.4
+  s_leaf: 0.6
+  d_leaf: 2
+  centers: 5
+  d_max: 2
+triage:
+  clear_if_component_size_below: 3
+  case_if_motif_score_above: 1.0
+algorithms:
+  betweenness_sampling_size: 64
+  betweenness_seed: 42
+  label_propagation_iterations: 10

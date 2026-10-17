@@ -1,12 +1,15 @@
 services:
   falkordb:
+    restart: unless-stopped
     image: falkordb/falkordb:latest
     ports: ["6390:6379", "3030:3000"]
     volumes: ["falkor_data:/var/lib/falkordb/data"]
   redis:
+    restart: unless-stopped
     image: redis:7-alpine
     ports: ["6391:6379"]
   postgres:
+    restart: unless-stopped
     image: postgres:16
     environment: { POSTGRES_PASSWORD: bankweave, POSTGRES_DB: kyc }
     ports: ["5440:5432"]

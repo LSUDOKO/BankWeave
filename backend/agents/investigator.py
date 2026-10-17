@@ -197,6 +197,40 @@ def build_claims(case_id: str, seed: str, members: list[dict]) -> list[str]:
     return made
 
 
+LINK_TYPOLOGY = cy("claim_matches_typology", "Link a claim to a named typology (mirrored)", """
+MATCH (c:Claim {id:$claim})
+MERGE (t:Typology {id:$typology}) SET t.name = $name, t.source_doc = $chunk
+MERGE (c)-[m:MATCHES_TYPOLOGY]->(t) SET m.score = $score
+""")
+
+
+def cite_typologies(case_id: str) -> list[str]:
+    """Map detector hits to named typologies and cite the guidance as `doc:` evidence."""
+    from knowledge import typology_kb
+    g = db.case_graph(case_id)
+    ring = db.ro(g, "MATCH (c:Claim {kind:'ring'}) RETURN c.id AS id LIMIT 1")
+    if not ring:
+        return []
+    pats = {r["p"] for r in db.ro(g, "MATCH (e:Evidence {kind:'typology_match'}) "
+                                     "RETURN split(e.origin, ':')[1] AS p")}
+    out = []
+    for p in sorted(pats):
+        tid = typology_kb.DETECTOR_TO_TYPOLOGY.get(p)
+        t = typology_kb.typology(tid) if tid else None
+        if not t:
+            continue
+        eid = store.add_evidence(case_id, "doc", store.origin_for("doc", chunk=t["chunk"]),
+                                 f"matches named typology '{t['name']}' "
+                                 f"(guidance: {t['sources'].split(' ; ')[0]})",
+                                 {"typology": tid, "indicators": t["indicators"]},
+                                 typology_kb.GET, "investigator")
+        store.support(case_id, ring[0]["id"], eid)
+        db.q(g, LINK_TYPOLOGY, {"claim": ring[0]["id"], "typology": tid, "name": t["name"],
+                                "chunk": t["chunk"], "score": 1.0})
+        out.append(tid)
+    return out
+
+
 def _llm_claims(case_id: str, steps: list[dict]) -> list[str]:
     made = []
     for s in steps:
@@ -234,6 +268,9 @@ def run(case_id: str, round_: int = 0) -> dict:
     made = _llm_claims(case_id, steps)
     if not made:
         made = build_claims(case_id, seed, members)
+    typs = cite_typologies(case_id) if not rebuttal else []
+    if typs:
+        store.log_event(case_id, "investigator", "cited_typologies", {"typologies": typs})
     for cid in [c["id"] for c in db.ro(g, CLAIMS)]:
         echo.echo_check(case_id, cid)
     store.log_event(case_id, "investigator", "done",

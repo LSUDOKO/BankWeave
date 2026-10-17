@@ -383,3 +383,16 @@ def _summarize(out: dict) -> str:
 def describe(agent: str) -> list[dict]:
     return [{"name": t.name, "description": t.description, "params": t.params}
             for t in REGISTRY.values() if agent in t.agents]
+
+
+@tool("kb_query", "Typology guidance with citations (abstains when unsupported)",
+      ("investigator", "skeptic", "reporter", "analyst"), records=True)
+def kb_query(ctx: Ctx, question: str) -> dict:
+    from knowledge import typology_kb
+    r = typology_kb.kb_query(question)
+    ids = []
+    for c in r["citations"][:1]:
+        ids.append(_ev(ctx, "doc", store.origin_for("doc", chunk=c["chunk"]),
+                       f"typology guidance '{c['name']}' ({c['sources']})", c, r["cypher"], []))
+    r["evidence_ids"] = [i for i in ids if i]
+    return r

@@ -25,11 +25,12 @@ export default function Scoreboard() {
 
       {e1 && (
         <Section e={e1} title="Fewer alerts escalated, more of them real">
-          <p className="text-sm text-muted max-w-[68ch]">Alerted accounts in the later half of the period ({e1.params.test_accounts}, of which {e1.params.illicit_in_test} illicit). The cutoff was tuned on the earlier half only.</p>
+          <p className="text-sm text-muted max-w-[68ch]">Alerted accounts in the later half of the period ({e1.params.test_accounts.toLocaleString()}, of which {e1.params.illicit_in_test} illicit). Weights and thresholds came from the earlier half only.</p>
           <MetricTable rows={[
             ["Rule-based: escalate everything", e1.results.baseline_escalate_all, BASE],
             [`Rules without the graph (≥${e1.params.no_graph_rules_k} rules fired)`, e1.results.no_graph_rules, BASE],
-            ["BankWeave triage on the graph", e1.results.bankweave_triage, BLUE],
+            ["Graph score, hand weights (no labels)", e1.results.graph_hand_weights, BASE],
+            ["Graph score, calibrated on the dev split", e1.results.graph_calibrated, BLUE],
           ]} />
         </Section>
       )}
@@ -37,13 +38,14 @@ export default function Scoreboard() {
       {e2 && (
         <Section e={e2} title="Rings a single bank can't see">
           <div className="flex flex-wrap gap-10">
-            <Tile label="Cross-bank laundering attempts" value={String(e2.results.attempts)} />
-            <Tile label="Seen as one structure by the consortium" value={pct(e2.results.detection_rate_consortium)} accent />
-            <Tile label="…by the best single bank" value={pct(e2.results.detection_rate_best_single_bank)} />
+            <Tile label="Laundering groups spanning banks" value={String(e2.results.attempts)} />
+            <Tile label="Share of a ring's accounts the best-placed bank holds" value={pct(e2.results.best_single_bank.mean_accounts_held)} accent />
+            <Tile label="Rings fully held by one bank" value={pct(e2.results.best_single_bank.attempts_fully_held)} />
           </div>
           <Bars max={1} rows={[
-            ["Consortium: mean share of the attempt connected", e2.results.mean_visibility_consortium, BLUE],
-            ["Best single bank", e2.results.mean_visibility_best_single_bank, BASE],
+            ["Consortium: ring accounts it can investigate", e2.results.consortium.mean_accounts_held, BLUE],
+            ["Best single bank: ring accounts it can investigate", e2.results.best_single_bank.mean_accounts_held, BASE],
+            ["Best single bank: laundering transfers it observes", e2.results.best_single_bank.mean_transfers_visible, BASE],
           ]} />
         </Section>
       )}
@@ -54,8 +56,10 @@ export default function Scoreboard() {
           <Bars max={Math.max(0.3, e3.results.motif.illicit_ratio, e3.results.degree.illicit_ratio) * 1.1} rows={[
             [`Random seeds (mean of ${e3.results.random.runs})`, e3.results.random.illicit_ratio, BASE, e3.results.paper_hi_small_k200_r1.random],
             ["Degree-imbalance seeds", e3.results.degree.illicit_ratio, BASE, e3.results.paper_hi_small_k200_r1.degree],
-            ["Motif-coherent seeds", e3.results.motif.illicit_ratio, BLUE, e3.results.paper_hi_small_k200_r1.motif],
+            ["Motif-coherent seeds (paper parameters)", e3.results.motif.illicit_ratio, BLUE, e3.results.paper_hi_small_k200_r1.motif],
+            ...(e3.results.motif_no_degree_penalty ? [["Motif, no degree penalty (post-hoc ablation)", e3.results.motif_no_degree_penalty.illicit_ratio, BASE] as [string, number, string]] : []),
           ]} />
+          <p className="text-sm text-muted max-w-[68ch]">We did not reproduce the paper&apos;s ranking on this slice: with its parameters the degree penalty inverts the motif score (account-level AUC {e3.results.account_auc?.motif_paper_params ?? "—"}).</p>
         </Section>
       )}
 

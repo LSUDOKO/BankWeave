@@ -15,7 +15,7 @@ from app import db, events
 from app.config import get_settings
 from app.events import CHANNEL_PREFIX
 from app.routers import (actions, alerts, cases, demo, evals, lab, network, overview, sar,
-                         tools_api, trust, workspace)
+                         scenarios, tools_api, trust, workspace)
 
 
 @asynccontextmanager
@@ -34,7 +34,7 @@ app = FastAPI(title="BankWeave", version="1.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
                    allow_methods=["*"], allow_headers=["*"])
 for r in (alerts, cases, sar, actions, network, trust, evals, demo, tools_api, overview, lab,
-          workspace):
+          workspace, scenarios):
     app.include_router(r.router)
 
 

@@ -44,6 +44,11 @@ MATCH (al:Alert {id:$id}) RETURN al.id AS id, al.account_id AS account, al.bank_
 """)
 
 
+RULE_LABEL = {"large_transfer": "Large transfer", "near_threshold_burst": "Near-threshold burst",
+              "new_counterparty_big": "Large payment to a new counterparty",
+              "high_risk_format": "Cash or crypto transfer"}
+
+
 def signals(account: str) -> dict:
     ctx = Ctx(agent="triage", record=False)
     pre = db.ro(db.CONSORTIUM, "MATCH (a:Account {id:$id}) RETURN a.component_size AS size",
@@ -139,7 +144,8 @@ def run(alert_id: str) -> dict:
                                              " RETURN DISTINCT a.bank_id AS bank",
                                              {"ids": members})})
     cid = store.open_case(alert_id, al["account"], banks,
-                          f"{al['rule']} on {al['account'][:6]} ({len(banks)} banks)")
+                          f"{RULE_LABEL.get(al['rule'], al['rule'])} by {al['account'][:6]}, "
+                          f"{len(members)} accounts across {len(banks)} banks")
     db.q(db.CONSORTIUM, CONCERNS, {"case": cid, "ids": members})
     copy_to_case(db.CONSORTIUM, members, db.case_graph(cid))
     store.log_event(cid, "triage", "open_case", {"alert": alert_id, "decision": d,

@@ -162,18 +162,23 @@ def write_graph(name: str, df: pd.DataFrame, bank: str | None,
             db.q(name, "UNWIND $rows AS r MATCH (a:Account {id:r.id}) "
                        "SET a.behavior_vec = vecf32(r.v)", {"rows": chunk})
 
-    erows = [{"s": s, "d": d, "id": t, "ts": int(ts), "amt": float(ap), "recv": float(ar),
-              "cur": cp, "cur_recv": cr, "fmt": f}
-             for s, d, t, ts, ap, ar, cp, cr, f in zip(
-                 df["src"], df["dst"], df["txn_id"], df["ts"], df["amount_paid"],
-                 df["amount_recv"], df["cur_paid"], df["cur_recv"], df["format"])]
-    for chunk in _batches(erows):
-        db.q(name, """UNWIND $rows AS r
-            MATCH (s {id:r.s}) WHERE s:Account OR s:ExternalAccount OR s:OtherBank
-            MATCH (d {id:r.d}) WHERE d:Account OR d:ExternalAccount OR d:OtherBank
-            CREATE (s)-[:TRANSFERS {txn_id:r.id, ts:r.ts, amount:r.amt, amount_recv:r.recv,
-                    cur:r.cur, cur_recv:r.cur_recv, format:r.fmt, capacity:r.amt}]->(d)""",
-             {"rows": chunk})
+    label_of = {k: v["label"] for k, v in accts.items()}
+    groups: dict[tuple[str, str], list[dict]] = {}
+    for s_, d_, t, ts, ap, ar, cp, cr, f in zip(
+            df["src"], df["dst"], df["txn_id"], df["ts"], df["amount_paid"],
+            df["amount_recv"], df["cur_paid"], df["cur_recv"], df["format"]):
+        groups.setdefault((label_of[s_], label_of[d_]), []).append(
+            {"s": s_, "d": d_, "id": t, "ts": int(ts), "amt": float(ap), "recv": float(ar),
+             "cur": cp, "cur_recv": cr, "fmt": f})
+    # labelled endpoints so FalkorDB uses the id index (an unlabelled MATCH scans every node)
+    for (ls, ld), rows in groups.items():
+        for chunk in _batches(rows):
+            db.q(name, f"""UNWIND $rows AS r
+                MATCH (s:{ls} {{id:r.s}}) MATCH (d:{ld} {{id:r.d}})
+                CREATE (s)-[:TRANSFERS {{txn_id:r.id, ts:r.ts, amount:r.amt, amount_recv:r.recv,
+                        cur:r.cur, cur_recv:r.cur_recv, format:r.fmt, capacity:r.amt}}]->(d)""",
+                 {"rows": chunk})
+    erows = [r for rows in groups.values() for r in rows]
     # FLOWS: one edge per ordered account pair (simple digraph). algo.maxFlow rejects
     # multi-edge relationship types, and the motif score is defined on a simple digraph.
     agg = (df[df["src_inside"] & df["dst_inside"] & (df["src"] != df["dst"])]

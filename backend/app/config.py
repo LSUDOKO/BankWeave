@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     postgres_url: str = "postgresql://postgres:bankweave@localhost:5440/kyc"
 
     openrouter_api_key: str | None = None
-    llm_writer_model: str = "openrouter/anthropic/claude-haiku-5-5"
-    llm_auditor_model: str = "openrouter/openai/gpt-5"
+    llm_writer_model: str = "openrouter/google/gemini-3.8-flash"
+    llm_auditor_model: str = "openrouter/anthropic/claude-sonnet-5.5"
 
     dataset: str = "HI-Small"
     data_dir: Path = ROOT / "data" / "raw"

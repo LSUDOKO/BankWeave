@@ -47,8 +47,10 @@ RETURN a.id AS id, a.kind AS kind, a.status AS status, a.state AS state,
 CITE_CHECK = cy("gate_cite_check", "Code-level check: cited items exist and are active", """
 MATCH (n) WHERE (n:Evidence OR n:Claim) AND n.id IN $ids
 RETURN n.id AS id, n.state AS state, labels(n)[0] AS label,
-       coalesce(n.summary, n.text) AS text, n.payload AS payload
+       coalesce(n.summary, n.text) AS text, n.payload AS payload, n.confidence AS confidence
 """)
+
+MIN_CONCLUSION_CONFIDENCE = 0.5
 
 WRITE_SAR = cy("sar_write", "Write a SAR with sentences citing evidence and claims", """
 MATCH (k:Case)
@@ -115,6 +117,19 @@ def _deterministic_verdict(sentence: str, cited: list[dict]) -> tuple[bool, str]
     return True, "all numbers and account ids appear in cited items"
 
 
+def _weak_conclusion(cites: list[str], items: dict) -> str:
+    for c in cites:
+        it = items[c]
+        if it["label"] != "Claim":
+            continue
+        if it["state"] != "active":
+            return f"conclusion rests on claim {c} in state {it['state']}"
+        if (it.get("confidence") or 0) < MIN_CONCLUSION_CONFIDENCE:
+            return (f"conclusion rests on claim {c} with echo-proof confidence "
+                    f"{it.get('confidence') or 0:.2f} < {MIN_CONCLUSION_CONFIDENCE}")
+    return ""
+
+
 def audit(case_id: str, sentences: list[dict]) -> list[dict]:
     g = db.case_graph(case_id)
     all_ids = sorted({c for s in sentences for c in s.get("cites", [])})
@@ -130,6 +145,9 @@ def audit(case_id: str, sentences: list[dict]) -> list[dict]:
             verdicts.append({**s, "supported": False, "verdict": f"unknown ids {bad}"})
         elif stale:
             verdicts.append({**s, "supported": False, "verdict": f"cites superseded {stale}"})
+        elif s.get("section") == "recommendation" and _weak_conclusion(cites, items):
+            # a conclusion may not assert more than the (echo-proof) evidence supports
+            verdicts.append({**s, "supported": False, "verdict": _weak_conclusion(cites, items)})
         else:
             verdicts.append({**s, "supported": None, "verdict": ""})
             to_llm.append(s)

@@ -24,6 +24,8 @@ export default function NetworkPage() {
   const [sel, setSel] = useState<string | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [showQuery, setShowQuery] = useState(false);
+  const [cases, setCases] = useState<any[]>([]);
+  const [focus, setFocus] = useState<string>("");
 
   useEffect(() => {
     get("/network/banks").then((b) => {
@@ -31,7 +33,16 @@ export default function NetworkPage() {
       if (b.banks?.length) setView(`bank_${b.banks[0]}`);
     }).catch(() => {});
   }, []);
-  const load = useCallback(() => { get(`/network?view=${view}`).then(setNet).catch(() => {}); }, [view]);
+  useEffect(() => {
+    get("/cases").then((d) => {
+      const cs = [...d.cases].sort((a, b) => b.banks.length - a.banks.length || b.accounts - a.accounts);
+      setCases(cs);
+      if (cs[0]) setFocus((f) => f || cs[0].id);
+    }).catch(() => {});
+  }, []);
+  const load = useCallback(() => {
+    get(`/network?view=${view}${focus && focus !== "all" ? `&case=${focus}` : ""}`).then(setNet).catch(() => {});
+  }, [view, focus]);
   useEffect(load, [load]);
   useLiveReload(load, (e) => e.type === "case");
   useEffect(() => { if (sel) get(`/network/account/${sel}`).then(setDetail).catch(() => setDetail(null)); else setDetail(null); }, [sel]);
@@ -64,10 +75,19 @@ export default function NetworkPage() {
           </button>
         </div>
 
-        <p className="mt-4 text-sm min-h-[1.5em]" aria-live="polite">
+        {cases.length > 0 && (
+          <label className="mt-4 flex items-center gap-2 text-sm text-muted">
+            Accounts shown
+            <select value={focus} onChange={(e) => setFocus(e.target.value)} className="rounded border border-line bg-ink px-2 py-1 text-paper">
+              {cases.map((c) => <option key={c.id} value={c.id}>Case {c.id}: {c.accounts} accounts, {c.banks.length} banks</option>)}
+              <option value="all">Every case at once</option>
+            </select>
+          </label>
+        )}
+        <p className="mt-3 text-sm min-h-[1.5em]" aria-live="polite">
           {net && p && (isCons
             ? <>All banks together: <b>{own}</b> accounts in <b>{p.count}</b> connected piece{p.count === 1 ? "" : "s"}; the largest holds <b className="text-ring">{p.largest}</b>.</>
-            : <>Bank {view.slice(5)} sees <b>{own}</b> of its own accounts and <b>{stubs}</b> outside stubs, broken into <b>{p.count}</b> pieces (largest {p.largest}).</>)}
+            : <>Bank {view.slice(5)} sees <b>{own}</b> of its own accounts and <b>{stubs}</b> outside stubs, and its own accounts form <b>{p.count}</b> unconnected group{p.count === 1 ? "" : "s"}. Nothing here looks like a ring.</>)}
         </p>
 
         <div className="mt-3">

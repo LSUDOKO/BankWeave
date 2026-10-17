@@ -4,13 +4,14 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import queue
 from contextlib import asynccontextmanager
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import db
+from app import db, events
 from app.config import get_settings
 from app.events import CHANNEL_PREFIX
 from app.routers import actions, alerts, cases, demo, evals, network, sar, tools_api, trust
@@ -48,6 +49,19 @@ def health():
 async def ws(socket: WebSocket):
     """Every graph write publishes an event; the UI receives them live here."""
     await socket.accept()
+    if not events.use_redis():
+        q = events.LOCAL.subscribe()
+        try:
+            while True:
+                try:
+                    await socket.send_text(q.get_nowait())
+                except queue.Empty:
+                    await asyncio.sleep(0.1)
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+        finally:
+            events.LOCAL.unsubscribe(q)
+        return
     client = aioredis.from_url(get_settings().redis_url)
     pubsub = client.pubsub()
     await pubsub.psubscribe(CHANNEL_PREFIX + "*")

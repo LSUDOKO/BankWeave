@@ -75,7 +75,7 @@ WHERE e.state IN ['active', 'needs_verification']
 RETURN count(e) AS paths, count(DISTINCT e.origin) AS independent_sources
 ```
 
-The UI shows "14 paths, 9 independent sources" and the naive figure next to it, and a shared
+On one real IBM case the ring claim shows "11 paths, 10 independent sources" with the naive figure beside it, and a shared
 address in a 200-unit building is weighted down because it's weak evidence.
 
 ## When a reason dies, everything resting on it notices

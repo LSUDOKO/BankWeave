@@ -15,6 +15,7 @@
   --bank-2: #009e73;
   --bank-3: #cc79a7;
   --bank-4: #f0e442;
+  --bank-5: #b0b7ff;       /* sixth bank: periwinkle, clear of ring red and verify amber */
 }
 
 @theme inline {

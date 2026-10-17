@@ -258,8 +258,11 @@ def run(case_id: str, round_: int = 0) -> dict:
             plan = rebuttal_plan(case_id, seed, members)
         else:
             proc = procedural.best(None)
-            plan = ([{"tool": s["tool"], "params": {k: (seed if v == "$seed" else v)
-                                                    for k, v in s["params"].items()}}
+            def bind(v):
+                if isinstance(v, list):
+                    return [seed if x == "$seed" else x for x in v]
+                return seed if v == "$seed" else v
+            plan = ([{"tool": s["tool"], "params": {k: bind(v) for k, v in s["params"].items()}}
                      for s in proc["steps"]] if proc else default_plan(case_id, seed, members))
             if proc:
                 store.log_event(case_id, "investigator", "using_procedure",

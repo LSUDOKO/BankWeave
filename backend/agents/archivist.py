@@ -5,6 +5,8 @@ Cross-case recall needs no extra work: claim summaries are mirrored into the con
 """
 from __future__ import annotations
 
+import re
+
 from app import db
 from app.cypher import cy
 from memory import episodic, procedural
@@ -20,6 +22,18 @@ RETURN DISTINCT split(e.origin, ':')[1] AS typology
 """)
 
 
+_ACCT = re.compile(r"^[0-9a-f]{16}$")
+
+
+def _template(params: dict, seed: str) -> dict:
+    """Generalise a tool call: the seed account -> $seed, any other account -> $hub."""
+    def one(v):
+        if isinstance(v, str) and _ACCT.match(v):
+            return "$seed" if v == seed else "$hub"
+        return v
+    return {k: ([one(x) for x in v] if isinstance(v, list) else one(v)) for k, v in params.items()}
+
+
 def run(case_id: str, round_: int = 0) -> dict:
     g = db.case_graph(case_id)
     acts = db.ro(g, ACTIONS)
@@ -31,16 +45,14 @@ def run(case_id: str, round_: int = 0) -> dict:
         if e["agent"] == "investigator" and e["action"].startswith("tool:"):
             p = e["payload"].get("params", {}) if isinstance(e["payload"], dict) else {}
             seed = db.ro(g, "MATCH (c:Case) RETURN c.seed_account AS s")[0]["s"]
-            templ = {k: ("$seed" if v == seed else v) for k, v in p.items()
-                     if not isinstance(v, list)}
-            steps.append({"tool": e["action"][5:], "params": templ})
+            steps.append({"tool": e["action"][5:], "params": _template(p, seed)})
     typs = [r["typology"] for r in db.ro(g, TYPOLOGIES)]
     saved = None
     if steps and (approved or rejected):
         dedup, seen = [], set()
         for s in steps:
-            key = (s["tool"], tuple(sorted(s["params"].items())))
-            if key not in seen and "$hub" not in str(s["params"]):
+            key = (s["tool"], str(sorted(s["params"].items())))
+            if key not in seen:
                 seen.add(key)
                 dedup.append(s)
         saved = procedural.save(case_id, typs[0] if typs else "general", dedup[:12], approved)

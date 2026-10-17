@@ -15,8 +15,10 @@ def main(n: int) -> None:
     from agents import tools
     from app import db
 
-    accts = [r["id"] for r in db.ro(db.CONSORTIUM, "MATCH (a:Account) WHERE a.out_deg > 2 "
-                                                   "RETURN a.id AS id LIMIT 3000")]
+    hub = 2000  # hub accounts take the precomputed-profile path in triage; timed separately
+    accts = [r["id"] for r in db.ro(db.CONSORTIUM, "MATCH (a:Account) WHERE a.out_deg > 2 AND "
+                                                   "a.in_deg + a.out_deg <= $hub "
+                                                   "RETURN a.id AS id LIMIT 3000", {"hub": hub})]
     rng = random.Random(5)
     ctx = tools.Ctx(graph=db.CONSORTIUM, record=False)
     calls = {
@@ -37,6 +39,28 @@ def main(n: int) -> None:
         lat.sort()
         res[name] = {"median_ms": round(statistics.median(lat), 1),
                      "p95_ms": round(lat[int(0.95 * (len(lat) - 1))], 1), "calls": len(lat)}
+    from agents import triage
+    hubs = [r["id"] for r in db.ro(db.CONSORTIUM, "MATCH (a:Account) WHERE a.in_deg + a.out_deg "
+                                                  "> $hub RETURN a.id AS id LIMIT 50", {"hub": hub})]
+    lat = []
+    for a in hubs:
+        t0 = time.perf_counter()
+        triage.signals(a)
+        lat.append((time.perf_counter() - t0) * 1000)
+    if lat:
+        lat.sort()
+        res["triage_signals_hub_accounts"] = {"median_ms": round(statistics.median(lat), 1),
+                                              "p95_ms": round(lat[int(0.95 * (len(lat) - 1))], 1),
+                                              "calls": len(lat)}
+    lat = []
+    for a in rng.sample(accts, min(n, len(accts))):
+        t0 = time.perf_counter()
+        triage.signals(a)
+        lat.append((time.perf_counter() - t0) * 1000)
+    lat.sort()
+    res["triage_signals_regular_accounts"] = {"median_ms": round(statistics.median(lat), 1),
+                                              "p95_ms": round(lat[int(0.95 * (len(lat) - 1))], 1),
+                                              "calls": len(lat)}
     cases = db.case_graphs()[:20]
     for name in ("find_hub", "find_bridges", "find_orchestrator"):
         lat = []

@@ -69,7 +69,7 @@ export default function Scoreboard() {
             <Tile label="Accounts flagged" value={String(e4.results.flagged)} />
             <Tile label="Illicit among flagged" value={pct(e4.results.precision)} accent />
             <Tile label="Base rate" value={pct(e4.results.base_rate)} />
-            <Tile label="Value moved (chains counted once)" value={money(e4.results.chain_deduplicated_value)} />
+            <Tile label="Value through matched chains (raw sum across currencies, chains counted once)" value={money(e4.results.chain_deduplicated_value)} />
           </div>
         </Section>
       )}

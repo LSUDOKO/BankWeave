@@ -1,26 +1,45 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #0f1b2d;          /* page */
+  --panel: #16263d;        /* raised surfaces */
+  --panel-2: #1d3150;      /* hover / selected */
+  --line: #2a3f5f;         /* structure */
+  --paper: #e9e4d4;        /* primary text */
+  --muted: #9aa7b8;        /* secondary text */
+  --ring: #e5484d;         /* laundering ring / danger: reserved */
+  --verify: #f2a900;       /* needs_verification: reserved */
+  --ok: #3fb68b;           /* active / published */
+  --bank-0: #0072b2;       /* Okabe-Ito, colorblind-safe */
+  --bank-1: #56b4e9;
+  --bank-2: #009e73;
+  --bank-3: #cc79a7;
+  --bank-4: #f0e442;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-paper: var(--paper);
+  --color-muted: var(--muted);
+  --color-ring: var(--ring);
+  --color-verify: var(--verify);
+  --color-ok: var(--ok);
+  --font-sans: var(--font-schibsted);
+  --font-mono: var(--font-jetbrains);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html, body { background: var(--ink); color: var(--paper); }
+body { font-family: var(--font-schibsted), system-ui, sans-serif; font-size: 15px; line-height: 1.5; }
+h1 { font-size: 1.75rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; line-height: 1.25; font-weight: 650; }
+h3 { font-size: 0.95rem; font-weight: 650; }
+:focus-visible { outline: 2px solid var(--bank-1); outline-offset: 2px; }
+::selection { background: var(--bank-0); color: white; }
+.mono { font-family: var(--font-jetbrains), ui-monospace, monospace; font-size: 0.82em; }
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

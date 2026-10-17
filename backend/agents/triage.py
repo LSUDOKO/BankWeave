@@ -206,7 +206,7 @@ def decide(s: dict, f: dict[str, float] | None = None) -> dict:
         return {"decision": out["decision"], "reason": str(out.get("reason", ""))[:240],
                 "mode": "llm", "score": score}
     why = ", ".join(s["typologies"]) or "structural signals"
-    basis = (f"model {prob:.2f} (threshold {thr:.2f})" if prob is not None
+    basis = (f"score {prob:.3f}, alert-budget cutoff {thr:.3f}" if prob is not None
              else f"risk {score:.1f}")
     if score >= thr:
         return {"decision": "case", "score": score, "mode": "graph",

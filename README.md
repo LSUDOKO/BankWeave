@@ -133,7 +133,7 @@ the Redis protocol for live pub/sub.
 | **`GRAPH.MEMORY USAGE`** | per-graph memory in the Lab and Command Center; capacity guard for the 100 MB cloud tier (`app/services/capacity.py`) | `/lab/graphs` |
 | **ACL** (`~graph` key patterns, `ACL LOG`) | a bank user that can only `GRAPH.RO_QUERY` its own graph (`/lab/acl-demo`) | consortium, other banks and writes denied, logged (screenshot above). The FalkorDB Cloud user cannot manage ACLs, so this runs on Docker |
 | Several `CALL`s in one query | tri-modal query: phonetic full-text → HNSW vector twins → `algo.SPpaths` over `FLOWS` | Lab `trimodal` (about 10 ms) |
-| Parameterised Cypher, `ro_query` for reads | every query (`docs/QUERIES.md`, 190 queries) | read-only MCP tool `cypher_readonly` |
+| Parameterised Cypher, `ro_query` for reads | every query (`docs/QUERIES.md`: 204 registered + 67 inline) | read-only MCP tool `cypher_readonly` |
 | Concurrent writers on one graph | task blackboard (`agents/blackboard.py`) | `test_blackboard.py`: 6 threads, 20 tasks, each claimed once |
 | FalkorDB Browser | visual inspection of every graph | screenshots below |
 | FalkorDB Cloud | live instance (ap-south-1) seeded with the IBM slice | `scripts/make_slice.py` + seed log |

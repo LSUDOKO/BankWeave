@@ -2,7 +2,7 @@
 
 Generated from the query registry (`backend/app/cypher.py`) by `scripts/gen_queries_md.py`. Every query the product runs is declared with `cy(name, purpose, text)`, so this file matches the code.
 
-**153 queries** across 31 modules. Native algorithms used: `algo.wcc`, `algo.labelPropagation`, `algo.pageRank`, `algo.betweenness`, `algo.HarmonicCentrality`, `algo.SPpaths`, `algo.SSpaths`, `algo.maxFlow`, `algo.bfs`, `algo.MSF`; indexes: range, full-text (Double Metaphone phonetic, English stemming), vector (HNSW, cosine).
+**204 queries** across 43 modules. Native algorithms used: `algo.wcc`, `algo.labelPropagation`, `algo.pageRank`, `algo.betweenness`, `algo.HarmonicCentrality`, `algo.SPpaths`, `algo.SSpaths`, `algo.maxFlow`, `algo.bfs`, `algo.MSF`; indexes: range, full-text (Double Metaphone phonetic, English stemming), vector (HNSW, cosine).
 
 Not native in FalkorDB, done in plain Cypher instead: degree (precomputed), cycles (time-respecting iterative expansion), triangles / 3-cycles (motif score).
 
@@ -231,6 +231,17 @@ MATCH (al:Alert {id:$id}) RETURN al.id AS id, al.account_id AS account, al.bank_
        al.rule AS rule, al.reason AS reason, al.status AS status
 ```
 
+### alert_join_claimed_case
+
+Attach an alert to the case that claimed its account
+
+```cypher
+MATCH (al:Alert {id:$alert})
+MERGE (c:Case {id:$case})
+SET al.status = 'case', al.case_id = $case, al.reason_cleared = null
+MERGE (c)-[:OPENED_FROM]->(al)
+```
+
 ### alert_merge_into_case
 
 Attach an alert to an existing case
@@ -239,6 +250,20 @@ Attach an alert to an existing case
 MATCH (al:Alert {id:$alert}), (c:Case {id:$case})
 SET al.status = 'case', al.case_id = $case, al.reason_cleared = null
 MERGE (c)-[:OPENED_FROM]->(al)
+```
+
+### case_claim_account
+
+Atomically claim an account for a new case
+
+```cypher
+MERGE (l:CaseLock {account:$account})
+ON CREATE SET l.case_id = $case, l.at = timestamp()
+WITH l
+OPTIONAL MATCH (c:Case {id:l.case_id})
+FOREACH (_ IN CASE WHEN c IS NOT NULL AND c.status = 'closed' THEN [1] ELSE [] END |
+         SET l.case_id = $case, l.at = timestamp())
+RETURN l.case_id AS case_id
 ```
 
 ### case_concerns_accounts
@@ -447,6 +472,141 @@ RETURN collect(DISTINCT {id:k.id, text:k.text, state:k.state}) AS claims,
                          state:e.state, cypher:e.cypher, payload:e.payload}) AS evidence
 ```
 
+## `app.routers.lab`
+
+### lab_busiest_sender
+
+Account with the most outgoing transfers (default source)
+
+```cypher
+MATCH (a:Account)-[t:TRANSFERS]->(:Account)
+RETURN a.id AS id, count(t) AS n ORDER BY n DESC LIMIT 1
+```
+
+### lab_flex_attribute_jaccard
+
+FLEX: Jaccard overlap of two accounts' identity attributes
+
+```cypher
+MATCH (a:Account)-[:USES_DEVICE|USES_IP|REGISTERED_AT]->(x)<-[:USES_DEVICE|USES_IP|REGISTERED_AT]-(b:Account)
+WHERE a.id < b.id
+WITH a, b, count(DISTINCT x) AS shared LIMIT 200
+MATCH (a)-[:USES_DEVICE|USES_IP|REGISTERED_AT]->(xa)
+WITH a, b, shared, collect(DISTINCT xa.id) AS sa
+MATCH (b)-[:USES_DEVICE|USES_IP|REGISTERED_AT]->(xb)
+WITH a, b, shared, sa, collect(DISTINCT xb.id) AS sb
+RETURN a.id AS a, b.id AS b, shared, flex.sim.jaccard(sa, sb) AS jaccard
+ORDER BY jaccard DESC, shared DESC LIMIT 10
+```
+
+### lab_flex_name_similarity
+
+FLEX: Levenshtein and Jaro-Winkler name similarity
+
+```cypher
+MATCH (p:Person)
+WITH p, flex.text.jaroWinkler(toLower(p.name), toLower($q)) AS jw
+WHERE jw > 0.85
+RETURN p.name AS name, jw, flex.text.levenshtein(toLower(p.name), toLower($q)) AS edits
+ORDER BY jw DESC LIMIT 10
+```
+
+### lab_flow_pair
+
+A source and sink joined by a multi-hop FLOWS chain
+
+```cypher
+MATCH p = (s:Account)-[:FLOWS*2..3]->(t:Account) WHERE s <> t
+RETURN s.id AS src, t.id AS dst, length(p) AS hops ORDER BY hops DESC LIMIT 1
+```
+
+### lab_fulltext_phonetic
+
+Double Metaphone full-text name search
+
+```cypher
+CALL db.idx.fulltext.queryNodes('Person', $q) YIELD node, score
+RETURN node.name AS name, node.id AS person, score ORDER BY score DESC LIMIT 10
+```
+
+### lab_fulltext_stemmed
+
+English-stemmed full-text search over typology knowledge
+
+```cypher
+CALL db.idx.fulltext.queryNodes('Chunk', $q) YIELD node, score
+RETURN node.id AS chunk, substring(node.text, 0, 160) AS text, node.sources AS sources, score
+ORDER BY score DESC LIMIT 5
+```
+
+### lab_procedural_memory
+
+Procedures the Archivist learned, with their ordered steps
+
+```cypher
+MATCH (p:Procedure)
+OPTIONAL MATCH (p)-[r:STEP]->(s:Step)
+OPTIONAL MATCH (s)-[:FAILED_BEFORE]->(x:Pitfall)
+WITH p, r, s, collect(x.note) AS pitfalls ORDER BY r.order
+RETURN p.id AS id, p.name AS name, p.typology AS typology, p.success_count AS success,
+       p.fail_count AS fail, p.learned_from AS learned_from,
+       collect({order:r.order, tool:s.tool, params:s.params_template, why:s.why,
+                pitfalls:pitfalls}) AS steps
+```
+
+### lab_top_accounts
+
+Top accounts by PageRank in a graph (default parameters)
+
+```cypher
+CALL algo.pageRank('Account', 'TRANSFERS') YIELD node, score
+RETURN node.id AS id ORDER BY score DESC LIMIT $n
+```
+
+### lab_trimodal_single_pass
+
+One query: full-text name, vector twins, shortest path
+
+```cypher
+CALL db.idx.fulltext.queryNodes('Person', $name) YIELD node AS p, score AS text_score
+WITH p, text_score ORDER BY text_score DESC LIMIT 1
+MATCH (p)-[:OWNS]->(seed:Account)
+WITH p, text_score, seed LIMIT 1
+CALL db.idx.vector.queryNodes('Account', 'behavior_vec', $k, seed.behavior_vec)
+YIELD node AS twin, score AS vec_score
+WITH p, text_score, seed, twin, vec_score WHERE twin <> seed
+CALL algo.SPpaths({sourceNode:seed, targetNode:twin, relTypes:['FLOWS'],
+                   maxLen:$flow_hops, pathCount:1, relDirection:'both'})
+YIELD path, pathWeight
+RETURN p.name AS matched_name, text_score, seed.id AS seed, seed.bank_id AS seed_bank,
+       twin.id AS twin, twin.bank_id AS twin_bank, vec_score,
+       [n IN nodes(path) | n.id] AS path, pathWeight AS hops
+ORDER BY vec_score LIMIT 5
+```
+
+### lab_udf_time_respecting_reach
+
+JS UDF: time-respecting reach from an account
+
+```cypher
+MATCH (a:Account {id:$id})
+WITH a, aml_temporal.timeRespectingReach(a, $hops, $window) AS reach
+UNWIND reach AS r
+RETURN r.account AS account, r.bank AS bank, r.hops AS hops, r.arrived AS arrived,
+       r.amount AS amount, r.back_to_start AS back_to_start
+ORDER BY hops, arrived LIMIT 50
+```
+
+### lab_vector_knn
+
+HNSW vector KNN over 16-dim behaviour profiles
+
+```cypher
+MATCH (a:Account {id:$id})
+CALL db.idx.vector.queryNodes('Account', 'behavior_vec', $k, a.behavior_vec) YIELD node, score
+RETURN node.id AS account, node.bank_id AS bank, score ORDER BY score
+```
+
 ## `app.routers.network`
 
 ### network_account_detail
@@ -525,6 +685,70 @@ Highest motif-score accounts when no case exists yet
 MATCH (a:Account) RETURN a.id AS id ORDER BY coalesce(a.motif_score, 0.0) DESC LIMIT $limit
 ```
 
+### network_layer_cases
+
+Cases and their claim summaries over focus accounts
+
+```cypher
+MATCH (c:Case)-[:CONCERNS]->(a:Account) WHERE a.id IN $ids
+WITH c, collect(DISTINCT a.id) AS accounts
+OPTIONAL MATCH (c)-[:HAS_CLAIM]->(cl:Claim)
+RETURN c.id AS id, c.title AS title, c.status AS status, accounts,
+       collect(DISTINCT {id:cl.id, kind:cl.kind, state:cl.state}) AS claims
+```
+
+### network_layer_external
+
+External stubs a bank sees around focus accounts
+
+```cypher
+MATCH (a:Account)-[:TRANSFERS]-(x:ExternalAccount) WHERE a.id IN $ids
+RETURN DISTINCT x.id AS id, x.bank_id AS bank LIMIT $limit
+```
+
+## `app.routers.overview`
+
+### overview_alerts
+
+Alert counts by status
+
+```cypher
+MATCH (al:Alert) RETURN al.status AS status, count(al) AS n
+```
+
+### overview_case_claims
+
+Claim support summary inside one case graph
+
+```cypher
+MATCH (c:Claim)
+RETURN count(c) AS claims,
+       sum(CASE WHEN coalesce(c.independent_sources, 0) >= 2 AND c.state = 'active'
+                THEN 1 ELSE 0 END) AS independent,
+       sum(CASE WHEN c.state <> 'active' THEN 1 ELSE 0 END) AS flagged,
+       sum(coalesce(c.paths, 0)) AS paths, sum(coalesce(c.independent_sources, 0)) AS origins
+```
+
+### overview_case_evidence
+
+Evidence by validity state inside one case graph
+
+```cypher
+MATCH (e:Evidence) RETURN e.state AS state, count(e) AS n
+```
+
+### overview_case_head
+
+Case header and pending actions inside one case graph
+
+```cypher
+MATCH (k:Case)
+OPTIONAL MATCH (a:Action {status:'proposed'})
+OPTIONAL MATCH (s:SAR)
+RETURN k.id AS id, k.title AS title, k.status AS status, k.opened_at AS opened_at,
+       count(DISTINCT a) AS pending_actions, collect(DISTINCT s.status)[0] AS sar
+```
+
 ## `app.routers.sar`
 
 ### api_sar_latest
@@ -554,6 +778,78 @@ MATCH (s:SAR) RETURN s.id AS id, s.status AS status, s.pf_score AS pf, s.version
        s.state AS state, s.created_at AS created_at ORDER BY version
 ```
 
+## `app.routers.scenarios`
+
+### scenario_bank_holds
+
+Ring accounts a bank holds and transfers it can see
+
+```cypher
+OPTIONAL MATCH (a:Account) WHERE a.id IN $ids
+WITH count(a) AS own
+OPTIONAL MATCH (s)-[t:TRANSFERS]->(d) WHERE s.id IN $ids AND d.id IN $ids
+RETURN own, count(DISTINCT [s.id, d.id]) AS links
+```
+
+### scenario_cascade_reach
+
+What rests on an evidence item (read-only preview)
+
+```cypher
+MATCH (e:Evidence {id:$id})
+OPTIONAL MATCH (c:Claim)-[:SUPPORTED_BY|CHALLENGED_BY]->(e)
+OPTIONAL MATCH (d:Claim)-[:DERIVED_FROM*1..3]->(c)
+OPTIONAL MATCH (x:Action)-[:JUSTIFIED_BY]->(c)
+OPTIONAL MATCH (s:Sentence)-[:CITES]->(e)
+RETURN collect(DISTINCT c.id) AS claims, collect(DISTINCT d.id) AS derived,
+       collect(DISTINCT x.id) AS actions, collect(DISTINCT s.id) AS sentences
+```
+
+### scenario_cleared_isolated
+
+Alerts the triage agent cleared as isolated
+
+```cypher
+MATCH (al:Alert {status:'cleared'})-[:RAISED_FOR]->(a:Account)
+WHERE al.reason_cleared STARTS WITH 'isolated cluster'
+RETURN al.id AS id, al.rule AS rule, al.reason AS reason, al.reason_cleared AS cleared,
+       al.signals AS signals, a.id AS account, a.bank_id AS bank,
+       coalesce(a.component_size, 0) AS component_size
+ORDER BY component_size DESC, id LIMIT 1
+```
+
+### scenario_consortium_links
+
+Ring account pairs linked in the consortium
+
+```cypher
+MATCH (s:Account)-[:FLOWS]->(d:Account) WHERE s.id IN $ids AND d.id IN $ids
+RETURN count(*) AS links
+```
+
+### scenario_ring_case
+
+The case spanning the most banks
+
+```cypher
+MATCH (c:Case)-[:CONCERNS]->(a:Account)
+WITH c, collect(DISTINCT a.bank_id) AS banks, collect(DISTINCT a.id) AS ids
+WHERE size(banks) >= 3
+RETURN c.id AS id, c.title AS title, banks, ids
+ORDER BY size(banks) DESC, size(ids) DESC LIMIT 1
+```
+
+### scenario_shared_attr_evidence
+
+Shared-attribute evidence in one case
+
+```cypher
+MATCH (e:Evidence {kind:'shared_attr'})
+OPTIONAL MATCH (c:Claim)-[r:SUPPORTED_BY|CHALLENGED_BY]->(e)
+RETURN e.id AS id, e.origin AS origin, e.summary AS summary, e.state AS state,
+       collect(DISTINCT {claim:c.id, text:c.text, rel:type(r), confidence:c.confidence}) AS claims
+```
+
 ## `app.routers.trust`
 
 ### trust_echo_overview
@@ -574,6 +870,144 @@ Validity states across a case graph
 ```cypher
 MATCH (n) WHERE n.state IS NOT NULL AND (n:Claim OR n:Evidence OR n:Action OR n:SAR)
 RETURN labels(n)[0] AS label, n.state AS state, count(n) AS n
+```
+
+## `app.routers.workspace`
+
+### freeze_components
+
+Connected components of the case money graph
+
+```cypher
+CALL algo.wcc({nodeLabels:['Account'], relationshipTypes:['FLOWS']})
+YIELD node, componentId
+WITH componentId, count(node) AS size
+RETURN count(componentId) AS components, max(size) AS largest
+```
+
+### freeze_flow_decomposition
+
+Max-flow edges and their flows (who carries the money)
+
+```cypher
+MATCH (s:Account) WHERE s.id IN $sources
+WITH collect(s) AS srcs
+MATCH (t:Account) WHERE t.id IN $sinks
+WITH srcs, collect(t) AS tgts
+CALL algo.maxFlow({sourceNodes:srcs, targetNodes:tgts, relationshipTypes:['FLOWS'],
+                   capacityProperty:'capacity', nodeLabels:['Account']})
+YIELD maxFlow, edges, edgeFlows
+RETURN maxFlow, [e IN edges | endNode(e).id] AS heads, edgeFlows
+```
+
+### freeze_flow_ends
+
+Sources and sinks of the collapsed FLOWS graph
+
+```cypher
+MATCH (a:Account)
+OPTIONAL MATCH (a)-[o:FLOWS]->()
+OPTIONAL MATCH ()-[i:FLOWS]->(a)
+WITH a, count(DISTINCT o) AS outs, count(DISTINCT i) AS ins
+RETURN a.id AS id, outs, ins
+```
+
+### freeze_max_flow
+
+Liquidity: max flow from sources to sinks over FLOWS
+
+```cypher
+MATCH (s:Account) WHERE s.id IN $sources
+WITH collect(s) AS srcs
+MATCH (t:Account) WHERE t.id IN $sinks
+WITH srcs, collect(t) AS tgts
+CALL algo.maxFlow({sourceNodes:srcs, targetNodes:tgts, relationshipTypes:['FLOWS'],
+                   capacityProperty:'capacity', nodeLabels:['Account']})
+YIELD maxFlow
+RETURN maxFlow
+```
+
+### freeze_remove_account
+
+Remove the frozen account in the sandbox copy
+
+```cypher
+MATCH (a:Account {id:$id}) DETACH DELETE a
+```
+
+### ws_claims
+
+Claims with stored echo numbers
+
+```cypher
+MATCH (c:Claim)
+RETURN c.id AS id, c.text AS text, c.kind AS kind, c.state AS state, c.confidence AS confidence,
+       c.naive_confidence AS naive, c.created_at AS created_at
+ORDER BY created_at
+```
+
+### ws_dag_edges
+
+Provenance DAG edges
+
+```cypher
+MATCH (a)-[r]->(b)
+WHERE type(r) IN ['SUPPORTED_BY', 'CHALLENGED_BY', 'DERIVED_FROM', 'JUSTIFIED_BY',
+                  'SUPERSEDES', 'CITES', 'CONTAINS']
+RETURN a.id AS source, type(r) AS type, b.id AS target
+```
+
+### ws_dag_nodes
+
+Provenance DAG nodes: claims, evidence, sentences, actions, SAR
+
+```cypher
+MATCH (n) WHERE n:Claim OR n:Evidence OR n:Sentence OR n:Action OR n:SAR
+RETURN labels(n)[0] AS type, n.id AS id, coalesce(n.text, n.summary, n.rationale, n.status) AS label,
+       n.kind AS kind, coalesce(n.state, 'active') AS state, n.confidence AS confidence,
+       n.origin AS origin, n.status AS status, n.supported AS supported, n.section AS section,
+       coalesce(n.created_at, n.ts) AS ts
+```
+
+### ws_export_bundle
+
+Everything a SAR export needs from a case graph
+
+```cypher
+MATCH (k:Case)
+OPTIONAL MATCH (k)-[:HAS_SAR]->(s:SAR)
+WITH k, s ORDER BY s.created_at DESC
+WITH k, collect(s)[0] AS s
+RETURN k.id AS id, k.title AS title, k.seed_account AS seed, k.bank_scope AS banks,
+       k.opened_at AS opened_at, s.id AS sar, s.status AS sar_status, s.pf_score AS pf,
+       s.auditor AS auditor, s.repairs AS repairs
+```
+
+## `app.services.attestation`
+
+### hw_attestation_list
+
+Hardware attestations in a case
+
+```cypher
+MATCH (h:HardwareAttestation)-[:ATTESTS]->(t)
+RETURN h.id AS id, h.method AS method, h.merkle_root AS merkle_root, h.alg AS alg,
+       h.credential_id AS credential_id, h.aaguid AS aaguid, h.counter AS counter,
+       h.ts AS ts, h.device AS device, h.origin AS origin, t.id AS target, labels(t)[0] AS target_type
+ORDER BY ts DESC
+```
+
+### hw_attestation_store
+
+Store a hardware attestation that seals an action
+
+```cypher
+MATCH (t) WHERE (t:Action OR t:SAR) AND t.id = $target
+CREATE (h:HardwareAttestation {id:$id, method:$method, merkle_root:$root, alg:-7,
+        credential_id:$cred, aaguid:$aaguid, counter:$counter, public_key:$pk,
+        signature:$sig, origin:$origin, ts:timestamp(), device:$device})
+CREATE (h)-[:ATTESTS]->(t)
+RETURN h.id AS id
 ```
 
 ## `app.services.baseline`
@@ -646,6 +1080,162 @@ RETURN a.id AS account, a.bank_id AS bank, min(t.ts) AS ts, count(t) AS hits
 ORDER BY account SKIP $skip LIMIT $limit
 ```
 
+## `app.services.crypto_bridge`
+
+### crypto_offramp_accounts
+
+Accounts that send or receive money in crypto formats
+
+```cypher
+MATCH (a:Account)-[t:TRANSFERS]-()
+WHERE t.format = 'Bitcoin'
+WITH a, count(t) AS n, sum(t.amount) AS total, min(t.ts) AS first, max(t.ts) AS last
+RETURN a.id AS account, a.bank_id AS bank, n, total, first, last
+ORDER BY n DESC LIMIT $limit
+```
+
+## `app.services.hardware_enclave`
+
+### enclave_attestation_history
+
+Recent enclave attestations
+
+```cypher
+MATCH (e:EnclaveAttestation) RETURN e.ts AS ts, e.status AS status, e.verified AS verified,
+       e.pcr0 AS pcr0, e.reason AS reason ORDER BY ts DESC LIMIT 10
+```
+
+### enclave_attestation_record
+
+Record an enclave attestation in the consortium
+
+```cypher
+CREATE (:EnclaveAttestation {module_id:$module, ts:$ts, status:$status, verified:$verified,
+                             pcr0:$pcr0, pcr1:$pcr1, pcr2:$pcr2, nonce:$nonce, reason:$reason})
+```
+
+## `app.services.merkle`
+
+### merkle_case_leaves
+
+Records sealed by the case Merkle root
+
+```cypher
+MATCH (c:Claim)
+RETURN 'Claim' AS type, c.id AS id,
+       {text:c.text, kind:c.kind, state:coalesce(c.state, 'active')} AS body
+UNION ALL
+MATCH (e:Evidence)
+RETURN 'Evidence' AS type, e.id AS id,
+       {kind:e.kind, origin:e.origin, summary:e.summary, cypher:e.cypher, payload:e.payload,
+        state:coalesce(e.state, 'active')} AS body
+UNION ALL
+MATCH (s:Sentence)
+OPTIONAL MATCH (s)-[:CITES]->(n)
+WITH s, collect(n.id) AS cites
+RETURN 'Sentence' AS type, s.id AS id,
+       {text:s.text, supported:s.supported, cites:cites, state:coalesce(s.state, 'active')} AS body
+```
+
+## `app.services.pos_twin`
+
+### pos_card_accounts
+
+Accounts that hold the three demo cards
+
+```cypher
+MATCH (c:Case)-[:CONCERNS]->(a:Account)
+WITH c, collect(DISTINCT a) AS accts, collect(DISTINCT a.bank_id) AS banks
+WHERE size(accts) >= 3
+WITH accts ORDER BY size(banks) DESC, size(accts) DESC LIMIT 1
+UNWIND accts[0..3] AS a
+RETURN a.id AS id, a.bank_id AS bank
+```
+
+### pos_card_accounts_fallback
+
+Any three accounts for the demo cards
+
+```cypher
+MATCH (a:Account) RETURN a.id AS id, a.bank_id AS bank ORDER BY coalesce(a.pagerank, 0) DESC LIMIT 3
+```
+
+### pos_last_txn_of_card
+
+Previous transaction of the same card
+
+```cypher
+MATCH (a:Account)-[t:CARD_TXN {card:$card}]->(term:Terminal)
+WHERE t.ts < $ts
+RETURN t.ts AS ts, t.atc AS atc, term.id AS terminal, term.lat AS lat, term.lon AS lon,
+       term.city AS city ORDER BY ts DESC LIMIT 1
+```
+
+### pos_raise_alert
+
+Raise a hardware-twin alert on an account
+
+```cypher
+MATCH (a:Account {id:$account})
+MERGE (al:Alert {id:$id})
+ON CREATE SET al.account_id = $account, al.bank_id = a.bank_id, al.rule = $rule, al.ts = $ts,
+              al.status = 'open', al.reason = $reason, al.hits = 1, al.source = 'hardware_twin'
+MERGE (al)-[:RAISED_FOR]->(a)
+RETURN al.id AS id, al.status AS status
+```
+
+### pos_recent_at_terminal
+
+Distinct cards at a terminal in the last window
+
+```cypher
+MATCH (a:Account)-[t:CARD_TXN]->(:Terminal {id:$terminal})
+WHERE t.ts >= $since AND t.ts <= $until
+RETURN a.id AS account, a.bank_id AS bank, t.card AS card, t.amount AS amount, t.ts AS ts
+```
+
+### pos_write_card_txn
+
+Write a card transaction at a terminal into the consortium
+
+```cypher
+MATCH (a:Account {id:$account})
+MERGE (t:Terminal {id:$terminal})
+ON CREATE SET t.kind = $kind, t.city = $city, t.lat = $lat, t.lon = $lon, t.merchant = $merchant
+MERGE (d:Device {id:$device})
+ON CREATE SET d.kind = 'device', d.units = 1, d.text = $terminal
+MERGE (a)-[:USES_DEVICE {first_seen:$ts}]->(d)
+CREATE (a)-[:CARD_TXN {stan:$stan, ts:$ts, amount:$amount, currency:'INR', card:$card,
+                       atc:$atc, cryptogram:$ac, mti:'0200'}]->(t)
+WITH d
+MATCH (x:Account)-[:USES_DEVICE]->(d)
+WITH d, count(DISTINCT x) AS n
+SET d.shared_count = n
+```
+
+## `app.services.psi`
+
+### psi_bank_identity_items
+
+Identity attributes used by a bank's own customers
+
+```cypher
+MATCH (a:Account)-[:USES_DEVICE|USES_IP|REGISTERED_AT]->(x)
+RETURN DISTINCT x.id AS item
+```
+
+## `app.services.sanctions`
+
+### sanctions_account_owners
+
+Names on the accounts a case covers
+
+```cypher
+MATCH (p)-[o:OWNS]->(a:Account) WHERE a.id IN $ids AND (p:Person OR p:Company)
+RETURN DISTINCT p.id AS person, coalesce(o.name_on_account, p.name) AS name,
+       labels(p)[0] AS schema, a.id AS account
+```
+
 ## `app.services.simulator`
 
 ### sim_covered_accounts
@@ -680,6 +1270,19 @@ MATCH (a:Account) WHERE a.bank_id IN $banks AND a.out_deg < 20 AND a.in_deg < 20
 RETURN a.id AS id, a.bank_id AS bank
 ```
 
+### sim_smurf_alert
+
+Raise the one alert rules would see for a smurfing source
+
+```cypher
+MATCH (a:Account {id:$id})
+MERGE (al:Alert {id:$aid})
+ON CREATE SET al.account_id = $id, al.bank_id = a.bank_id, al.rule = 'near_threshold_burst',
+              al.ts = $ts, al.status = 'open', al.reason = $reason, al.hits = $hits,
+              al.source = 'red_team'
+MERGE (al)-[:RAISED_FOR]->(a)
+```
+
 ### sim_write_transfers
 
 Insert simulated transfers (consortium)
@@ -705,6 +1308,31 @@ MERGE (s:Account {id:r.s}) ON CREATE SET s.bank_id = r.sb
 MERGE (d:Account {id:r.d}) ON CREATE SET d.bank_id = r.db
 CREATE (s)-[:TRANSFERS {txn_id:r.id, ts:r.ts, amount:r.amt, amount_recv:r.amt, cur:'US Dollar',
         cur_recv:'US Dollar', format:'ACH', capacity:r.amt, simulated:true}]->(d)
+```
+
+## `app.services.telemetry`
+
+### telemetry_read_spans
+
+Spans of a case trace, in start order
+
+```cypher
+MATCH (s:Span)
+RETURN s.trace_id AS trace_id, s.span_id AS span_id, s.parent_id AS parent_id, s.name AS name,
+       s.kind AS kind, s.start_ns AS start_ns, s.end_ns AS end_ns, s.status AS status,
+       s.attrs AS attrs
+ORDER BY start_ns
+```
+
+### telemetry_write_spans
+
+Store a task's spans in the case graph
+
+```cypher
+UNWIND $spans AS s
+CREATE (:Span {trace_id:s.trace_id, span_id:s.span_id, parent_id:s.parent_id, name:s.name,
+               kind:s.kind, start_ns:s.start_ns, end_ns:s.end_ns, status:s.status,
+               attrs:s.attrs})
 ```
 
 ## `detection.algorithms`
@@ -1785,7 +2413,7 @@ RETURN e.id AS id
 
 ## Inline queries
 
-46 short queries are written inline (data loading, small lookups, DDL). f-string templates only interpolate labels and relationship types from fixed sets in code, never user input; values are always bound parameters.
+67 short queries are written inline (data loading, small lookups, DDL). f-string templates only interpolate labels and relationship types from fixed sets in code, never user input; values are always bound parameters.
 
 - `backend/agents/archivist.py:47`
 
@@ -1823,37 +2451,37 @@ RETURN e.id AS id
   MATCH (e:Evidence {kind:'typology_match'}) RETURN split(e.origin, ':')[1] AS p
   ```
 
-- `backend/agents/tools.py:77`
+- `backend/agents/tools.py:78`
 
   ```cypher
   MATCH (c:Case) OPTIONAL MATCH (cl:Claim) WITH c, collect(cl) AS cls OPTIONAL MATCH (e:Evidence) WITH c, cls, collect(e) AS evs OPTIONAL MATCH (a:Action) RETURN c.id AS id, c.status AS status, c.title AS title, size(cls) AS claims, size(evs) AS evidence, collect(a.kind) AS actions
   ```
 
-- `backend/agents/tools.py:130`
+- `backend/agents/tools.py:131`
 
   ```cypher
   MATCH (c:Case) OPTIONAL MATCH (cl:Claim) WITH c, collect(cl) AS cls OPTIONAL MATCH (e:Evidence) WITH c, cls, collect(e) AS evs OPTIONAL MATCH (a:Action) RETURN c.id AS id, c.status AS status, c.title AS title, size(cls) AS claims, size(evs) AS evidence, collect(a.kind) AS actions
   ```
 
-- `backend/agents/tools.py:355`
+- `backend/agents/tools.py:374`
 
   ```cypher
   MATCH (c:Case) OPTIONAL MATCH (cl:Claim) WITH c, collect(cl) AS cls OPTIONAL MATCH (e:Evidence) WITH c, cls, collect(e) AS evs OPTIONAL MATCH (a:Action) RETURN c.id AS id, c.status AS status, c.title AS title, size(cls) AS claims, size(evs) AS evidence, collect(a.kind) AS actions
   ```
 
-- `backend/agents/tools.py:261`
+- `backend/agents/tools.py:262`
 
   ```cypher
   MATCH (a:Account) RETURN a.id AS id
   ```
 
-- `backend/agents/triage.py:150`
+- `backend/agents/triage.py:167`
 
   ```cypher
   MATCH (m:Meta {id:'triage_cutoff'}) RETURN m.json AS j
   ```
 
-- `backend/agents/triage.py:248`
+- `backend/agents/triage.py:271`
 
   ```cypher
   MATCH (a:Account) WHERE a.id IN $ids RETURN DISTINCT a.bank_id AS bank
@@ -1868,19 +2496,73 @@ RETURN e.id AS id
 - `backend/app/routers/demo.py:70`
 
   ```cypher
-  MATCH (n) WHERE n:Task OR n:Case OR n:Claim OR n:Decision DETACH DELETE n
+  MATCH (n) WHERE n:Task OR n:Case OR n:Claim OR n:Decision OR n:CaseLock DETACH DELETE n
   ```
 
-- `backend/app/routers/demo.py:84`
+- `backend/app/routers/demo.py:85`
 
   ```cypher
   MATCH (al:Alert {status:'open'}) WHERE al.tasked IS NULL SET al.tasked = -1 RETURN al.id AS id
   ```
 
-- `backend/app/routers/demo.py:92`
+- `backend/app/routers/demo.py:93`
 
   ```cypher
   MATCH (al:Alert {id:$id}) REMOVE al.tasked
+  ```
+
+- `backend/app/routers/hardware.py:61`
+
+  ```cypher
+  MATCH (t) WHERE t:Action OR t:SAR RETURN t.id AS id, labels(t)[0] AS type, coalesce(t.kind, t.status) AS kind
+  ```
+
+- `backend/app/routers/integrations.py:19`
+
+  ```cypher
+  MATCH (:Case {id:$id})-[:CONCERNS]->(a:Account) RETURN a.id AS id
+  ```
+
+- `backend/app/routers/lab.py:188`
+
+  ```cypher
+  CALL db.indexes() YIELD label, properties, types, entitytype RETURN label, properties, types, entitytype
+  ```
+
+- `backend/app/routers/lab.py:184`
+
+  ```cypher
+  MATCH (n) RETURN count(n) AS n
+  ```
+
+- `backend/app/routers/lab.py:185`
+
+  ```cypher
+  MATCH ()-[e]->() RETURN count(e) AS n
+  ```
+
+- `backend/app/routers/lab.py:186`
+
+  ```cypher
+  CALL db.labels() YIELD label RETURN label
+  ```
+
+- `backend/app/routers/lab.py:187`
+
+  ```cypher
+  CALL db.relationshipTypes() YIELD relationshipType AS t RETURN t
+  ```
+
+- `backend/app/routers/lab.py:424`
+
+  ```cypher
+  MATCH (e:Event) RETURN count(e) AS n
+  ```
+
+- `backend/app/routers/lab.py:178`
+
+  ```cypher
+  MATCH (a:Account) RETURN count(a) AS n
   ```
 
 - `backend/app/routers/network.py:64`
@@ -1889,10 +2571,58 @@ RETURN e.id AS id
   MATCH (m:Meta {id:'dataset'}) RETURN m.json AS j
   ```
 
+- `backend/app/routers/scenarios.py:138`
+
+  ```cypher
+  MATCH (k:Case) RETURN k.title AS t
+  ```
+
 - `backend/app/routers/trust.py:70`
 
   ```cypher
   MATCH (e:Evidence {kind:'shared_attr'}) WHERE e.state <> 'superseded' AND e.origin STARTS WITH 'attr:A' RETURN e.origin AS o
+  ```
+
+- `backend/app/routers/workspace.py:81`
+
+  ```cypher
+  MATCH (a:Action) RETURN a.id AS id, a.kind AS kind, a.status AS status
+  ```
+
+- `backend/app/routers/workspace.py:244`
+
+  ```cypher
+  MATCH (:SAR {id:$sar})-[:CONTAINS]->(t:Sentence) OPTIONAL MATCH (t)-[:CITES]->(n) RETURN t.id AS id, t.text AS text, t.section AS section, t.supported AS supported, t.state AS state, t.order AS ord, collect(n.id) AS cites ORDER BY ord
+  ```
+
+- `backend/app/routers/workspace.py:249`
+
+  ```cypher
+  MATCH (e:Evidence) RETURN e.id AS id, e.kind AS kind, e.origin AS origin, e.summary AS summary, e.cypher AS cypher, e.payload AS payload, e.state AS state, e.agent AS agent, e.created_at AS created_at ORDER BY created_at
+  ```
+
+- `backend/app/routers/workspace.py:255`
+
+  ```cypher
+  MATCH (a:Account) RETURN a.id AS id, a.bank_id AS bank, a.pagerank AS pagerank ORDER BY id
+  ```
+
+- `backend/app/routers/workspace.py:258`
+
+  ```cypher
+  MATCH (a:Action) RETURN a.id AS id, a.kind AS kind, a.status AS status, a.rationale AS rationale, a.target AS target
+  ```
+
+- `backend/app/routers/workspace.py:147`
+
+  ```cypher
+  MATCH (a:Action {kind:'freeze_rec'}) RETURN a.target AS t LIMIT 1
+  ```
+
+- `backend/app/routers/workspace.py:163`
+
+  ```cypher
+  CALL algo.pageRank('Account', 'FLOWS') YIELD node, score RETURN node.id AS id ORDER BY score DESC LIMIT 1
   ```
 
 - `backend/app/services/baseline.py:71`
@@ -1907,103 +2637,133 @@ RETURN e.id AS id
   CREATE INDEX FOR (al:Alert) ON (al.status)
   ```
 
-- `backend/app/services/kyc_synth.py:114`
+- `backend/app/services/capacity.py:35`
+
+  ```cypher
+  MATCH (k:Case {id:$id}) OPTIONAL MATCH (k)-[:HAS_CLAIM]->(c:Claim) DETACH DELETE k, c
+  ```
+
+- `backend/app/services/capacity.py:37`
+
+  ```cypher
+  MATCH (l:CaseLock {case_id:$id}) DELETE l
+  ```
+
+- `backend/app/services/capacity.py:27`
+
+  ```cypher
+  MATCH (c:Case) RETURN c.opened_at AS t LIMIT 1
+  ```
+
+- `backend/app/services/kyc_synth.py:116`
 
   ```cypher
   MATCH (n) WHERE n:Person OR n:Company OR n:Device OR n:IP OR n:Address DETACH DELETE n
   ```
 
-- `backend/app/services/kyc_synth.py:134`
+- `backend/app/services/kyc_synth.py:136`
 
   ```cypher
   UNWIND $rows AS r MATCH (a:Account {id:r.a}) MATCH (p {id:r.p}) WHERE p:Person OR p:Company CREATE (p)-[:OWNS {valid_from:0, name_on_account:r.n}]->(a)
   ```
 
-- `backend/app/services/kyc_synth.py:143`
+- `backend/app/services/kyc_synth.py:146`
 
   ```cypher
   f"UNWIND $rows AS r CREATE (x:{label} {{id:r.id, kind:r.kind,\n shared_count:r.shared, units:coalesce(r.units, 1),\n text:coalesce(r.text, '')}})"
   ```
 
-- `backend/app/services/kyc_synth.py:146`
+- `backend/app/services/kyc_synth.py:149`
 
   ```cypher
   f'CREATE INDEX FOR (x:{label}) ON (x.id)'
   ```
 
-- `backend/app/services/kyc_synth.py:149`
+- `backend/app/services/kyc_synth.py:152`
 
   ```cypher
   f'UNWIND $rows AS r MATCH (a:Account {{id:r.a}})\n MATCH (x {{id:r.x}}) WHERE x:Device OR x:IP OR x:Address\n CREATE (a)-[:{rel} {{first_seen:0}}]->(x)'
   ```
 
-- `backend/app/services/kyc_synth.py:153`
+- `backend/app/services/kyc_synth.py:156`
 
   ```cypher
   f"CALL db.idx.fulltext.createNodeIndex('{label}', {{field:'name', phonetic:'dm:en'}})"
   ```
 
-- `backend/app/services/kyc_synth.py:155`
+- `backend/app/services/kyc_synth.py:158`
 
   ```cypher
   f'CREATE INDEX FOR (p:{label}) ON (p.id)'
   ```
 
-- `backend/app/services/kyc_synth.py:131`
+- `backend/app/services/kyc_synth.py:133`
 
   ```cypher
   f'UNWIND $rows AS r CREATE (:{label} {{id:r.id, name:r.name, name_norm:r.norm, kyc_id:r.id}})'
   ```
 
-- `backend/app/services/loader.py:146`
+- `backend/app/services/loader.py:147`
 
   ```cypher
   UNWIND $b AS b MERGE (:Bank {id:b, name:'Bank '+b})
   ```
 
-- `backend/app/services/loader.py:264`
+- `backend/app/services/loader.py:265`
 
   ```cypher
   MERGE (m:Meta {id:'dataset'}) SET m.json = $j
   ```
 
-- `backend/app/services/loader.py:116`
+- `backend/app/services/loader.py:117`
 
   ```cypher
   CREATE VECTOR INDEX FOR (a:Account) ON (a.behavior_vec) OPTIONS {dimension:16, similarityFunction:'cosine'}
   ```
 
-- `backend/app/services/loader.py:190`
+- `backend/app/services/loader.py:191`
 
   ```cypher
   UNWIND $rows AS r MATCH (s:Account {id:r.s}), (d:Account {id:r.d}) CREATE (s)-[:FLOWS {capacity:r.cap, n_txn:r.n}]->(d)
   ```
 
-- `backend/app/services/loader.py:154`
+- `backend/app/services/loader.py:155`
 
   ```cypher
   f'UNWIND $rows AS r\n CREATE (a:{label} {{id:r.id, bank_id:r.bank_id, in_deg:r.in_deg, out_deg:r.out_deg,\n first_seen:r.first_seen, last_seen:r.last_seen}})\n WITH a, r MATCH (b:Bank {{id:r.bank_id}}) CREATE (a)-[:HELD_AT]->(b)'
   ```
 
-- `backend/app/services/loader.py:162`
+- `backend/app/services/loader.py:163`
 
   ```cypher
   UNWIND $rows AS r MATCH (a:Account {id:r.id}) SET a.behavior_vec = vecf32(r.v)
   ```
 
-- `backend/app/services/loader.py:176`
+- `backend/app/services/loader.py:177`
 
   ```cypher
   f'UNWIND $rows AS r\n MATCH (s:{ls} {{id:r.s}}) MATCH (d:{ld} {{id:r.d}})\n CREATE (s)-[:TRANSFERS {{txn_id:r.id, ts:r.ts, amount:r.amt, amount_recv:r.recv,\n cur:r.cur, cur_recv:r.cur_recv, format:r.fmt, capacity:r.amt}}]->(d)'
   ```
 
-- `backend/app/services/loader.py:193`
+- `backend/app/services/loader.py:194`
 
   ```cypher
   MATCH (n) WHERE n:Account OR n:ExternalAccount OR n:OtherBank RETURN count(n) AS c
   ```
 
+- `backend/app/services/pos_twin.py:230`
+
+  ```cypher
+  MATCH ()-[t:CARD_TXN]->() RETURN max(t.ts) AS ts
+  ```
+
 - `backend/app/services/simulator.py:61`
+
+  ```cypher
+  MATCH (m:Meta {id:'dataset'}) RETURN m.json AS j
+  ```
+
+- `backend/app/services/simulator.py:128`
 
   ```cypher
   MATCH (m:Meta {id:'dataset'}) RETURN m.json AS j
@@ -2051,13 +2811,7 @@ RETURN e.id AS id
   MATCH (s:SAR) RETURN count(s) AS c
   ```
 
-- `backend/trust/store.py:149`
-
-  ```cypher
-  f'CREATE INDEX FOR (n:{label}) ON (n.id)'
-  ```
-
-- `backend/trust/store.py:178`
+- `backend/trust/store.py:183`
 
   ```cypher
   MATCH (e:Evidence) WHERE e.id IN $ids RETURN count(e) AS c

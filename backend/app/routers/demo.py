@@ -95,3 +95,21 @@ def stream(body: Stream):
             time.sleep(1 / max(0.1, body.rate_per_sec))
     threading.Thread(target=run, daemon=True).start()
     return {"queued": len(rows)}
+
+
+class Inject(BaseModel):
+    size: int = 5
+
+
+@router.post("/red_team")
+def red_team(body: Inject):
+    """Inject an evasive cross-bank ring that rule-based monitoring cannot see."""
+    from app.services import simulator
+    return simulator.inject_evasive_ring(body.size)
+
+
+@router.post("/hunt")
+def hunt():
+    """Hunt mode: motif seeds + shortest-path subgraph raise alerts with no rule firing."""
+    from app.services import simulator
+    return simulator.hunt()

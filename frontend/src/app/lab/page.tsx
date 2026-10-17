@@ -243,6 +243,7 @@ function Tools({ onReplay }: { onReplay: (b: boolean) => void }) {
   const [sel, setSel] = useState<Tool | null>(null);
   const [args, setArgs] = useState("{}");
   const [out, setOut] = useState<any>(null);
+  const [xray, setXray] = useState<any>(null);
   const [filter, setFilter] = useState("all");
   useEffect(() => { live<{ tools: Tool[] }>("/lab/tools").then(({ data, replay }) => { setTs(data.tools); onReplay(replay); }); }, [onReplay]);
   const pick = (t: Tool) => {
@@ -256,8 +257,14 @@ function Tools({ onReplay }: { onReplay: (b: boolean) => void }) {
   };
   const run = async () => {
     if (!sel) return;
+    setXray(null);
     try { setOut(await post("/lab/tools/run", { name: sel.name, params: JSON.parse(args) })); }
     catch (e: any) { setOut({ error: e.data?.detail ?? e.message }); }
+  };
+  // Engine X-Ray: PROFILE the exact query the tool ran, with its parameters, plus graph memory
+  const runXray = async () => {
+    try { setXray(await post("/lab/inspect", { graph: out.graph ?? "consortium", cypher: out.cypher, params: out.params ?? {}, mode: "profile" })); }
+    catch (e: any) { setXray({ error: e.data?.detail ?? e.message }); }
   };
   const counts = ts.reduce<Record<string, number>>((a, t) => ({ ...a, [t.mode]: (a[t.mode] ?? 0) + 1 }), {});
   return (
@@ -296,9 +303,19 @@ function Tools({ onReplay }: { onReplay: (b: boolean) => void }) {
             {out && (
               <div className="mt-3 grid gap-3 lg:grid-cols-2">
                 <div><p className="text-xs text-muted mb-1">Payload {out.ms != null && `(${out.ms} ms)`}</p><pre className="rounded bg-ink/70 p-2 text-[11px] mono overflow-auto max-h-72">{JSON.stringify(out.error ?? out.result ?? out, null, 2).slice(0, 6000)}</pre></div>
-                <div><p className="text-xs text-muted mb-1">Cypher it ran</p><pre className="rounded bg-ink/70 p-2 text-[11px] mono overflow-auto max-h-72 text-cyan/90">{typeof out.cypher === "string" ? out.cypher : JSON.stringify(out.cypher, null, 2)}</pre></div>
+                <div><p className="text-xs text-muted mb-1">Cypher it ran</p><pre className="rounded bg-ink/70 p-2 text-[11px] mono overflow-auto max-h-72 text-cyan/90">{typeof out.cypher === "string" ? out.cypher : JSON.stringify(out.cypher, null, 2)}</pre>
+                  {typeof out.cypher === "string" && <button onClick={runXray} className="mt-1 rounded border border-line px-2 py-0.5 text-xs hover:border-cyan">Engine X-Ray (PROFILE + memory)</button>}
+                </div>
               </div>
             )}
+            {xray && (xray.error ? <p className="mt-2 text-sm text-ring">{xray.error}</p> : (
+              <div className="mt-3 glass-2 p-3 text-xs">
+                <p className="text-muted">{xray.rows} rows · RO_QUERY {xray.ro_query_ms} ms · graph <span className="mono">{xray.graph}</span> {xray.memory?.total_graph_sz_mb} MB, indexes {xray.memory?.indices_sz_mb} MB</p>
+                <ol className="mt-1 space-y-0.5 mono">{(xray.profile ?? []).map((n: any, i: number) => (
+                  <li key={i} style={{ paddingLeft: n.depth * 14 }}>{n.op} <span className="text-cyan/80">{n.detail}</span> <span className="text-muted">{n.records} rows · {n.ms?.toFixed(3)} ms</span></li>
+                ))}</ol>
+              </div>
+            ))}
           </>
         )}
       </div>

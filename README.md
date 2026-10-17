@@ -60,6 +60,41 @@ graphs in one instance), **native algorithms** (`algo.wcc`, `algo.labelPropagati
 matching and English stemming, a **vector index** (HNSW) on behaviour profiles, and the Redis
 protocol for live pub/sub.
 
+## Proof: every FalkorDB feature BankWeave uses
+
+| Feature | Where in the code | Evidence it runs |
+|---|---|---|
+| **Multigraph** (isolated graphs in one instance) | `consortium`, `bank_<id>`, `case_<id>`, `procedures`, `typology_kb` (`backend/app/db.py`) | Browser shows 43-188 graphs during a run; FalkorDB Cloud holds `consortium` + 6 bank graphs + `typology_kb` |
+| `algo.wcc` | precompute component sizes; triage islands (`detection/precompute.py`, `detection/algorithms.py`) | E7 timing; triage reasons "isolated cluster" in the alert queue |
+| `algo.labelPropagation` | communities (`detection/precompute.py`) | `Account.community` on every account |
+| `algo.pageRank` | hub finding in case graphs; SPNSA intermediaries | ![hub](docs/img/app-case-workspace.png) hub claim; E7 timing |
+| `algo.betweenness` (seeded) | mule bridges; SPNSA | ![betweenness](docs/img/falkordb-browser-betweenness.png) |
+| `algo.HarmonicCentrality` | orchestrator candidates | `find_orchestrator` tool, rebuttal rounds |
+| `algo.SPpaths` | money paths: the primary evidence of a claim | `path` evidence in every case, with its query |
+| `algo.SSpaths`, `algo.bfs` | reach / neighbourhood tools | MCP tools `reach`-style queries, `bfs` |
+| `algo.maxFlow` | money at risk over collapsed `FLOWS` edges | hub claims cite max-flow evidence |
+| `algo.MSF` | ring backbone | `algo_msf_backbone` in QUERIES.md |
+| Full-text index + **Double Metaphone** | `Person.name`, `Company.name` (`detection/identity.py`) | `test_identity.py`: a spelling variant finds its original identity |
+| Full-text index + **English stemming** | typology knowledge graph (`knowledge/typology_kb.py`) | cited answers; abstains on unrelated questions |
+| **Vector index (HNSW, cosine)** | 16-dim behaviour profiles (`app/services/loader.py`) | `behavior_neighbors`, triage features, clue expansion |
+| Range indexes incl. **relationship property index** | `TRANSFERS.ts`, `TRANSFERS.txn_id` | `CALL db.indexes()` |
+| Parameterised Cypher, `ro_query` for reads | every query (`docs/QUERIES.md`, 190 queries) | read-only MCP tool `cypher_readonly` |
+| Concurrent writers on one graph | task blackboard (`agents/blackboard.py`) | `test_blackboard.py`: 6 threads, 20 tasks, each claimed once |
+| FalkorDB Browser | visual inspection of every graph | screenshots below |
+| FalkorDB Cloud | live instance (ap-south-1) seeded with the IBM slice | `scripts/make_slice.py` + seed log |
+
+| The consortium ring in FalkorDB Browser | A case graph: claims and their evidence |
+|---|---|
+| ![ring](docs/img/falkordb-browser-consortium-ring.png) | ![claims](docs/img/falkordb-browser-case-claims.png) |
+
+| One bank's view (fragments) | Consortium view (one ring across 4 banks) |
+|---|---|
+| ![single](docs/img/app-network-single-bank.png) | ![consortium](docs/img/app-network-consortium.png) |
+
+| Alert queue on real IBM data | Case workspace |
+|---|---|
+| ![queue](docs/img/app-alert-queue.png) | ![case](docs/img/app-case-workspace.png) |
+
 ## Architecture
 
 ```mermaid

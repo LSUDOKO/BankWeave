@@ -209,9 +209,31 @@ def ground_truth(df: pd.DataFrame, patterns_path: Path | None, banks: list[str],
                 attempts.append({"id": a["id"], "pattern": a["pattern"],
                                  "members": sorted(members), "banks": sorted(abanks),
                                  "cross_bank": len(abanks) >= 2})
-    return {"banks": banks, "illicit_accounts": illicit,
+    if not attempts:  # no Patterns file: proxy attempts = connected groups of laundering transfers
+        attempts = _attempts_from_labels(lab, set(banks))
+    return {"banks": banks, "illicit_accounts": illicit, "attempt_source":
+            "patterns_file" if patterns_path and patterns_path.exists() else
+            "connected_components_of_laundering_transfers",
             "laundering_txns": lab["txn_id"].tolist(), "attempts": attempts,
             "n_txn": int(len(df)), "n_laundering_txn": int(len(lab))}
+
+
+def _attempts_from_labels(lab: pd.DataFrame, banks: set[str]) -> list[dict]:
+    import networkx as nx
+
+    g = nx.Graph()
+    bank_of = {}
+    for s_, d_, sb, db_ in zip(lab["src"], lab["dst"], lab["src_bank"], lab["dst_bank"]):
+        if s_.startswith("other_") or d_.startswith("other_"):
+            continue
+        g.add_edge(s_, d_)
+        bank_of[s_], bank_of[d_] = sb, db_
+    out = []
+    for i, comp in enumerate(sorted(nx.connected_components(g), key=len, reverse=True)):
+        bs = sorted({bank_of[a] for a in comp})
+        out.append({"id": f"lc{i}", "pattern": "COMPONENT", "members": sorted(comp), "banks": bs,
+                    "cross_bank": len(bs) >= 2})
+    return out
 
 
 def load(trans_path: Path, patterns_path: Path | None = None, top_n: int | None = None,

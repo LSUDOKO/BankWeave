@@ -139,6 +139,15 @@ def main(sample: int, seed: int, workers: int) -> None:
     ng["escalated"] = sum(1 for a in test if len(by_acct[a]["rules"]) >= k_best)
     ng["alert_reduction"] = round(1 - ng["escalated"] / n, 4)
 
+    # per-account test scores for the evaluation page's threshold slider (no ids, just the
+    # calibrated probability, the hand score, the number of rules fired and the label)
+    (ROOT / "eval" / "results" / "E1_test_scores.json").write_text(json.dumps({
+        "dataset": dataset_label(), "commit": commit(), "threshold": round(float(thr), 4),
+        "hand_cutoff": hand_c, "rules_k": k_best,
+        "rows": sorted(([round(float(pt[i]), 5), round(float(rows[a][0]), 3),
+                         len(by_acct[a]["rules"]), int(yt[i])] for i, a in enumerate(test)),
+                       key=lambda r: -r[0])}, separators=(",", ":")))
+
     top = sorted(zip(keys, w), key=lambda kv: -abs(kv[1]))[:8]
     write("E1_alert_triage", dataset_label(),
           {"sample_per_split": sample, "seed": seed, "alerts_total": gen["alerts"],

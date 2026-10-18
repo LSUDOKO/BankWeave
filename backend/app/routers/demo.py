@@ -4,7 +4,7 @@ from __future__ import annotations
 import threading
 import time
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from agents.blackboard import Blackboard
@@ -97,6 +97,15 @@ def stream(body: Stream):
     return {"queued": len(rows)}
 
 
+def _attested():
+    """New transactions are blinded into the consortium by the enclave: refuse when quarantined."""
+    from app.services.hardware_enclave import ENCLAVE
+    try:
+        ENCLAVE.require()
+    except PermissionError as exc:
+        raise HTTPException(423, str(exc)) from exc
+
+
 class Inject(BaseModel):
     size: int = 5
 
@@ -105,6 +114,7 @@ class Inject(BaseModel):
 def red_team(body: Inject):
     """Inject an evasive cross-bank ring that rule-based monitoring cannot see."""
     from app.services import simulator
+    _attested()
     return simulator.inject_evasive_ring(body.size)
 
 
@@ -112,6 +122,7 @@ def red_team(body: Inject):
 def red_team_smurf():
     """Inject a 25-transfer smurfing network (fan-out under the threshold, then fan-in)."""
     from app.services import simulator
+    _attested()
     return simulator.inject_smurfing()
 
 

@@ -94,8 +94,11 @@ def seal(case_id: str):
 
 @router.get("/twin")
 def twin():
-    return {"terminals": TERMINALS, "cards": TWIN.cards(), "log": TWIN.log[:20],
-            "simulated": True}
+    from app.services.pos_twin import nfc_uid
+    cards = [{**c, "nfc_uid": nfc_uid(c["card"])} for c in TWIN.cards()]
+    return {"terminals": TERMINALS, "cards": cards, "log": TWIN.log[:20],
+            "wokwi_log": [x for x in TWIN.log if x.get("source") == "wokwi"][:20],
+            "enclave": ENCLAVE.status, "simulated": True}
 
 
 class Tap(BaseModel):
@@ -104,6 +107,12 @@ class Tap(BaseModel):
     amount: float
     clone: bool = False
     source: str = "ui"
+    # what a device reports about itself (the Wokwi sketch sends these); kept for the log,
+    # while the server builds the authoritative ISO 8583 / EMV message
+    device_id: str | None = None
+    emv_atc: int | None = None
+    gps: list[float] | None = None
+    tlv: str | None = None
 
 
 @router.post("/pos-tap")
@@ -115,8 +124,13 @@ def pos_tap(body: Tap):
         raise HTTPException(404, "unknown card")
     if not 0 < body.amount <= 1_000_000:
         raise HTTPException(400, "amount out of range")
-    out = TWIN.tap(body.terminal_id, body.card_id, body.amount, clone=body.clone)
-    return {**out, "source": body.source}
+    reported = {k: v for k, v in body.model_dump().items()
+                if k in ("device_id", "emv_atc", "gps", "tlv") and v is not None}
+    try:
+        return TWIN.tap(body.terminal_id, body.card_id, body.amount, clone=body.clone,
+                        source=body.source, reported=reported)
+    except PermissionError as exc:
+        raise HTTPException(423, str(exc)) from exc
 
 
 @router.post("/preset/{name}")
@@ -125,3 +139,5 @@ def run_preset(name: str):
         return preset(name)
     except ValueError as exc:
         raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(423, str(exc)) from exc

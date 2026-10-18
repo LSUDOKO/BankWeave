@@ -22,9 +22,11 @@ from app.services.baseline import _id as alert_id
 
 TERMINALS = {
     "POS-MUM-D00063": {"kind": "POS", "city": "Mumbai", "lat": 19.0760, "lon": 72.8777,
+                       "imei": "356938035643809", "mac": "24:0A:C4:00:00:63",
                        "device": "D00063", "ifd": "D0006301", "merchant": "M-MUM-4471",
                        "name": "BankWeave POS Mumbai IN", "txn_type": "00"},
     "ATM-DEL-A00091": {"kind": "ATM", "city": "Delhi", "lat": 28.6139, "lon": 77.2090,
+                       "imei": "356938035643817", "mac": "24:0A:C4:00:00:91",
                        "device": "A00091", "ifd": "A0009101", "merchant": "ATM-DEL-0091",
                        "name": "BankWeave ATM New Delhi IN", "txn_type": "01"},
 }
@@ -51,7 +53,11 @@ MERGE (t:Terminal {id:$terminal})
 ON CREATE SET t.kind = $kind, t.city = $city, t.lat = $lat, t.lon = $lon, t.merchant = $merchant
 MERGE (d:Device {id:$device})
 ON CREATE SET d.kind = 'device', d.units = 1, d.text = $terminal
-MERGE (a)-[:USES_DEVICE {first_seen:$ts}]->(d)
+SET d.imei = $imei, d.mac = $mac, d.terminal_id = $terminal
+MERGE (a)-[u:USES_DEVICE]->(d)
+ON CREATE SET u.first_seen = $ts
+SET u.last_seen = $ts, u.emv_atc = $atc, u.terminal_id = $terminal, u.gps = [$lat, $lon],
+    u.nfc_uid = $uid
 CREATE (a)-[:CARD_TXN {stan:$stan, ts:$ts, amount:$amount, currency:'INR', card:$card,
                        atc:$atc, cryptogram:$ac, mti:'0200'}]->(t)
 WITH d
@@ -132,10 +138,17 @@ class Twin:
             self._cards = [{"card": CARD_IDS[i], "pan": TEST_PANS[i],
                             "pan_masked": TEST_PANS[i][:6] + "******" + TEST_PANS[i][-4:],
                             "account": r["id"], "bank": r["bank"]} for i, r in enumerate(rows[:3])]
+            # a chip's counter only goes up: resume from the highest ATC the graph has seen
+            for r in db.ro(db.CONSORTIUM, "MATCH ()-[t:CARD_TXN]->() RETURN t.card AS card, "
+                                          "max(t.atc) AS atc"):
+                if r["card"] in self.atc and r["atc"]:
+                    self.atc[r["card"]] = max(self.atc[r["card"]], int(r["atc"]))
         return self._cards
 
     def tap(self, terminal: str, card: str, amount: float, ts: int | None = None,
-            clone: bool = False) -> dict:
+            clone: bool = False, source: str = "ui", reported: dict | None = None) -> dict:
+        from app.services.hardware_enclave import ENCLAVE
+        ENCLAVE.require()  # taps are blinded into the consortium: no attested enclave, no write
         term = TERMINALS[terminal]
         c = next(x for x in self.cards() if x["card"] == card)
         ts = ts or int(time.time())
@@ -164,11 +177,15 @@ class Twin:
             "account": c["account"], "terminal": terminal, "kind": term["kind"],
             "city": term["city"], "lat": term["lat"], "lon": term["lon"],
             "merchant": term["merchant"], "device": term["device"], "ts": ts, "stan": stan,
-            "amount": float(amount), "card": card, "atc": atc, "ac": ac})
+            "amount": float(amount), "card": card, "atc": atc, "ac": ac,
+            "imei": term["imei"], "mac": term["mac"], "uid": nfc_uid(card)})
         alerts = self._detect(terminal, c, ts, atc)
         entry = {"ts": ts, "terminal": terminal, "city": term["city"], "card": card,
                  "account": c["account"], "amount": amount, "atc": atc, "clone": clone,
-                 "iso8583": msg, "emv": decoded, "alerts": alerts,
+                 "iso8583": msg, "emv": decoded, "alerts": alerts, "source": source,
+                 "nfc_uid": nfc_uid(card), "gps": [term["lat"], term["lon"]],
+                 "imei": term["imei"], "mac": term["mac"], "device_id": term["device"],
+                 "reported": reported or {},
                  "response": "05 DECLINE / REFER" if alerts else "00 APPROVED",
                  "emvlab": "https://emvlab.org/tlvutils/?data=" + field55}
         with self.lock:
@@ -207,11 +224,18 @@ class Twin:
             hours = max((ts - p["ts"]) / 3600, 1e-6)
             if km / hours > MAX_KMH or atc <= (p["atc"] or 0):
                 why = (f"card used in {p['city']} then {t['city']} {km:,.0f} km apart in "
-                       f"{(ts - p['ts']) / 60:.0f} min ({km / hours:,.0f} km/h)")
+                       + (f"{ts - p['ts']} s" if ts - p['ts'] < 120 else f"{(ts - p['ts']) / 60:.0f} min")
+                       + f" ({km / hours:,.0f} km/h)")
                 if atc <= (p["atc"] or 0):
-                    why += f"; ATC did not advance ({p['atc']} then {atc}): cloned chip data"
+                    why += (f"; same PAN and ATC did not advance ({p['atc']} then {atc}): cloned "
+                            "chip data, not a supplementary card (which has its own PAN and counter)")
                 out.append(self._raise(c["account"], "impossible_travel", why, ts))
         return out
+
+
+def nfc_uid(card: str) -> str:
+    """7-byte ISO 14443-A UID of a demo card (stable per card, synthetic)."""
+    return "04" + hashlib.sha256(card.encode()).hexdigest()[:12].upper()
 
 
 def _km(lat1, lon1, lat2, lon2) -> float:
@@ -231,13 +255,13 @@ def preset(name: str) -> dict:
     now = max(int(time.time()), (last[0]["ts"] or 0) + 3600 if last else 0)
     cards = [c["card"] for c in TWIN.cards()]
     if name == "mule_ring":
-        steps = [TWIN.tap("POS-MUM-D00063", cards[i], amt, now + 60 * i)
-                 for i, amt in enumerate([9400.0, 9650.0, 9820.0])]
+        steps = [TWIN.tap("POS-MUM-D00063", cards[i], amt, now + 10 * i)
+                 for i, amt in enumerate([9400.0, 9650.0, 9820.0])]  # 10 s apart
         title = "Mule card-swiping ring on shared POS D00063"
     elif name == "impossible_travel":
         steps = [TWIN.tap("POS-MUM-D00063", cards[0], 2450.0, now),
-                 TWIN.tap("ATM-DEL-A00091", cards[0], 20000.0, now + 25 * 60, clone=True)]
-        title = "Cloned EMV card: Mumbai then Delhi in 25 minutes"
+                 TWIN.tap("ATM-DEL-A00091", cards[0], 20000.0, now + 10, clone=True)]
+        title = "Cloned EMV card: Mumbai then Delhi 10 seconds later"
     else:
         raise ValueError("unknown preset")
     return {"preset": name, "title": title, "steps": steps,

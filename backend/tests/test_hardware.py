@@ -82,3 +82,15 @@ def test_signatures_seal_the_root_and_break_on_revocation():
         assert len(attestation.seal(cid)["broken"]) == 2
     finally:
         capacity.drop_case(cid)
+
+
+def test_quarantined_enclave_blocks_consortium_ingestion(monkeypatch):
+    from app.services import hardware_enclave as he
+    e = he.Enclave()
+    monkeypatch.setattr(he, "ENCLAVE", e)
+    e.tamper()
+    with pytest.raises(PermissionError):
+        pos_twin.TWIN.tap("POS-MUM-D00063", pos_twin.TWIN.cards()[0]["card"], 100.0)
+    out = e.reset()
+    assert out["status"] == "ATTESTED" and out["hsm"]["pkcs11_slot_id"] == 0
+    assert all(b["sync"] == "open" for b in out["bank_links"])

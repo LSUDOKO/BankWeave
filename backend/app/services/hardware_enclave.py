@@ -38,7 +38,8 @@ APP_ID = "bankweave/consortium-blinding/v2"
 
 RECORD = cy("enclave_attestation_record", "Record an enclave attestation in the consortium", """
 CREATE (:EnclaveAttestation {module_id:$module, ts:$ts, status:$status, verified:$verified,
-                             pcr0:$pcr0, pcr1:$pcr1, pcr2:$pcr2, nonce:$nonce, reason:$reason})
+                             pcr0:$pcr0, pcr1:$pcr1, pcr2:$pcr2, nonce:$nonce, reason:$reason,
+                             pkcs11_slot:0, signer_fp:$fp, verified_banks:$banks})
 """)
 
 HISTORY = cy("enclave_attestation_history", "Recent enclave attestations", """
@@ -64,6 +65,17 @@ class Enclave:
         self._signer = ec.generate_private_key(ec.SECP384R1())
         self.reference = self.pcrs()
 
+    def fingerprint(self) -> str:
+        der = self._signer.public_key().public_bytes(
+            serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+        return hashlib.sha256(der).hexdigest()[:32]
+
+    def require(self) -> None:
+        """Gate for anything that writes blinded data into the consortium graph."""
+        if self.status != "ATTESTED":
+            raise PermissionError(f"enclave {self.status}: {self.reason}; cross-bank sync is "
+                                  "severed until the hardware root is reset")
+
     def pcrs(self) -> dict[str, str]:
         return {"0": _sha384(self.image), "1": _sha384(RUNTIME), "2": _sha384(APP_ID)}
 
@@ -82,15 +94,23 @@ class Enclave:
                    "certificate": "SIMULATED (no AWS Nitro PKI chain)", "cabundle": []}
             payload = json.dumps(doc, sort_keys=True).encode()
             sig = self._signer.sign(payload, ec.ECDSA(hashes.SHA384()))
+            banks = _banks()
             out = {"document": doc, "signature_es384": base64.b64encode(sig).decode(),
                    "reference_pcrs": self.reference, "verified": ok, "status": self.status,
-                   "reason": self.reason, "simulated": True}
+                   "reason": self.reason, "simulated": True,
+                   "hsm": {"interface": "PKCS#11 (SoftHSMv2-compatible, simulated)",
+                           "pkcs11_slot_id": 0, "enclave_signer_fingerprint": self.fingerprint(),
+                           "key": "HMAC-SHA256 blinding key, CKA_SENSITIVE, never exported"},
+                   "bank_links": [{"bank": b, "sync": "open" if self.status == "ATTESTED"
+                                   else "severed"} for b in banks],
+                   "verified_banks": banks if self.status == "ATTESTED" else []}
         try:
             db.q(db.CONSORTIUM, RECORD, {"module": MODULE_ID, "ts": doc["timestamp"],
                                           "status": self.status, "verified": ok,
                                           "pcr0": measured["0"], "pcr1": measured["1"],
                                           "pcr2": measured["2"], "nonce": nonce,
-                                          "reason": self.reason})
+                                          "reason": self.reason, "fp": self.fingerprint(),
+                                          "banks": out["verified_banks"]})
         except Exception:  # noqa: BLE001  (a full graph must not hide the attestation result)
             pass
         return out
@@ -112,6 +132,14 @@ class Enclave:
 
 
 ENCLAVE = Enclave()
+
+
+def _banks() -> list[str]:
+    try:
+        meta = db.ro(db.CONSORTIUM, "MATCH (m:Meta {id:'dataset'}) RETURN m.json AS j")
+        return json.loads(meta[0]["j"])["banks"] if meta else []
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def history() -> list[dict]:

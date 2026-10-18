@@ -8,7 +8,7 @@ const VERT = "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }
 
 const FRAG = `
 precision highp float;
-uniform vec2 res; uniform float time; uniform float zoom; uniform float shift;
+uniform vec2 res; uniform float time; uniform float zoom; uniform float shift; uniform float spread;
 mat4 rotationMatrix(vec3 axis, float angle) {
   axis = normalize(axis); float s = sin(angle), c = cos(angle), oc = 1.0 - c;
   return mat4(oc*axis.x*axis.x + c, oc*axis.x*axis.y - axis.z*s, oc*axis.z*axis.x + axis.y*s, 0.0,
@@ -23,11 +23,21 @@ float sdf(vec3 p) {
   vec3 p2 = rotate(p, vec3(1.0), -time/5.0);
   vec3 p3 = rotate(p, vec3(1.0, 1.0, 0.0), -time/4.5);
   vec3 p4 = rotate(p, vec3(0.0, 1.0, 0.0), -time/4.0);
-  float d = length(p1 - vec3(-0.5, 0.0, 0.0)) - 0.35;
-  d = smin(d, length(p2 - vec3(0.55, 0.0, 0.0)) - 0.3, 0.1);
-  d = smin(d, length(p2 - vec3(-0.8, 0.0, 0.0)) - 0.2, 0.1);
-  d = smin(d, length(p3 - vec3(1.0, 0.0, 0.0)) - 0.15, 0.1);
-  d = smin(d, length(p4 - vec3(0.45, -0.45, 0.0)) - 0.15, 0.1);
+  float d = length(p1 - vec3(-0.5, 0.0, 0.0) * spread) - 0.35;
+  d = smin(d, length(p2 - vec3(0.55, 0.0, 0.0) * spread) - 0.3, 0.1);
+  d = smin(d, length(p2 - vec3(-0.8, 0.0, 0.0) * spread) - 0.2, 0.1);
+  d = smin(d, length(p3 - vec3(1.0, 0.0, 0.0) * spread) - 0.15, 0.1);
+  d = smin(d, length(p4 - vec3(0.45, -0.45, 0.0) * spread) - 0.15, 0.1);
+  if (spread > 1.0) {
+    // extra bubbles on wider orbits so the field fills a full-width hero
+    vec3 p5 = rotate(p, vec3(0.0, 0.0, 1.0), -time/7.0);
+    vec3 p6 = rotate(p, vec3(0.3, 1.0, 0.2), time/6.0);
+    vec3 p7 = rotate(p, vec3(0.0, 0.0, 1.0), time/9.0);
+    d = smin(d, length(p5 - vec3(0.2, 0.8, 0.0) * spread) - 0.24, 0.1);
+    d = smin(d, length(p6 - vec3(-0.95, -0.55, 0.0) * spread) - 0.2, 0.1);
+    d = smin(d, length(p7 - vec3(1.2, 0.45, 0.0) * spread) - 0.17, 0.1);
+    d = smin(d, length(p5 - vec3(-1.25, 0.35, 0.0) * spread) - 0.13, 0.1);
+  }
   return d;
 }
 vec3 getNormal(vec3 p) {
@@ -42,7 +52,7 @@ void main() {
   vec3 bg = mix(vec3(0.902, 0.945, 1.0), vec3(0.973, 0.984, 1.0), smoothstep(0.0, 1.0, frag.y));
   bg = mix(bg, vec3(0.541, 0.847, 0.988), 0.22 * smoothstep(0.6, 0.0, length((frag - vec2(0.85, 1.0)) * vec2(1.0, 1.4))));
   float t = 0.0; bool hit = false;
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 120; i++) {
     float d = sdf(cam + ray * t);
     if (d < 0.001) { hit = true; break; }
     t += d; if (t > 100.0) break;
@@ -60,7 +70,7 @@ void main() {
   gl_FragColor = vec4(mix(c, vec3(1.0), smoothstep(0.85, 1.0, fresnel)), 1.0);
 }`;
 
-export default function WeaveField({ className = "", zoom = 1, shift = 0 }: { className?: string; zoom?: number; shift?: number }) {
+export default function WeaveField({ className = "", zoom = 1, shift = 0, spread = 1 }: { className?: string; zoom?: number; shift?: number; spread?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const cv = ref.current!;
@@ -78,7 +88,7 @@ export default function WeaveField({ className = "", zoom = 1, shift = 0 }: { cl
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     const uRes = gl.getUniformLocation(prog, "res"), uT = gl.getUniformLocation(prog, "time");
-    gl.uniform1f(gl.getUniformLocation(prog, "zoom"), zoom); gl.uniform1f(gl.getUniformLocation(prog, "shift"), shift);
+    gl.uniform1f(gl.getUniformLocation(prog, "zoom"), zoom); gl.uniform1f(gl.getUniformLocation(prog, "shift"), shift); gl.uniform1f(gl.getUniformLocation(prog, "spread"), spread);
 
     const t0 = performance.now();
     const draw = (now: number) => { gl.uniform1f(uT, (now - t0) / 1000); gl.drawArrays(gl.TRIANGLES, 0, 3); };
@@ -103,6 +113,6 @@ export default function WeaveField({ className = "", zoom = 1, shift = 0 }: { cl
     io.observe(cv);
     raf = requestAnimationFrame(frame);
     return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); };
-  }, [zoom, shift]);
+  }, [zoom, shift, spread]);
   return <canvas ref={ref} aria-hidden className={`pointer-events-none absolute inset-0 h-full w-full ${className}`} />;
 }

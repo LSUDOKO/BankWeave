@@ -1,8 +1,8 @@
 "use client";
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import WeaveField from "@/components/WeaveField";
+import { useEffect, useRef, useState } from "react";
+import Icon from "@/components/Icon";
 import { Logo } from "@/components/TopNav";
 import { API } from "@/lib/api";
 import { live } from "@/lib/snapshot";
@@ -24,7 +24,6 @@ type Overview = {
 };
 
 const BLEED = { width: "100vw", marginLeft: "calc(50% - 50vw)" };
-const INSET = { width: "calc(100vw - 24px)", marginLeft: "calc(50% - 50vw + 12px)" }; // same 12px frame as the hero card
 const ONE_BANK = "#0c9aa6"; // validated against --cyan for CVD and normal-vision separation
 const n = (x?: number) => (x == null ? "…" : Math.round(x).toLocaleString());
 
@@ -32,58 +31,164 @@ export default function Landing() {
   const [d, setD] = useState<Overview | null>(null);
   const [replay, setReplay] = useState(false);
   useEffect(() => { live<Overview>("/overview").then(({ data, replay }) => { setD(data); setReplay(replay); }).catch(() => {}); }, []);
+  // reveal-on-scroll for every [data-reveal] block, in every browser
+  useEffect(() => {
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
+    document.querySelectorAll("[data-reveal]").forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
   return (
-    <>
-      <Hero />
-      <ProductReveal d={d} replay={replay} />
+    <div className="bg-white">
+      <Hero d={d} replay={replay} />
+      <Stack />
+      <Statement />
+      <Bento d={d} />
       <Results />
       <CaseTour />
       <AgentFlow />
       <Faqs />
       <CallToAction />
       <Footer />
-    </>
+    </div>
   );
 }
 
-function Hero() {
-  // an inset card exactly one viewport tall: the first screen is complete, with rounded edges instead of a hard cut
+function useScrollProgress(range: number) {
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const f = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setP(Math.min(1, Math.max(0, window.scrollY / range)))); };
+    f(); window.addEventListener("scroll", f, { passive: true });
+    return () => { window.removeEventListener("scroll", f); cancelAnimationFrame(raf); };
+  }, [range]);
+  return p;
+}
+
+function Hero({ d, replay }: { d: Overview | null; replay: boolean }) {
+  const p = useScrollProgress(520);
+  const decided = (d?.alerts.cleared ?? 0) + (d?.alerts.case ?? 0);
   return (
-    <section className="hero-card hero-blue relative flex items-center justify-center overflow-hidden rounded-[28px] shadow-[0_30px_80px_-40px_rgba(4,38,84,.6)]"
-      style={{ width: "calc(100vw - 24px)", marginLeft: "calc(50% - 50vw + 12px)", marginTop: -20, height: "calc(100svh - 24px)" }}>
-      <WeaveField />
-      <div className="hero-par relative flex flex-col items-center justify-center px-4 text-center">
-        <h1 className="text-5xl font-bold tracking-tight text-white sm:whitespace-nowrap md:text-6xl lg:text-7xl" style={{ letterSpacing: "-0.05em" }}>
-          Find the laundering ring <br />
-          no single bank can see
+    <section className="hero-night relative overflow-hidden pt-36 md:pt-44">
+      <div className="dot-grid absolute inset-0" />
+      <Threads />
+      <div className="relative mx-auto max-w-[1080px] px-5 text-center" style={{ transform: `translateY(${p * -60}px)`, opacity: 1 - p * 0.9 }}>
+        <a href="#product" data-reveal className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.06] py-1 pl-1.5 pr-3.5 text-[13px] text-[#c8d6ea] backdrop-blur hover:border-white/30">
+          <span className="rounded-full bg-cyan px-2 py-0.5 text-[11px] font-semibold text-white">{replay ? "Replay" : "Live"}</span>
+          Running on FalkorDB Cloud · 6 banks · {d ? `${n(d.falkordb.graphs)} graphs` : "…"}
+        </a>
+        <h1 data-reveal style={{ letterSpacing: "-0.05em", ["--d" as string]: "80ms" }}
+          className="mx-auto mt-7 max-w-[1000px] text-[44px] font-semibold leading-[1.02] text-white sm:text-[62px] lg:text-[80px]">
+          Find the laundering ring <br className="hidden sm:block" /><span className="text-grad">no single bank can see</span>
         </h1>
-        <p className="mt-4 max-w-2xl text-center text-lg leading-relaxed text-white/90 lg:text-xl">
-          BankWeave is a team of AI agents that investigates alerts across banks in one FalkorDB instance: each bank keeps its
-          own graph, rings appear where those graphs join, and every sentence of a report points to the query that proves it.
+        <p data-reveal style={{ ["--d" as string]: "160ms" }} className="mx-auto mt-6 max-w-[640px] text-[17px] leading-relaxed text-[#a9bcd8] md:text-[19px]">
+          AI agents investigate alerts across banks in one FalkorDB instance. Each bank keeps its own graph, rings appear where
+          the graphs join, and every sentence of a report points to the query that proves it.
         </p>
-        <div className="mt-6 scale-110">
-          <Link href="/command" className="inline-block rounded-xl bg-white px-5 py-2.5 font-semibold text-cyan shadow-lg shadow-black/10 hover:bg-white/90">Open the console</Link>
+        <div data-reveal style={{ ["--d" as string]: "240ms" }} className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <Link href="/command" className="group inline-flex items-center gap-2 rounded-xl bg-cyan px-6 py-3 font-semibold text-white shadow-[0_14px_40px_-12px_rgba(8,124,248,.95)] transition hover:bg-[#1a8bff]">
+            Open the console <span className="transition-transform group-hover:translate-x-0.5">→</span>
+          </Link>
+          <Link href="/scenarios" className="rounded-xl border border-white/20 bg-white/[.06] px-6 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/[.12]">See the golden scenarios</Link>
+        </div>
+        <dl data-reveal style={{ ["--d" as string]: "320ms" }} className="mx-auto mt-12 grid max-w-[720px] grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[.04] py-4 backdrop-blur">
+          {[[n(decided), "alerts decided by agents"], [n(d?.claims.independent), "independent claims"], [d ? `${Math.round(d.ms)} ms` : "…", "live overview query"]].map(([v, l]) => (
+            <div key={l} className="px-3"><dt className="sr-only">{l}</dt><dd className="kpi text-[26px] text-white md:text-[30px]">{v}</dd><p className="text-[12px] text-[#8fa6c6]">{l}</p></div>
+          ))}
+        </dl>
+      </div>
+      {/* the console rises out of the hero and flattens as you scroll, framer-style */}
+      <div id="product" className="relative mx-auto mt-16 max-w-[1180px] px-4 md:mt-20" style={{ perspective: "1600px" }}>
+        <div className="pointer-events-none absolute inset-x-[10%] -top-10 h-40 rounded-full bg-cyan/40 blur-[90px] glow-pulse" />
+        <div style={{ transform: `rotateX(${(1 - p) * 22}deg) scale(${0.92 + p * 0.08})`, transformOrigin: "50% 0%" }} className="will-change-transform">
+          <Shot src={shotCommand} alt="BankWeave dashboard on the live site" label="bankweave.vercel.app/command" dark />
         </div>
       </div>
-      <a href="#product" aria-label="Scroll to the product" className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 hover:text-white">
-        <span className="scroll-cue block h-9 w-5 rounded-full border-2 border-current" />
-      </a>
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-white" />
     </section>
   );
 }
 
-function ProductReveal({ d, replay }: { d: Overview | null; replay: boolean }) {
-  const decided = (d?.alerts.cleared ?? 0) + (d?.alerts.case ?? 0);
+/** Bank lanes and the thread that weaves them: faint verticals, a few curves with light running along them. */
+function Threads() {
+  const curves = ["M-50 520 C 300 120, 600 640, 1500 180", "M-50 300 C 400 700, 900 60, 1500 460", "M-50 640 C 500 420, 800 820, 1500 600"];
   return (
-    <section id="product" className="mx-auto max-w-[1180px] pt-28">
-      <Head kicker="The console" title="Every bank's investigators, one live picture" sub="Alerts, cases, evidence and engine health from the same FalkorDB Cloud instance the agents write to." />
-      <div className="tilt-stage relative mt-14">
-        <div className="tilt">
-          <Shot src={shotCommand} alt="BankWeave Command Center on the live site" label="bankweave.vercel.app/command" />
-        </div>
-        <Float className="float-a -left-4 top-[18%] hidden md:block" label="Alerts decided by agents" value={n(decided)} sub={`of ${n(d?.alerts.total)} raised`} tone="text-paper" />
-        <Float className="float-b -right-4 top-[38%] hidden md:block" label="Independent claims" value={n(d?.claims.independent)} sub={`${n(d?.claims.paths)} paths · ${n(d?.claims.origins)} origins`} tone="text-ok" />
-        <Float className="float-a bottom-[10%] left-[12%] hidden md:block" label={replay ? "Seeded replay" : "Live API"} value={d ? `${Math.round(d.ms)} ms` : "…"} sub="overview query" tone="text-cyan" />
+    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden>
+      <defs>
+        <linearGradient id="th" x1="0" x2="1"><stop offset="0" stopColor="#8ad8fc" stopOpacity="0" /><stop offset=".5" stopColor="#8ad8fc" /><stop offset="1" stopColor="#087cf8" stopOpacity="0" /></linearGradient>
+      </defs>
+      {[180, 420, 660, 900, 1140, 1320].map((x) => <line key={x} x1={x} y1="0" x2={x} y2="900" stroke="rgba(255,255,255,.05)" />)}
+      {curves.map((c, i) => (
+        <g key={c}>
+          <path d={c} fill="none" stroke="rgba(138,216,252,.10)" strokeWidth="1.2" />
+          <path d={c} fill="none" stroke="url(#th)" strokeWidth="1.6" className="thread" style={{ animationDelay: `${i * -2}s`, animationDuration: `${7 + i * 2}s` }} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function Stack() {
+  const items = ["FalkorDB", "GraphBLAS algorithms", "LangGraph agents", "Groq", "OpenRouter", "HNSW vector index", "Full-text index", "WebAuthn / FIDO2",
+    "Ed25519 Merkle seals", "X25519 PSI", "OpenTelemetry", "IBM AML data", "Next.js"];
+  return (
+    <section aria-label="Built with" className="relative overflow-hidden border-b border-line bg-white py-7">
+      <p className="mb-5 text-center text-xs font-medium uppercase tracking-[.16em] text-muted">Built on</p>
+      <div className="flex w-max marquee gap-12 [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
+        {[...items, ...items].map((t, i) => <span key={i} className="whitespace-nowrap text-[19px] font-semibold tracking-tight text-[#9aa8bb]">{t}</span>)}
+      </div>
+    </section>
+  );
+}
+
+/** A statement whose words light up as it scrolls through the viewport. */
+function Statement() {
+  const text = "A laundering ring spreads its accounts across banks, so each bank sees a few harmless customers. BankWeave joins their graphs without sharing raw data, and agents prove every link before a human signs.";
+  const words = text.split(" ");
+  const ref = useRef<HTMLDivElement>(null);
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    const f = () => {
+      const r = ref.current?.getBoundingClientRect();
+      if (!r) return;
+      const vh = window.innerHeight;
+      setP(Math.min(1, Math.max(0, (vh * 0.85 - r.top) / (r.height + vh * 0.35))));
+    };
+    f(); window.addEventListener("scroll", f, { passive: true });
+    return () => window.removeEventListener("scroll", f);
+  }, []);
+  return (
+    <section className="mx-auto max-w-[1080px] px-5 py-28 md:py-40">
+      <p className="mono mb-6 text-center font-medium text-cyan">Why a consortium graph</p>
+      <div ref={ref} className="text-center text-[30px] font-semibold leading-[1.18] md:text-[50px]" style={{ letterSpacing: "-0.04em" }}>
+        {words.map((w, i) => (
+          <span key={i} className="transition-colors duration-300" style={{ color: i / words.length < p ? "var(--paper)" : "#d3dbe6" }}>{w} </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Bento({ d }: { d: Overview | null }) {
+  const cards: [string, string, string, string, string][] = [
+    ["One graph per bank", "Each bank's transfers live in its own FalkorDB graph with its own ACL. The consortium links accounts by blinded ids.", "/network", "network", "lg:col-span-2"],
+    ["Echo-proof confidence", "Ten paths to one shared device count once. Confidence is computed over independent origins.", "/trust", "trust", ""],
+    ["Cascading invalidation", "Overturn one fact and every claim, action and sentence resting on it is flagged in one traversal.", "/scenarios#C", "scenarios", ""],
+    ["Signed with a hardware key", "Approvals are WebAuthn signatures over the case's Merkle root. Change any evidence and the seal breaks.", "/hardware-lab", "approve", "lg:col-span-2"],
+  ];
+  return (
+    <section className="mx-auto max-w-[1180px] px-5 pb-10">
+      <div className="grid gap-4 lg:grid-cols-3">
+        {cards.map(([t, b, href, icon, span], i) => (
+          <Link key={t} href={href} data-reveal style={{ ["--d" as string]: `${i * 90}ms` }}
+            className={`group relative overflow-hidden rounded-[28px] border border-line bg-[#f6f8fb] p-7 transition-[transform,box-shadow] duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-30px_rgba(12,26,46,.35)] ${span}`}>
+            <span className="grid size-11 place-items-center rounded-2xl bg-white text-cyan shadow-[var(--shadow)]"><Icon name={icon} className="size-5" /></span>
+            <h3 className="mt-10 text-[24px] font-semibold" style={{ letterSpacing: "-0.03em" }}>{t}</h3>
+            <p className="mt-2 max-w-[46ch] text-muted">{b}</p>
+            <span className="mt-5 inline-block text-sm font-semibold text-cyan opacity-0 transition-opacity group-hover:opacity-100">Open it live →</span>
+            {i === 0 && <span className="kpi absolute right-7 top-6 text-[56px] font-semibold text-[#dbe4ef]">{d ? n(d.falkordb.graphs) : "36"}</span>}
+          </Link>
+        ))}
       </div>
     </section>
   );
@@ -91,7 +196,7 @@ function ProductReveal({ d, replay }: { d: Overview | null; replay: boolean }) {
 
 function Results() {
   return (
-    <section className="mt-32 bg-panel-2/70 py-24" style={BLEED}>
+    <section id="results" className="mt-20 bg-[#f6f8fb] py-24">
       <div className="mx-auto max-w-[1180px] px-4 md:px-8">
         <Head kicker="Measured on IBM's laundering data" title="The numbers, not the pitch" sub="Every figure below comes from eval/results in the repo, against IBM's labelled synthetic AML transactions." />
         <div className="mt-14 grid gap-4 md:grid-cols-2">
@@ -141,7 +246,7 @@ function CaseTour() {
     if (e.key === "ArrowLeft") setActive((a) => (a + N - 1) % N);
   };
   return (
-    <section className="mx-auto mt-32 max-w-[1180px]" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+    <section id="tour" className="mx-auto mt-32 max-w-[1180px] scroll-mt-24" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
       <Head kicker="Inside a case" title="Open any case and check it yourself" sub="Screens from the live site, running on FalkorDB Cloud with the agents on Groq." />
       <div role="tablist" aria-label="Case features" onKeyDown={onKey} className="mt-8 flex flex-wrap justify-center gap-2">
@@ -195,8 +300,8 @@ function AgentFlow() {
   ];
   const edges = ["M120 130 H180", "M280 130 C330 130 330 70 350 70", "M450 70 C480 70 480 130 520 130", "M400 92 V168", "M620 130 H670", "M770 130 C800 130 800 70 820 70", "M870 92 V168"];
   return (
-    <section className="hero-blue mt-24 rounded-[28px] py-24" style={INSET}>
-      <div className="mx-auto max-w-[1180px] px-4 md:px-8">
+    <section id="how" className="hero-night relative mx-2 mt-24 overflow-hidden rounded-[32px] py-24 md:mx-3"><div className="dot-grid absolute inset-0" />
+      <div className="relative mx-auto max-w-[1180px] px-4 md:px-8">
         <Head light kicker="How it works" title="Seven agents, one blackboard in the graph" sub="LLMs plan and write. Cypher and FalkorDB's algorithms compute. A human approves every action." />
         <div className="glass reveal mt-14 overflow-hidden p-6">
           <svg viewBox="0 0 960 260" className="hidden w-full md:block" role="img" aria-label="Agent pipeline: Orchestrator, Triage, Investigator and Skeptic, Reporter, Auditor, Human approval, Archivist">
@@ -262,15 +367,15 @@ function CallToAction() {
   return (
     <section className="py-16 md:py-32">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="hero-blue relative overflow-hidden rounded-3xl px-8 py-16 md:px-12 md:py-20">
-          <WeaveField />
+        <div className="hero-night relative overflow-hidden rounded-[32px] px-8 py-16 md:px-12 md:py-24">
+          <div className="dot-grid absolute inset-0" /><Threads />
           <div className="relative flex flex-col items-center justify-center px-4 text-center">
-            <h2 className="text-5xl font-bold tracking-tight text-white sm:whitespace-nowrap md:text-6xl lg:text-7xl" style={{ letterSpacing: "-0.05em" }}>Watch It Work Live</h2>
-            <p className="mt-4 max-w-2xl text-center text-lg leading-relaxed text-white/90 lg:text-xl">
+            <h2 className="text-5xl font-semibold text-white md:text-6xl lg:text-7xl" style={{ letterSpacing: "-0.05em" }}>Watch it work <span className="text-grad">live</span></h2>
+            <p className="mt-4 max-w-2xl text-center text-lg leading-relaxed text-[#a9bcd8] lg:text-xl">
               Agents opening cases on FalkorDB Cloud right now, with every claim one click from the query that proves it.
             </p>
             <div className="mt-6">
-              <Link href="/command" className="inline-block rounded-xl bg-white px-5 py-2.5 font-semibold text-cyan shadow-lg shadow-black/10 hover:bg-white/90">Open the console</Link>
+              <Link href="/command" className="inline-block rounded-xl bg-cyan px-6 py-3 font-semibold text-white shadow-[0_14px_40px_-12px_rgba(8,124,248,.95)] hover:bg-[#1a8bff]">Open the console →</Link>
             </div>
           </div>
         </div>
@@ -287,14 +392,13 @@ function Footer() {
   ];
   // a navy card that closes the page the way the hero opens it, ending in the oversized wordmark
   return (
-    <footer className="hero-blue relative mt-8 overflow-hidden rounded-t-[28px] text-white"
-      style={{ width: "calc(100vw - 24px)", marginLeft: "calc(50% - 50vw + 12px)", marginBottom: -64 }}>
+    <footer className="hero-night relative mx-2 overflow-hidden rounded-t-[32px] text-white md:mx-3">
       <div className="relative mx-auto max-w-[1180px] px-6 pt-16 md:px-10">
         <div className="flex flex-col gap-12 lg:flex-row lg:justify-between">
           <div className="max-w-sm space-y-5">
             <Link href="/" aria-label="go home" className="flex size-fit items-center gap-2"><Logo light /><span className="text-xl font-bold">BankWeave</span></Link>
-            <p className="text-white/80">Cross-bank money-laundering investigations on FalkorDB, with every claim proven.</p>
-            <Link href="/command" className="inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-cyan hover:bg-white/90">Open the console</Link>
+            <p className="text-[#a9bcd8]">Cross-bank money-laundering investigations on FalkorDB, with every claim proven.</p>
+            <Link href="/command" className="inline-block rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-white hover:bg-[#1a8bff]">Open the console</Link>
           </div>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:gap-16">
             {links.map(([group, items]) => (
@@ -303,7 +407,7 @@ function Footer() {
                 <div className="flex flex-col gap-3">
                   {items.map(([title, href]) => (
                     <Link key={title} href={href} {...(href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                      className="text-sm text-white/75 duration-150 hover:text-white">{title}</Link>
+                      className="text-sm text-[#a9bcd8] duration-150 hover:text-white">{title}</Link>
                   ))}
                 </div>
               </div>
@@ -323,32 +427,22 @@ function Footer() {
 function Head({ kicker, title, sub, light = false }: { kicker: string; title: string; sub: string; light?: boolean }) {
   return (
     <div className="reveal mx-auto max-w-[760px] px-4 text-center">
-      <p className={`mono font-medium ${light ? "text-white/80" : "text-cyan"}`}>{kicker}</p>
+      <p className={`mono font-medium ${light ? "text-sky" : "text-cyan"}`}>{kicker}</p>
       <h2 className={`mt-3 text-[34px] leading-[1.05] sm:text-[46px] ${light ? "text-white" : ""}`} style={{ letterSpacing: "-0.045em", fontWeight: 700 }}>{title}</h2>
-      <p className={`mt-4 text-[17px] ${light ? "text-white/85" : "text-muted"}`}>{sub}</p>
+      <p className={`mt-4 text-[17px] ${light ? "text-[#a9bcd8]" : "text-muted"}`}>{sub}</p>
     </div>
   );
 }
 
-function Shot({ src, alt, label }: { src: StaticImageData; alt: string; label: string }) {
+function Shot({ src, alt, label, dark = false }: { src: StaticImageData; alt: string; label: string; dark?: boolean }) {
   return (
-    <figure className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_40px_80px_-40px_rgba(4,38,84,.45),0_2px_6px_rgba(4,38,84,.08)]">
+    <figure className={`overflow-hidden rounded-2xl border bg-white ${dark ? "border-white/15 shadow-[0_60px_120px_-40px_rgba(0,0,0,.7),0_0_0_8px_rgba(255,255,255,.04)]" : "border-line shadow-[0_40px_80px_-40px_rgba(4,38,84,.45),0_2px_6px_rgba(4,38,84,.08)]"}`}>
       <div className="flex items-center gap-1.5 border-b border-line bg-panel-2/70 px-3 py-2">
         {["#ff5f57", "#febc2e", "#28c840"].map((c) => <i key={c} className="size-2.5 rounded-full" style={{ background: c }} />)}
         <span className="mono mx-auto truncate text-muted">{label}</span>
       </div>
       <Image src={src} alt={alt} placeholder="blur" sizes="(min-width: 1180px) 1100px, 100vw" className="block h-auto w-full" />
     </figure>
-  );
-}
-
-function Float({ className, label, value, sub, tone }: { className: string; label: string; value: string; sub: string; tone: string }) {
-  return (
-    <div className={`absolute z-10 w-[200px] rounded-2xl border border-white/70 bg-white/85 p-4 shadow-[0_24px_50px_-20px_rgba(4,38,84,.45)] backdrop-blur-xl ${className}`}>
-      <p className="text-xs text-muted">{label}</p>
-      <p className={`kpi mt-1 text-[28px] leading-none ${tone}`}>{value}</p>
-      <p className="mt-1.5 text-xs text-muted">{sub}</p>
-    </div>
   );
 }
 

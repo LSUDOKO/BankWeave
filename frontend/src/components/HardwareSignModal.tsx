@@ -85,7 +85,7 @@ export default function HardwareSignModal({ caseId, actions, onClose, onDone }: 
             <button onClick={() => run("webauthn")} disabled={!ch || phase === "signing"} className="rounded-md bg-verify/15 border border-verify text-verify px-3 py-1.5 disabled:opacity-40">
               {phase === "signing" ? "Waiting for the authenticator…" : "Sign with WebAuthn"}
             </button>
-            <p className="text-xs"><a className="link" href="https://developer.chrome.com/docs/devtools/webauthn" target="_blank" rel="noreferrer">How to enable Chrome's virtual USB key ↗</a></p>
+            <p className="text-xs"><a className="link" href="https://developer.chrome.com/docs/devtools/webauthn" target="_blank" rel="noreferrer">How to enable Chrome&apos;s virtual USB key ↗</a></p>
           </div>
         )}
         {err && <p className="text-ring text-sm">{err}</p>}
@@ -130,7 +130,7 @@ function VaultKey({ phase, onTouch, disabled }: { phase: string; onTouch: () => 
         <rect x="8" y="40" width="22" height="16" rx="3" fill="#475569" />
         <rect x="34" y="14" width="160" height="68" rx="20" fill="#111827" stroke="#334155" strokeWidth="2" />
         <text x="58" y="40" fill="#e2e8f0" fontSize="11" fontFamily="monospace" fontWeight="700">VaultKey</text>
-        <text x="58" y="54" fill="#94a3b8" fontSize="8" fontFamily="monospace">FIPS 140-3 · SIMULATED</text>
+        <text x="58" y="54" fill="#94a3b8" fontSize="8" fontFamily="monospace">FIPS 140-3 · SIM</text>
         <circle cx="160" cy="48" r="20" fill="none" stroke={glow} strokeWidth="5" className={phase === "signing" ? "pulse-soft" : "group-hover:opacity-80"}>
           {phase === "idle" && <animate attributeName="stroke-opacity" values="1;0.35;1" dur="1.6s" repeatCount="indefinite" />}
         </circle>

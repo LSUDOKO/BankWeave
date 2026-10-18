@@ -1,0 +1,30 @@
+import { chromium } from 'playwright-core';
+import fs from 'fs';
+const b = await chromium.launch({ executablePath: process.env.HOME + '/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome', args: ['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist'] });
+const p = await b.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1.2 });
+p.on('pageerror', e => console.log('ERR', e.message));
+p.on('request', r => { if (r.method()!=='GET') console.log('REQ', r.method(), r.url(), r.postData()); });
+const meta = JSON.parse(fs.readFileSync('shots/meta.json'));
+await p.goto('https://bankweave.vercel.app/lab', { waitUntil:'networkidle', timeout:90000 });
+await p.click('button:text-is("Algorithms & indexes")'); await p.waitForTimeout(2500);
+async function runCard(title){
+  const box = await p.evaluate(t => { const h=[...document.querySelectorAll('*')].find(e=>e.children.length===0 && e.textContent.trim()===t); let c=h; for(let i=0;i<6&&c;i++){ c=c.parentElement; const btn=[...c.querySelectorAll('button')].find(x=>x.innerText.trim()==='Run'); if(btn){ btn.setAttribute('data-run',t); const r=btn.getBoundingClientRect(); return {x:r.x+scrollX,y:r.y+scrollY,w:r.width,h:r.height}; } } return null; }, title);
+  console.log(title, box);
+  await p.click(`button[data-run="${title}"]`); await p.waitForTimeout(6000);
+  return box;
+}
+const runAll = await p.evaluate(()=>{ const el=[...document.querySelectorAll('button')].find(e=>/Run all/.test(e.innerText)); const r=el.getBoundingClientRect(); return {x:r.x+scrollX,y:r.y+scrollY,w:r.width,h:r.height}; });
+const pr = await runCard('PageRank hubs');
+const vk = await runCard('Vector KNN (HNSW, cosine)');
+const h = await p.evaluate(()=>document.documentElement.scrollHeight);
+await p.screenshot({ path:'shots/lab-algo-run.png', fullPage:true });
+const pos = await p.evaluate(()=>{ const f=t=>{const h=[...document.querySelectorAll('*')].find(e=>e.children.length===0 && e.textContent.trim()===t); const r=h.getBoundingClientRect(); return r.y+scrollY;}; return {pr:f('PageRank hubs'), vk:f('Vector KNN (HNSW, cosine)'), ft:f('Full-text, Double Metaphone')}; });
+meta['lab-algo-run']={h, runAll, pr, vk, pos};
+console.log(meta['lab-algo-run']);
+await p.click('button:text-is("Inspector")'); await p.waitForTimeout(2000);
+const insp = await p.evaluate(()=>{ const el=[...document.querySelectorAll('button')].find(e=>e.innerText.trim()==='Inspect'); const r=el.getBoundingClientRect(); return {x:r.x+scrollX,y:r.y+scrollY,w:r.width,h:r.height}; });
+await p.click('button:text-is("Inspect")'); await p.waitForTimeout(8000);
+await p.screenshot({ path:'shots/lab-insp-run.png', fullPage:true });
+meta['lab-insp-run']={h: await p.evaluate(()=>document.documentElement.scrollHeight), insp};
+fs.writeFileSync('shots/meta.json', JSON.stringify(meta,null,1));
+await b.close();

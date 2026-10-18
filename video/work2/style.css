@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=block');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: #f4f7fb; font-family: Inter, sans-serif; color: #0b1b33; }
+#stage { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(1200px 700px at 85% -10%, #dbe9ff 0%, rgba(219,233,255,0) 60%), radial-gradient(900px 600px at -5% 110%, #e3eefc 0%, rgba(227,238,252,0) 60%), #f4f7fb; }
+#stage.navy { background: radial-gradient(1100px 700px at 80% -10%, #12407f 0%, rgba(18,64,127,0) 60%), radial-gradient(900px 600px at 0% 110%, #0d3570 0%, rgba(13,53,112,0) 60%), #0b2a5b; }
+.scene { position: absolute; inset: 0; visibility: hidden; }
+.win { position: absolute; border-radius: 16px; overflow: hidden; background: #fff; box-shadow: 0 30px 80px -20px rgba(11,42,91,.35), 0 0 0 1px rgba(11,42,91,.08); }
+.win .bar { height: 46px; display: flex; align-items: center; gap: 18px; padding: 0 18px; background: #eef2f8; border-bottom: 1px solid #dde4ee; }
+.win.dark .bar { background: #1c2333; border-bottom-color: #0e1320; }
+.win .dots { display: flex; gap: 8px; } .win .dots i { width: 13px; height: 13px; border-radius: 50%; background: #ff5f57; display: block; }
+.win .dots i:nth-child(2) { background: #febc2e; } .win .dots i:nth-child(3) { background: #28c840; }
+.win .url { flex: 1; max-width: 760px; margin: 0 auto; transform: translateX(-40px); height: 30px; border-radius: 9px; background: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 17px; color: #44526a; font-weight: 500; }
+.win.dark .url { background: #2a3347; color: #c3cde0; }
+.win .url svg { color: #7a879c; }
+.win .vp { position: relative; overflow: hidden; background: #f4f7fb; }
+.cam { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; }
+.lab { position: absolute; left: 50%; bottom: 46px; display: flex; align-items: center; gap: 16px; padding: 18px 30px 18px 24px; border-radius: 999px; background: #0b2a5b; color: #fff; font-size: 31px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; box-shadow: 0 18px 50px -12px rgba(11,42,91,.55), 0 0 0 1px rgba(255,255,255,.08) inset; opacity: 0; z-index: 50; }
+.lab b { width: 14px; height: 14px; border-radius: 50%; background: #3d9bff; box-shadow: 0 0 0 6px rgba(8,124,248,.28); }
+.lab .m { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #8cc4ff; }
+.lab .dim { color: #9fb3d1; font-weight: 500; }
+.cursor { position: absolute; z-index: 40; pointer-events: none; }
+.cursor svg { position: relative; filter: drop-shadow(0 3px 5px rgba(0,0,0,.35)); transform-origin: 0 0; }
+.cursor .rip { position: absolute; left: 4px; top: 4px; width: 70px; height: 70px; border-radius: 50%; background: rgba(8,124,248,.28); border: 3px solid rgba(8,124,248,.75); opacity: 0; }
+.ring { position: absolute; border-radius: 14px; border: 4px solid #087cf8; box-shadow: 0 0 0 9999px rgba(11,27,51,.0), 0 0 30px rgba(8,124,248,.55); opacity: 0; z-index: 30; }
+.ring.dim { box-shadow: 0 0 0 9999px rgba(11,27,51,.28), 0 0 30px rgba(8,124,248,.55); }
+.kicker { position: absolute; left: 60px; top: 34px; display: flex; align-items: center; gap: 14px; font-size: 22px; font-weight: 600; color: #0b2a5b; letter-spacing: .02em; }
+.kicker img { height: 34px; }

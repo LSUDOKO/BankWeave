@@ -75,7 +75,7 @@ function Terminals() {
       <div className="glass p-4 flex flex-wrap items-center gap-3">
         <span className="text-sm text-muted">Presets</span>
         <button disabled={busy} onClick={() => run(() => post("/hardware/preset/mule_ring"))} className="rounded-md bg-ring/10 border border-ring text-ring px-3 py-1.5 text-sm disabled:opacity-50">Mule card-swiping ring on shared POS D00063</button>
-        <button disabled={busy} onClick={() => run(() => post("/hardware/preset/impossible_travel"))} className="rounded-md bg-verify/10 border border-verify text-verify px-3 py-1.5 text-sm disabled:opacity-50">Cloned EMV: Mumbai → Delhi in 25 min</button>
+        <button disabled={busy} onClick={() => run(() => post("/hardware/preset/impossible_travel"))} className="rounded-md bg-verify/10 border border-verify text-verify px-3 py-1.5 text-sm disabled:opacity-50">Cloned EMV: Mumbai → Delhi in 10 s</button>
         {msg && <span className="text-sm">{msg} · <Link href="/alerts" className="link">alert queue</Link></span>}
       </div>
       <p className="text-xs text-muted">Cards belong to accounts in the consortium graph: {twin.cards.map((c: any) => `${c.card} → ${c.account.slice(0, 10)} (bank ${c.bank})`).join(" · ")}. Taps write <span className="mono">CARD_TXN</span> edges and link the account to the terminal&apos;s <span className="mono">Device</span>, so the agents&apos; shared-identity tools see the shared POS.</p>

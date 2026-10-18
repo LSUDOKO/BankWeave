@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const LINKS: [string, string][] = [["Product", "#product"], ["Results", "#results"], ["How it works", "#how"], ["Inside a case", "#tour"], ["FAQ", "#faqs"]];
+const LINKS: [string, string][] = [["Product", "#product"], ["What's new", "#new"], ["Results", "#results"], ["Recorded", "#recorded"], ["FalkorDB proof", "#falkordb-browser"], ["FAQ", "#faqs"]];
 
 /** Landing-page nav: glass over the light hero, a white floating pill once you scroll. */
 export default function LandingNav() {

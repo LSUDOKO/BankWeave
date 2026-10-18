@@ -100,3 +100,16 @@ pre, textarea { scrollbar-width: thin; scrollbar-color: var(--line) transparent;
 html { scrollbar-width: none; }
 html::-webkit-scrollbar { display: none; }
 
+/* landing */
+.faq summary::-webkit-details-marker { display: none; }
+.faq-sign::before { content: "+"; }
+.faq[open] .faq-sign::before { content: "\2212"; }
+.tour { --w: min(760px, 86vw); --h: clamp(380px, calc(100svh - 360px), 560px); }
+@media (max-width: 639px) { .tour { --h: clamp(400px, calc(100svh - 300px), 470px); } }
+.tour-card { width: var(--w); transition: transform .7s cubic-bezier(.2, .7, .2, 1), opacity .7s, background-color .4s, box-shadow .4s; }
+.bar:hover path { opacity: .8; }
+@keyframes flow { to { stroke-dashoffset: -28; } }
+.flow-dash { stroke-dasharray: 6 8; animation: flow 1.2s linear infinite; }
+@keyframes cue { 0%, 100% { box-shadow: inset 0 6px 0 -3px currentColor; } 50% { box-shadow: inset 0 16px 0 -3px currentColor; } }
+.scroll-cue { animation: cue 1.8s ease-in-out infinite; }
+

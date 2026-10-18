@@ -1,69 +1,34 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import ModeBadge from "@/components/ModeBadge";
+import { useEffect, useState } from "react";
 
-const GROUPS: [string, [string, string, string][]][] = [
-  ["Investigate", [["/command", "Command Center", "Live counts and engine health"], ["/alerts", "Alert queue", "What triage decided and why"],
-    ["/cases", "Cases", "Claims, evidence and reports"], ["/approvals", "Approvals", "Actions waiting for a human"]]],
-  ["Explore", [["/scenarios", "Golden scenarios", "Three investigations, end to end"], ["/network", "Bank vs consortium", "What each bank can see"],
-    ["/consortium-3d", "3D consortium", "Bank slices, consortium, cases"], ["/trust", "Trust layer", "Echo-proof confidence and cascades"]]],
-  ["Prove", [["/lab", "FalkorDB Lab", "Graphs, algorithms, query plans, tools"], ["/evaluation", "Evaluation", "Measured results on IBM data"],
-    ["/hardware-lab", "Hardware Lab", "Terminals, keys, enclave, PSI"], ["/demo", "Demo control", "Run agents and red-team injections"]]],
-];
+const LINKS: [string, string][] = [["Product", "#product"], ["Results", "#results"], ["How it works", "#how"], ["Inside a case", "#tour"], ["FAQ", "#faqs"]];
 
-export default function TopNav() {
-  const path = usePathname();
-  const [open, setOpen] = useState<string | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => { setOpen(null); }, [path]);
+/** Landing-page nav: transparent over the night hero, a white floating pill once you scroll. */
+export default function LandingNav() {
+  const [solid, setSolid] = useState(false);
   useEffect(() => {
-    const off = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(null); };
-    document.addEventListener("mousedown", off);
-    return () => document.removeEventListener("mousedown", off);
-  }, []);
-  // transparent white nav only while the landing hero (one viewport tall) is behind it
-  const [atTop, setAtTop] = useState(true);
-  useEffect(() => {
-    const f = () => setAtTop(window.scrollY < window.innerHeight - 80);
+    const f = () => setSolid(window.scrollY > 40);
     f(); window.addEventListener("scroll", f, { passive: true });
     return () => window.removeEventListener("scroll", f);
   }, []);
-  const onHero = path === "/" && atTop;
   return (
-    <header className={`${path === "/" ? "fixed inset-x-0 top-6" : "sticky top-3"} z-40 px-3`}>
-      <div ref={ref} className={`mx-auto flex items-center gap-2 rounded-2xl border py-2 transition-[max-width,padding,background-color,border-color,box-shadow,color] duration-500 ease-out ${
-        onHero ? "max-w-[calc(100vw-24px)] border-transparent bg-transparent px-5 text-white" : "max-w-[1180px] border-line bg-white/85 px-3 text-paper shadow-[var(--shadow)] backdrop-blur-xl"}`}>
-        <Link href="/" className="flex items-center gap-2 pr-2 font-semibold tracking-tight" aria-label="BankWeave home">
-          <Logo light={onHero} /><span className="text-[15px]">BankWeave</span>
+    <header className="fixed inset-x-0 top-4 z-40 px-3">
+      <div className={`mx-auto flex items-center gap-2 rounded-2xl border py-2 pl-4 pr-2 transition-all duration-500 ease-out ${solid
+        ? "max-w-[1080px] border-line bg-white/85 text-paper shadow-[0_20px_50px_-24px_rgba(12,26,46,.35)] backdrop-blur-xl"
+        : "max-w-[1240px] border-white/10 bg-white/[.04] text-white backdrop-blur-md"}`}>
+        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight" aria-label="BankWeave home">
+          <Logo light={!solid} /><span className="text-[15px]">BankWeave</span>
         </Link>
-        <nav className={`flex items-center gap-1 text-sm ${onHero ? "invisible opacity-0 max-md:hidden" : "visible opacity-100"} transition-[opacity,visibility] duration-300`} aria-label="Main">
-          {GROUPS.map(([g, items]) => {
-            const active = items.some(([h]) => path.startsWith(h));
-            return (
-              <div key={g} className="relative">
-                <button onClick={() => setOpen(open === g ? null : g)} aria-expanded={open === g}
-                  className={`rounded-lg px-3 py-1.5 transition-colors ${onHero ? "hover:bg-white/15" : "hover:bg-panel-2"} ${active && !onHero ? "text-cyan" : ""}`}>
-                  {g}
-                </button>
-                {open === g && (
-                  <div className="absolute left-0 top-full mt-2 w-[300px] rounded-2xl border border-line bg-white p-2 text-paper shadow-[0_24px_60px_-20px_rgba(10,80,143,.35)]">
-                    {items.map(([href, label, hint]) => (
-                      <Link key={href} href={href} className={`block rounded-xl px-3 py-2 hover:bg-panel-2 ${path.startsWith(href) ? "bg-panel-2" : ""}`}>
-                        <span className="block text-sm font-medium">{label}</span>
-                        <span className="block text-xs text-muted">{hint}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <nav className="mx-auto hidden items-center gap-1 text-sm md:flex" aria-label="Sections">
+          {LINKS.map(([t, h]) => (
+            <a key={h} href={h} className={`rounded-lg px-3 py-1.5 transition-colors ${solid ? "text-muted hover:bg-panel-2 hover:text-paper" : "text-white/75 hover:bg-white/10 hover:text-white"}`}>{t}</a>
+          ))}
         </nav>
-        <div className="ml-auto flex items-center gap-2">
-          <span className={`hidden sm:inline-flex ${onHero ? "invisible opacity-0" : "visible opacity-100"} transition-[opacity,visibility] duration-300`}><ModeBadge /></span>
-          <Link href="/command" className={`rounded-xl px-3.5 py-1.5 text-sm font-semibold ${onHero ? "bg-white text-cyan" : "bg-cyan text-white"}`}>Open console</Link>
+        <div className="ml-auto flex items-center gap-2 md:ml-0">
+          <a href="https://github.com/LSUDOKO/BankWeave" target="_blank" rel="noreferrer"
+            className={`hidden rounded-xl px-3 py-1.5 text-sm font-medium sm:block ${solid ? "text-paper hover:bg-panel-2" : "text-white/85 hover:bg-white/10"}`}>GitHub</a>
+          <Link href="/command" className="rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(8,124,248,.8)] hover:bg-[#1a8bff]">Open console</Link>
         </div>
       </div>
     </header>
@@ -73,9 +38,9 @@ export default function TopNav() {
 export function Logo({ light }: { light: boolean }) {
   // three bank lanes crossed by one thread: the weave
   return (
-    <svg width="24" height="24" viewBox="0 0 26 26" aria-hidden>
-      {[5, 13, 21].map((x) => <line key={x} x1={x} y1="3" x2={x} y2="23" stroke={light ? "rgba(255,255,255,.75)" : "#b5bcc6"} strokeWidth="2.5" strokeLinecap="round" />)}
-      <path d="M2 18 C 8 4, 18 22, 24 8" stroke={light ? "#ffffff" : "#087cf8"} strokeWidth="2.8" fill="none" strokeLinecap="round" />
+    <svg width="22" height="22" viewBox="0 0 26 26" aria-hidden>
+      {[5, 13, 21].map((x) => <line key={x} x1={x} y1="3" x2={x} y2="23" stroke={light ? "rgba(255,255,255,.55)" : "#b5bcc6"} strokeWidth="2.5" strokeLinecap="round" />)}
+      <path d="M2 18 C 8 4, 18 22, 24 8" stroke={light ? "#8ad8fc" : "#087cf8"} strokeWidth="2.8" fill="none" strokeLinecap="round" />
     </svg>
   );
 }

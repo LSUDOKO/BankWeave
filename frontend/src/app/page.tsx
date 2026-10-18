@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import WeaveField from "@/components/WeaveField";
+import Numbers from "@/components/landing/Numbers";
+import { BrowserProof, NewIn3, RealTools } from "@/components/landing/Showcase";
 import { Logo } from "@/components/TopNav";
 import { API } from "@/lib/api";
 import { live } from "@/lib/snapshot";
@@ -25,7 +27,6 @@ type Overview = {
 };
 
 const BLEED = { width: "100vw", marginLeft: "calc(50% - 50vw)" };
-const ONE_BANK = "#0c9aa6"; // validated against --cyan for CVD and normal-vision separation
 const n = (x?: number) => (x == null ? "…" : Math.round(x).toLocaleString());
 
 export default function Landing() {
@@ -44,9 +45,12 @@ export default function Landing() {
       <Hero d={d} replay={replay} />
       <div className="mt-16"><Stack /></div>
       <Statement />
+      <NewIn3 />
       <Bento d={d} />
-      <Results />
+      <Numbers />
       <CaseTour />
+      <RealTools />
+      <BrowserProof />
       <AgentFlow />
       <Faqs />
       <CallToAction />
@@ -128,24 +132,6 @@ function Hero({ d, replay }: { d: Overview | null; replay: boolean }) {
   );
 }
 
-/** Bank lanes and the thread that weaves them: faint verticals, a few curves with light running along them. */
-function Threads() {
-  const curves = ["M-50 520 C 300 120, 600 640, 1500 180", "M-50 300 C 400 700, 900 60, 1500 460", "M-50 640 C 500 420, 800 820, 1500 600"];
-  return (
-    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden>
-      <defs>
-        <linearGradient id="th" x1="0" x2="1"><stop offset="0" stopColor="#8ad8fc" stopOpacity="0" /><stop offset=".5" stopColor="#8ad8fc" /><stop offset="1" stopColor="#087cf8" stopOpacity="0" /></linearGradient>
-      </defs>
-      {[180, 420, 660, 900, 1140, 1320].map((x) => <line key={x} x1={x} y1="0" x2={x} y2="900" stroke="rgba(255,255,255,.05)" />)}
-      {curves.map((c, i) => (
-        <g key={c}>
-          <path d={c} fill="none" stroke="rgba(138,216,252,.10)" strokeWidth="1.2" />
-          <path d={c} fill="none" stroke="url(#th)" strokeWidth="1.6" className="thread" style={{ animationDelay: `${i * -2}s`, animationDuration: `${7 + i * 2}s` }} />
-        </g>
-      ))}
-    </svg>
-  );
-}
 
 function Stack() {
   const items = ["FalkorDB", "GraphBLAS algorithms", "LangGraph agents", "Groq", "OpenRouter", "HNSW vector index", "Full-text index", "WebAuthn / FIDO2",
@@ -208,37 +194,6 @@ function Bento({ d }: { d: Overview | null }) {
             {i === 0 && <span className="kpi absolute right-7 top-6 text-[56px] font-semibold text-[#dbe4ef]">{d ? n(d.falkordb.graphs) : "36"}</span>}
           </Link>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function Results() {
-  return (
-    <section id="results" className="mt-20 bg-[#f6f8fb] py-24">
-      <div className="mx-auto max-w-[1180px] px-4 md:px-8">
-        <Head kicker="Measured on IBM's laundering data" title="The numbers, not the pitch" sub="Every figure below comes from eval/results in the repo, against IBM's labelled synthetic AML transactions." />
-        <div className="mt-14 grid gap-4 md:grid-cols-2">
-          <ChartCard title="No bank can see the ring alone" note="E2 · 36 cross-bank laundering groups, 3.5 banks each">
-            <RingChart />
-          </ChartCard>
-          <ChartCard title="Triage F1 against IBM's labels" note="E1 · 4,000 held-out alerted accounts, base rate 3.2%">
-            <TriageChart />
-          </ChartCard>
-          <ChartCard title="Median query latency" note="E7 · 1.3M transfers, one local machine, log scale" className="md:col-span-2">
-            <LatencyChart />
-          </ChartCard>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {[["27.8%", "of evidence echoed an origin already seen", "E6 echo"], ["25 / 28", "SARs passed the provenance gate", "E6 gate"],
-            ["0.988", "mean provenance fidelity", "E6 gate"], ["100%", "recall on cascading invalidation", "E6 cascade"]].map(([v, l, k]) => (
-            <div key={l} className="glass reveal p-5">
-              <p className="kpi text-[34px] leading-none text-paper">{v}</p>
-              <p className="mt-2 text-sm text-muted">{l}</p>
-              <p className="mono mt-3 text-muted/80">{k}</p>
-            </div>
-          ))}
-        </div>
       </div>
     </section>
   );
@@ -465,87 +420,9 @@ function Shot({ src, alt, label, dark = false }: { src: StaticImageData; alt: st
   );
 }
 
-function ChartCard({ title, note, className = "", children }: { title: string; note: string; className?: string; children: React.ReactNode }) {
-  return (
-    <figure className={`glass reveal p-6 ${className}`}>
-      <figcaption>
-        <h3 className="text-[17px]">{title}</h3>
-        <p className="mono mt-1 text-muted">{note}</p>
-      </figcaption>
-      <div className="mt-5">{children}</div>
-    </figure>
-  );
-}
 
-type Bar = { label: string; v: number; text: string; color: string; head?: string };
 
-// horizontal bars: thin marks, 4px rounded data end on a square baseline, value labelled at the end, <title> tooltip on hover
-// W should match the card's inner width so 12px text renders at 12px
-function Bars({ rows, x, ticks = [], label = 190, W = 500 }: { rows: Bar[]; x: (v: number) => number; ticks?: [number, string][]; label?: number; W?: number }) {
-  const R = 64, BW = W - label - R, H = 16;
-  let y = ticks.length ? 18 : 4;
-  const laid = rows.map((r) => { if (r.head) y += 22; const at = y; y += H + 12; return { ...r, at }; });
-  return (
-    <svg viewBox={`0 0 ${W} ${y}`} className="w-full" role="img" aria-label={rows.map((r) => `${r.head ? r.head + ", " : ""}${r.label}: ${r.text}`).join("; ")}>
-      {ticks.map(([t, s]) => (
-        <g key={s}>
-          <line x1={label + x(t) * BW} x2={label + x(t) * BW} y1={12} y2={y - 8} stroke="var(--line)" />
-          <text x={label + x(t) * BW} y={9} textAnchor="middle" fontSize="11" fill="var(--muted)">{s}</text>
-        </g>
-      ))}
-      {laid.map((r, i) => {
-        const w = Math.max(0, x(r.v) * BW), rr = Math.min(4, w);
-        return (
-          <g key={i} className="bar">
-            <title>{`${r.head ? r.head + " · " : ""}${r.label}: ${r.text}`}</title>
-            {r.head && <text x={0} y={r.at - 9} fontSize="12" fontWeight="650" fill="var(--paper)">{r.head}</text>}
-            <text x={label - 10} y={r.at + H / 2 + 4} textAnchor="end" fontSize="12.5" fill="var(--muted)">{r.label}</text>
-            <rect x={label} y={r.at - 3} width={BW + R} height={H + 6} fill="transparent" />
-            {w > 0 && <path d={`M${label} ${r.at} h${w - rr} a${rr} ${rr} 0 0 1 ${rr} ${rr} v${H - 2 * rr} a${rr} ${rr} 0 0 1 ${-rr} ${rr} h${-(w - rr)} z`} fill={r.color} />}
-            <text x={label + w + 6} y={r.at + H / 2 + 4} fontSize="12.5" fontWeight="650" fill="var(--paper)">{r.text}</text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
 
-function Legend({ items }: { items: [string, string][] }) {
-  return (
-    <p className="mb-3 flex flex-wrap gap-4 text-xs text-muted">
-      {items.map(([c, t]) => <span key={t} className="inline-flex items-center gap-1.5"><i className="size-2.5 rounded-sm" style={{ background: c }} />{t}</span>)}
-    </p>
-  );
-}
 
-function RingChart() {
-  const pct = (v: number) => v / 100;
-  return (
-    <>
-      <Legend items={[[ONE_BANK, "Best-placed single bank"], ["var(--cyan)", "Consortium graph"]]} />
-      <Bars label={120} x={pct} rows={[
-        { head: "Share of a ring's accounts held", label: "One bank", v: 43.8, text: "43.8%", color: ONE_BANK },
-        { label: "Consortium", v: 100, text: "100%", color: "var(--cyan)" },
-        { head: "Rings seen whole", label: "One bank", v: 0, text: "0%", color: ONE_BANK },
-        { label: "Consortium", v: 100, text: "100%", color: "var(--cyan)" },
-      ]} />
-    </>
-  );
-}
 
-function TriageChart() {
-  const rows: [string, number][] = [["Escalate everything", 0.062], ["Rules, no graph", 0.126], ["Graph score, hand weights", 0.161], ["Graph score, calibrated", 0.205]];
-  return (
-    <>
-      <Bars x={(v) => v / 0.25} ticks={[[0, "0"], [0.1, "0.10"], [0.2, "0.20"]]} rows={rows.map(([label, v]) => ({ label, v, text: v.toFixed(3), color: "var(--cyan)" }))} />
-      <p className="mt-2 text-sm text-muted">Calibrated graph score: <b className="text-paper">3.3×</b> the F1 of escalating every alert, at 174 escalations instead of 4,000.</p>
-    </>
-  );
-}
 
-function LatencyChart() {
-  const rows: [string, number][] = [["behaviour neighbours (HNSW)", 0.4], ["cross-bank links", 0.6], ["shared identity", 0.7], ["pass-through check", 2.8],
-    ["expand neighbourhood", 3.1], ["typology patterns", 12.5], ["triage signals", 15.4], ["algo.wcc, whole consortium", 39.5], ["algo.pageRank, whole consortium", 57.5]];
-  const log = (v: number) => (Math.log10(v) + 1) / 3; // 0.1 ms .. 100 ms
-  return <Bars label={240} W={1080} x={log} ticks={[[0.1, "0.1 ms"], [1, "1 ms"], [10, "10 ms"], [100, "100 ms"]]} rows={rows.map(([label, v]) => ({ label, v, text: `${v} ms`, color: "var(--cyan)" }))} />;
-}

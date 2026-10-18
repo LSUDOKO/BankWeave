@@ -21,9 +21,9 @@ export const MEDIA = [
     caption: "A passkey assertion from an approval signature, decoded by Auth0's WebAuthn debugger: the clientDataJSON challenge is the case Merkle root, the origin is the BankWeave site, and authenticatorData carries the flags and signature counter.",
   },
   {
-    file: "/media/hw/falkordb-browser.gif", site: "FalkorDB Cloud", host: "app.falkordb.cloud", href: "https://app.falkordb.cloud",
-    title: "FalkorDB Cloud shows the signed approval",
-    caption: "The case graph in the FalkorDB Cloud browser: the (:HardwareAttestation) node that /hardware/attest writes after verifying the ES256 signature, linked by [:ATTESTS] to the approved (:Action).",
+    file: "/media/hw/falkordb-browser.gif", site: "FalkorDB Browser", host: "browser.falkordb.com", href: "https://browser.falkordb.com",
+    title: "The taps are edges in FalkorDB Cloud",
+    caption: "FalkorDB's own browser on our Cloud instance: the cross-bank ring, algo.pageRank, the (:Account)-[:CARD_TXN]->(:Terminal) edges the terminals (and the Wokwi ESP32) write, a SAR's provenance chain and vector KNN. Read-only queries; hostname cropped.",
   },
 ] as const;
 

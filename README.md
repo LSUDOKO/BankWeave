@@ -13,6 +13,7 @@ of them dies, and refuses to file a report it can't prove.
 - **Tracks:** 01 Agents That Act on Connected Data (primary), 02 Agent Memory and Coordination, Best blog post
 - **Live demo:** https://bankweave.vercel.app (UI on Vercel) · API https://bankweave-api.onrender.com/docs (Render) · graph: FalkorDB Cloud (ap-south-1)
 - **Use it from Claude:** `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp` (17 read-only FalkorDB tools, each returning the Cypher it ran; [docs/MCP.md](docs/MCP.md))
+- **Proof in FalkorDB's own browser:** [screenshots and a recording](#proof-in-the-official-falkordb-browser) of the ring, PageRank, card taps, SAR provenance and vector search running on our Cloud instance
 - **Understand it in five minutes:** the [3D explainer](https://bankweave.vercel.app/explainer) (eight scenes, each one FalkorDB call) and the [graph explorer](https://bankweave.vercel.app/explorer) (twelve presets, run live)
 - **Demo video:** _link added after recording_
 - **Blog post:** [`docs/BLOG.md`](docs/BLOG.md)
@@ -74,6 +75,56 @@ FalkorDB's QueryWeaver or Weights & Biases Weave.
 | Approvals | Hardware Lab |
 |---|---|
 | ![](docs/img/v3/05-approvals.png) | ![](docs/img/v3/08-hardware-lab.png) |
+
+## Proof in the official FalkorDB Browser
+
+The same data the agents use, opened in FalkorDB's own browser (`browser.falkordb.com`, connected
+to our FalkorDB Cloud instance: FalkorDB v4.22, 36 graphs, about 81 MB). Every query below is
+read-only and was typed into the browser; the timings are the engine's own `RT` readout. The
+connection bar with the instance hostname is cropped out.
+
+![Running BankWeave's queries in the FalkorDB Browser](docs/media/falkordb-browser.gif)
+
+| Query | What it proves |
+|---|---|
+| Cross-bank ring: the case spanning the most banks, its accounts, banks and transfers (12 nodes, 166 edges, **1.85 ms**) | one Cypher query sees the whole ring that no single bank graph contains |
+| `CALL algo.pageRank('Account','TRANSFERS')` top 12 (**3.55 ms**) | the hub detection the Investigator calls is native GraphBLAS, not Python |
+| `(:Account)-[:CARD_TXN]->(:Terminal)` (5 nodes, 29 edges, **0.41 ms**) | the POS/ATM taps, including the one sent from the Wokwi ESP32, are real edges in the consortium graph; the Terminal node carries `POS-MUM-…`, Mumbai, GPS 19.076, 72.8777 |
+| `(:SAR)-[:CONTAINS]->(:Sentence)-[:CITES]->(:Claim)-[:SUPPORTED_BY]->(:Evidence)` in `case_C-70431130` (**0.61 ms**) | every report sentence cites a claim, and every claim rests on evidence: the provenance gate is a graph pattern |
+| `db.idx.vector.queryNodes('Account','behavior_vec',10, …)` (**0.36 ms**) | HNSW vector search finds behaviour twins at five different banks |
+| Accounts at different banks sharing a `Device` or `IP` (291 nodes, 220 edges, **2.79 ms**) | the identity links the consortium uses to join bank slices |
+
+| Cross-bank ring | `algo.pageRank` |
+|---|---|
+| ![](docs/img/falkordb/01-browser-cross-bank-ring.png) | ![](docs/img/falkordb/02-browser-pagerank.png) |
+
+| Card taps into terminals (the Wokwi tap included) | The Mumbai POS node and its properties |
+|---|---|
+| ![](docs/img/falkordb/03-browser-card-taps.png) | ![](docs/img/falkordb/04-browser-terminal-node.png) |
+
+| SAR → sentence → claim → evidence | HNSW vector KNN |
+|---|---|
+| ![](docs/img/falkordb/05-browser-sar-provenance.png) | ![](docs/img/falkordb/06-browser-vector-knn.png) |
+
+| Shared devices and IPs across banks | FalkorDB Cloud console: the instance (Free tier, ap-south-1, v4.22.0, healthy) |
+|---|---|
+| ![](docs/img/falkordb/07-browser-shared-identity.png) | ![](docs/media/falkordb-cloud-instance.gif) |
+
+**Hosted MCP, called live** (no install, plain HTTP):
+
+```
+$ curl -s -X POST https://bankweave-api.onrender.com/mcp -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+17 tools: engine_overview, list_graphs, graph_schema, list_cases, get_case, explain_claim,
+account_network, trace_money_path, find_rings, top_hubs, connected_components, similar_accounts,
+search_customers, list_alerts, triage_alert, typology_guidance, run_readonly_cypher
+
+$ ... "method":"tools/call","params":{"name":"top_hubs","arguments":{}}
+{"graph": "consortium", "result": [{"account": "e8ccd1faa8d3a4ba", "bank": "001", "score": 0.0027...}, ...
+```
+
+The top account matches row 1 of the PageRank query in the FalkorDB Browser above.
 
 ## What's new in 2.0
 

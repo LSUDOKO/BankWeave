@@ -2,7 +2,7 @@
 
 Generated from the query registry (`backend/app/cypher.py`) by `scripts/gen_queries_md.py`. Every query the product runs is declared with `cy(name, purpose, text)`, so this file matches the code.
 
-**204 queries** across 43 modules. Native algorithms used: `algo.wcc`, `algo.labelPropagation`, `algo.pageRank`, `algo.betweenness`, `algo.HarmonicCentrality`, `algo.SPpaths`, `algo.SSpaths`, `algo.maxFlow`, `algo.bfs`, `algo.MSF`; indexes: range, full-text (Double Metaphone phonetic, English stemming), vector (HNSW, cosine).
+**210 queries** across 44 modules. Native algorithms used: `algo.wcc`, `algo.labelPropagation`, `algo.pageRank`, `algo.betweenness`, `algo.HarmonicCentrality`, `algo.SPpaths`, `algo.SSpaths`, `algo.maxFlow`, `algo.bfs`, `algo.MSF`; indexes: range, full-text (Double Metaphone phonetic, English stemming), vector (HNSW, cosine).
 
 Not native in FalkorDB, done in plain Cypher instead: degree (precomputed), cycles (time-respecting iterative expansion), triangles / 3-cycles (motif score).
 
@@ -300,6 +300,68 @@ OPTIONAL MATCH (a)-[f:FLOWS]-(b:Account) WHERE b.bank_id <> a.bank_id
 RETURN a.in_deg + a.out_deg AS degree, a.component_size AS component,
        coalesce(a.motif_score, 0.0) AS motif, coalesce(a.passthrough_pairs, 0) AS pt,
        a.community_size AS community, count(DISTINCT b) AS cross_bank
+```
+
+## `app.mcp_server`
+
+### mcp_alert_decision
+
+Triage decision recorded for an alert
+
+```cypher
+MATCH (al:Alert {id:$id})-[:DECIDED]->(d:Decision)
+RETURN d.id AS id, d.outcome AS outcome, d.reason AS reason, d.agent AS agent, d.ts AS ts
+```
+
+### mcp_banks_of
+
+Bank of each account in a list (consortium)
+
+```cypher
+MATCH (a:Account) WHERE a.id IN $ids
+RETURN a.id AS id, a.bank_id AS bank
+```
+
+### mcp_case_accounts
+
+Accounts and banks inside a case graph
+
+```cypher
+MATCH (a:Account)
+RETURN count(a) AS accounts, collect(DISTINCT a.bank_id) AS banks
+```
+
+### mcp_case_head
+
+Case header inside one case graph
+
+```cypher
+MATCH (c:Case)
+RETURN c.id AS id, c.status AS status, c.title AS title, c.seed_account AS seed,
+       c.seed_alert AS alert, c.bank_scope AS banks, c.opened_at AS opened_at
+```
+
+### mcp_case_sar
+
+SAR status and audit fields of a case
+
+```cypher
+MATCH (s:SAR)
+RETURN s.id AS id, s.status AS status, s.state AS state, s.version AS version,
+       s.pf_score AS provenance_score, s.repairs AS repairs, s.auditor AS auditor,
+       s.created_at AS created_at
+ORDER BY s.version DESC
+```
+
+### mcp_consortium_counts
+
+Headline sizes of the consortium graph
+
+```cypher
+MATCH (a:Account)
+WITH count(a) AS accounts, count(DISTINCT a.bank_id) AS banks
+MATCH ()-[t:TRANSFERS]->()
+RETURN accounts, banks, count(t) AS transfers
 ```
 
 ## `app.routers.actions`
@@ -1111,7 +1173,8 @@ Record an enclave attestation in the consortium
 
 ```cypher
 CREATE (:EnclaveAttestation {module_id:$module, ts:$ts, status:$status, verified:$verified,
-                             pcr0:$pcr0, pcr1:$pcr1, pcr2:$pcr2, nonce:$nonce, reason:$reason})
+                             pcr0:$pcr0, pcr1:$pcr1, pcr2:$pcr2, nonce:$nonce, reason:$reason,
+                             pkcs11_slot:0, signer_fp:$fp, verified_banks:$banks})
 ```
 
 ## `app.services.merkle`
@@ -1204,7 +1267,11 @@ MERGE (t:Terminal {id:$terminal})
 ON CREATE SET t.kind = $kind, t.city = $city, t.lat = $lat, t.lon = $lon, t.merchant = $merchant
 MERGE (d:Device {id:$device})
 ON CREATE SET d.kind = 'device', d.units = 1, d.text = $terminal
-MERGE (a)-[:USES_DEVICE {first_seen:$ts}]->(d)
+SET d.imei = $imei, d.mac = $mac, d.terminal_id = $terminal
+MERGE (a)-[u:USES_DEVICE]->(d)
+ON CREATE SET u.first_seen = $ts
+SET u.last_seen = $ts, u.emv_atc = $atc, u.terminal_id = $terminal, u.gps = [$lat, $lon],
+    u.nfc_uid = $uid
 CREATE (a)-[:CARD_TXN {stan:$stan, ts:$ts, amount:$amount, currency:'INR', card:$card,
                        atc:$atc, cryptogram:$ac, mti:'0200'}]->(t)
 WITH d
@@ -2413,7 +2480,7 @@ RETURN e.id AS id
 
 ## Inline queries
 
-67 short queries are written inline (data loading, small lookups, DDL). f-string templates only interpolate labels and relationship types from fixed sets in code, never user input; values are always bound parameters.
+77 short queries are written inline (data loading, small lookups, DDL). f-string templates only interpolate labels and relationship types from fixed sets in code, never user input; values are always bound parameters.
 
 - `backend/agents/archivist.py:47`
 
@@ -2485,6 +2552,48 @@ RETURN e.id AS id
 
   ```cypher
   MATCH (a:Account) WHERE a.id IN $ids RETURN DISTINCT a.bank_id AS bank
+  ```
+
+- `backend/app/mcp_server.py:204`
+
+  ```cypher
+  CALL db.indexes() YIELD label, properties, types, entitytype RETURN label, properties, types, entitytype
+  ```
+
+- `backend/app/mcp_server.py:291`
+
+  ```cypher
+  MATCH (c:Claim {id:$id}) RETURN c.id AS id, c.text AS text, c.kind AS kind, c.state AS state, c.about AS about, c.confidence AS stored_confidence
+  ```
+
+- `backend/app/mcp_server.py:572`
+
+  ```cypher
+  f'{q} LIMIT {n}'
+  ```
+
+- `backend/app/mcp_server.py:206`
+
+  ```cypher
+  CALL db.labels() YIELD label RETURN label
+  ```
+
+- `backend/app/mcp_server.py:207`
+
+  ```cypher
+  CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType
+  ```
+
+- `backend/app/mcp_server.py:208`
+
+  ```cypher
+  CALL db.propertyKeys() YIELD propertyKey RETURN propertyKey
+  ```
+
+- `backend/app/mcp_server.py:294`
+
+  ```cypher
+  MATCH (c:Claim) RETURN c.id AS id
   ```
 
 - `backend/app/routers/cases.py:93`
@@ -2559,6 +2668,12 @@ RETURN e.id AS id
   MATCH (e:Event) RETURN count(e) AS n
   ```
 
+- `backend/app/routers/lab.py:585`
+
+  ```cypher
+  MATCH (:SAR {state:'active'})-[:CONTAINS]->(:Sentence)-[c:CITES]->() RETURN count(c) AS n
+  ```
+
 - `backend/app/routers/lab.py:178`
 
   ```cypher
@@ -2571,7 +2686,7 @@ RETURN e.id AS id
   MATCH (m:Meta {id:'dataset'}) RETURN m.json AS j
   ```
 
-- `backend/app/routers/scenarios.py:138`
+- `backend/app/routers/scenarios.py:140`
 
   ```cypher
   MATCH (k:Case) RETURN k.title AS t
@@ -2653,6 +2768,12 @@ RETURN e.id AS id
 
   ```cypher
   MATCH (c:Case) RETURN c.opened_at AS t LIMIT 1
+  ```
+
+- `backend/app/services/hardware_enclave.py:139`
+
+  ```cypher
+  MATCH (m:Meta {id:'dataset'}) RETURN m.json AS j
   ```
 
 - `backend/app/services/kyc_synth.py:116`
@@ -2751,10 +2872,16 @@ RETURN e.id AS id
   MATCH (n) WHERE n:Account OR n:ExternalAccount OR n:OtherBank RETURN count(n) AS c
   ```
 
-- `backend/app/services/pos_twin.py:230`
+- `backend/app/services/pos_twin.py:254`
 
   ```cypher
   MATCH ()-[t:CARD_TXN]->() RETURN max(t.ts) AS ts
+  ```
+
+- `backend/app/services/pos_twin.py:142`
+
+  ```cypher
+  MATCH ()-[t:CARD_TXN]->() RETURN t.card AS card, max(t.atc) AS atc
   ```
 
 - `backend/app/services/simulator.py:61`

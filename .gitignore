@@ -25,3 +25,5 @@ eval/ground_truth.json
 eval/*ground_truth.json
 .playwright-mcp/
 .vscode/
+video/.venv/
+video/work/

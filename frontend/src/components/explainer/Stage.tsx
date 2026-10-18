@@ -30,7 +30,7 @@ export default function Stage({ model, scene, step, reduced, overrides }: {
   overrides?: Record<string, { title?: string; sub?: string }>;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
-  const canvas = useRef<HTMLCanvasElement>(null);
+  const host = useRef<HTMLDivElement>(null);
   const world = useRef<World | null>(null);
   const labels = useRef<(HTMLDivElement | null)[]>([]);
   const state = useRef({ scene, step });
@@ -38,9 +38,14 @@ export default function Stage({ model, scene, step, reduced, overrides }: {
   state.current = { scene, step };
 
   useEffect(() => {
-    const el = canvas.current, box = wrap.current;
-    if (!el || !box) return;
+    const slot = host.current, box = wrap.current;
+    if (!slot || !box) return;
     if (!webgl()) { setFailed(true); return; }
+    // a fresh canvas per World: dispose() force-loses its context, so a reused canvas would come back dead
+    const el = document.createElement("canvas");
+    el.className = "absolute inset-0 h-full w-full";
+    el.setAttribute("aria-hidden", "true");
+    slot.appendChild(el);
     let w: World;
     try {
       w = new World(el, model, {
@@ -55,6 +60,7 @@ export default function Stage({ model, scene, step, reduced, overrides }: {
         },
       });
     } catch {
+      el.remove();
       setFailed(true);
       return;
     }
@@ -73,6 +79,7 @@ export default function Stage({ model, scene, step, reduced, overrides }: {
       io.disconnect();
       document.removeEventListener("visibilitychange", sync);
       w.dispose();
+      el.remove();
       world.current = null;
     };
   }, [model, reduced]);
@@ -81,7 +88,7 @@ export default function Stage({ model, scene, step, reduced, overrides }: {
 
   return (
     <div ref={wrap} className="relative h-full w-full overflow-hidden">
-      <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-hidden />
+      <div ref={host} className="absolute inset-0" />
       {failed && (
         <div className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-muted">
           This browser has no WebGL, so the 3D stage is off. Every number and query is in the text.

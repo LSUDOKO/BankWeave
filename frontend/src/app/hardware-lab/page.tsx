@@ -176,20 +176,20 @@ function Wokwi() {
 
 function Circuit() {
   const pin = (x: number, y: number, label: string, color: string) => (
-    <g key={label}><line x1={x} y1={y} x2={150} y2={y} stroke={color} strokeWidth="2" /><text x={x - 4} y={y + 3} fontSize="9" fill="#94a3b8" textAnchor="end">{label}</text></g>
+    <g key={label}><line x1={x} y1={y} x2={150} y2={y} stroke={color} strokeWidth="2" /><text x={x - 4} y={y + 3} fontSize="9" fill="#5b6b80" textAnchor="end">{label}</text></g>
   );
   return (
-    <svg viewBox="0 0 420 190" className="w-full rounded-lg bg-[#0a1424] border border-line" role="img" aria-label="Wokwi circuit diagram">
-      <rect x="150" y="30" width="90" height="130" rx="6" fill="#1e293b" stroke="#475569" />
-      <text x="195" y="100" fontSize="11" fill="#e2e8f0" textAnchor="middle" fontFamily="monospace">ESP32</text>
-      <text x="195" y="114" fontSize="8" fill="#94a3b8" textAnchor="middle">DevKitC v4</text>
-      {pin(95, 50, "Card A · GPIO25", "#56b4e9")}{pin(95, 72, "Card B · GPIO26", "#56b4e9")}{pin(95, 94, "Card C · GPIO27", "#56b4e9")}{pin(95, 116, "POS/ATM · GPIO14", "#f59e0b")}
-      <line x1="240" y1="50" x2="300" y2="50" stroke="#10b981" strokeWidth="2" /><line x1="240" y1="62" x2="300" y2="62" stroke="#06b6d4" strokeWidth="2" />
-      <rect x="300" y="30" width="100" height="50" rx="4" fill="#020617" stroke="#475569" />
-      <text x="350" y="52" fontSize="9" fill="#e2e8f0" textAnchor="middle" fontFamily="monospace">SSD1306</text><text x="350" y="66" fontSize="8" fill="#94a3b8" textAnchor="middle">I2C 0x3C</text>
-      <line x1="240" y1="120" x2="300" y2="120" stroke="#10b981" strokeWidth="2" /><circle cx="310" cy="120" r="7" fill="#10b981" /><text x="324" y="123" fontSize="9" fill="#94a3b8">GPIO4 approved</text>
-      <line x1="240" y1="145" x2="300" y2="145" stroke="#ef4444" strokeWidth="2" /><circle cx="310" cy="145" r="7" fill="#ef4444" /><text x="324" y="148" fontSize="9" fill="#94a3b8">GPIO5 refer</text>
-      <text x="195" y="180" fontSize="9" fill="#06b6d4" textAnchor="middle">Wokwi-GUEST Wi-Fi → HTTPS POST /hardware/pos-tap</text>
+    <svg viewBox="0 0 420 190" className="w-full rounded-lg bg-[#f5f8fc] border border-line" role="img" aria-label="Wokwi circuit diagram">
+      <rect x="150" y="30" width="90" height="130" rx="6" fill="#dde6f0" stroke="#b5bcc6" />
+      <text x="195" y="100" fontSize="11" fill="#0c1a2e" textAnchor="middle" fontFamily="monospace">ESP32</text>
+      <text x="195" y="114" fontSize="8" fill="#5b6b80" textAnchor="middle">DevKitC v4</text>
+      {pin(95, 50, "Card A · GPIO25", "#56b4e9")}{pin(95, 72, "Card B · GPIO26", "#56b4e9")}{pin(95, 94, "Card C · GPIO27", "#56b4e9")}{pin(95, 116, "POS/ATM · GPIO14", "#c97a06")}
+      <line x1="240" y1="50" x2="300" y2="50" stroke="#0c9466" strokeWidth="2" /><line x1="240" y1="62" x2="300" y2="62" stroke="#087cf8" strokeWidth="2" />
+      <rect x="300" y="30" width="100" height="50" rx="4" fill="#020617" stroke="#b5bcc6" />
+      <text x="350" y="52" fontSize="9" fill="#0c1a2e" textAnchor="middle" fontFamily="monospace">SSD1306</text><text x="350" y="66" fontSize="8" fill="#5b6b80" textAnchor="middle">I2C 0x3C</text>
+      <line x1="240" y1="120" x2="300" y2="120" stroke="#0c9466" strokeWidth="2" /><circle cx="310" cy="120" r="7" fill="#0c9466" /><text x="324" y="123" fontSize="9" fill="#5b6b80">GPIO4 approved</text>
+      <line x1="240" y1="145" x2="300" y2="145" stroke="#d93a3f" strokeWidth="2" /><circle cx="310" cy="145" r="7" fill="#d93a3f" /><text x="324" y="148" fontSize="9" fill="#5b6b80">GPIO5 refer</text>
+      <text x="195" y="180" fontSize="9" fill="#087cf8" textAnchor="middle">Wokwi-GUEST Wi-Fi → HTTPS POST /hardware/pos-tap</text>
     </svg>
   );
 }
@@ -389,20 +389,20 @@ function BankLinks({ links, ok }: { links: { bank: string; sync: string }[]; ok:
   const n = Math.max(1, links.length);
   return (
     <svg viewBox="0 0 420 150" className="w-full" role="img" aria-label="Bank sync links through the enclave">
-      <rect x="160" y="10" width="100" height="34" rx="8" fill="#0f172a" stroke="#06b6d4" />
-      <text x="210" y="31" fontSize="11" fill="#e2e8f0" textAnchor="middle" fontFamily="monospace">consortium</text>
-      <rect x="175" y="62" width="70" height="26" rx="6" fill={ok ? "#10b98122" : "#ef444422"} stroke={ok ? "#10b981" : "#ef4444"} />
-      <text x="210" y="79" fontSize="10" fill={ok ? "#10b981" : "#ef4444"} textAnchor="middle" fontFamily="monospace">{ok ? "enclave ✓" : "QUARANTINE"}</text>
-      <line x1="210" y1="44" x2="210" y2="62" stroke={ok ? "#10b981" : "#ef4444"} strokeWidth="2" strokeDasharray={ok ? "" : "4 4"} />
+      <rect x="160" y="10" width="100" height="34" rx="8" fill="#ffffff" stroke="#087cf8" />
+      <text x="210" y="31" fontSize="11" fill="#0c1a2e" textAnchor="middle" fontFamily="monospace">consortium</text>
+      <rect x="175" y="62" width="70" height="26" rx="6" fill={ok ? "#0c946622" : "#d93a3f22"} stroke={ok ? "#0c9466" : "#d93a3f"} />
+      <text x="210" y="79" fontSize="10" fill={ok ? "#0c9466" : "#d93a3f"} textAnchor="middle" fontFamily="monospace">{ok ? "enclave ✓" : "QUARANTINE"}</text>
+      <line x1="210" y1="44" x2="210" y2="62" stroke={ok ? "#0c9466" : "#d93a3f"} strokeWidth="2" strokeDasharray={ok ? "" : "4 4"} />
       {links.map((l, i) => {
         const x = 20 + (i + 0.5) * (380 / n);
         const open = l.sync === "open";
         return (
           <g key={l.bank}>
-            <line x1={x} y1="118" x2="210" y2="88" stroke={open ? "#10b981" : "#ef4444"} strokeWidth="1.5" strokeDasharray={open ? "" : "3 5"} opacity={open ? 0.8 : 0.9} />
-            {!open && <text x={(x + 210) / 2} y="106" fontSize="11" fill="#ef4444" textAnchor="middle">✕</text>}
-            <rect x={x - 26} y="118" width="52" height="22" rx="5" fill="#0f172a" stroke={open ? "#334155" : "#ef4444"} />
-            <text x={x} y="133" fontSize="9" fill="#e2e8f0" textAnchor="middle" fontFamily="monospace">bank_{l.bank}</text>
+            <line x1={x} y1="118" x2="210" y2="88" stroke={open ? "#0c9466" : "#d93a3f"} strokeWidth="1.5" strokeDasharray={open ? "" : "3 5"} opacity={open ? 0.8 : 0.9} />
+            {!open && <text x={(x + 210) / 2} y="106" fontSize="11" fill="#d93a3f" textAnchor="middle">✕</text>}
+            <rect x={x - 26} y="118" width="52" height="22" rx="5" fill="#ffffff" stroke={open ? "#334155" : "#d93a3f"} />
+            <text x={x} y="133" fontSize="9" fill="#0c1a2e" textAnchor="middle" fontFamily="monospace">bank_{l.bank}</text>
           </g>
         );
       })}

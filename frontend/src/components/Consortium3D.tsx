@@ -1,6 +1,7 @@
 "use client";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import ForceGraph3D from "react-force-graph-3d";
+import * as THREE from "three";
 import { bankHex } from "@/lib/banks";
 
 export type Layers = {
@@ -17,7 +18,7 @@ export type Handle = { flyThrough: () => void; focusHub: () => void; shockwave: 
 const Y = { bank: -170, consortium: 0, case: 170, claim: 235 };
 const STATE: Record<string, string> = { active: "#10b981", needs_verification: "#f59e0b", superseded: "#ef4444", historical_only: "#94a3b8" };
 
-type N = { id: string; layer: string; label: string; color: string; val: number; fx?: number; fy: number; fz?: number; x?: number; y?: number; z?: number };
+type N = { id: string; layer: string; hub?: boolean; label: string; color: string; val: number; fx?: number; fy: number; fz?: number; x?: number; y?: number; z?: number };
 type L = { source: string; target: string; kind: string; color: string; amount?: number };
 
 const Consortium3D = forwardRef<Handle, { data: Layers; view: View; height: number }>(function Consortium3D({ data, view, height }, ref) {
@@ -65,8 +66,8 @@ const Consortium3D = forwardRef<Handle, { data: Layers; view: View; height: numb
     if (view.consortium) {
       for (const a of data.accounts) {
         const isHub = a.id === hub?.id;
-        nodes.push({ id: "c:" + a.id, layer: "consortium", label: `${isHub ? "PageRank hub · " : ""}${a.id.slice(0, 10)} (bank ${a.bank}) · PR ${a.pagerank.toFixed(4)}`,
-          color: isHub ? "#06b6d4" : bankHex(a.bank), val: 1 + 9 * (a.pagerank / maxPr), fy: Y.consortium });
+        nodes.push({ id: "c:" + a.id, layer: "consortium", hub: isHub, label: `${isHub ? "PageRank hub · " : ""}${a.id.slice(0, 10)} (bank ${a.bank}) · PR ${a.pagerank.toFixed(4)}`,
+          color: isHub ? "#8ad8fc" : bankHex(a.bank), val: 1 + 9 * (a.pagerank / maxPr), fy: Y.consortium });
         if (view.bank) links.push({ source: "b:" + a.id, target: "c:" + a.id, kind: "thread", color: "#06b6d4" });
       }
       for (const e of data.consortium_edges) links.push({ source: "c:" + e.source, target: "c:" + e.target, kind: "flow", color: "#94a3b8", amount: e.amount });
@@ -115,32 +116,110 @@ const Consortium3D = forwardRef<Handle, { data: Layers; view: View; height: numb
     g.d3Force("link")?.distance((l: any) => (l.kind === "thread" || l.kind === "concerns" ? 160 : 30)).strength((l: any) => (l.kind === "thread" ? 0.05 : l.kind === "concerns" ? 0.02 : 0.4));
   }, [graph]);
 
+  // the stage: translucent glass planes for the three layers, labels and soft lighting
+  useEffect(() => {
+    const g = fg.current;
+    if (!g) return;
+    const scene: THREE.Scene = g.scene();
+    const group = new THREE.Group();
+    group.name = "bw-stage";
+    const planes: [number, string][] = [[Y.bank, "Bank slices: what each bank sees"], [Y.consortium, "Consortium graph: where the slices join"], [Y.case, "Cases and claims"]];
+    for (const [y, text] of planes) {
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(760, 760),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.055, side: THREE.DoubleSide, depthWrite: false }));
+      plane.rotation.x = -Math.PI / 2; plane.position.y = y - 6;
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(plane.geometry),
+        new THREE.LineBasicMaterial({ color: 0xbfe8ff, transparent: true, opacity: 0.35 }));
+      edge.rotation.x = -Math.PI / 2; edge.position.y = y - 6;
+      const grid = new THREE.GridHelper(760, 16, 0x8ad8fc, 0x8ad8fc);
+      (grid.material as THREE.Material).transparent = true; (grid.material as THREE.Material).opacity = 0.07;
+      grid.position.y = y - 6;
+      group.add(plane, edge, grid, label(text, -380, y + 4, -380));
+    }
+    const amb = new THREE.AmbientLight(0xffffff, 1.25);
+    const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(300, 500, 400);
+    const rim = new THREE.DirectionalLight(0x8ad8fc, 1.0); rim.position.set(-400, -200, -300);
+    group.add(amb, key, rim);
+    scene.add(group);
+    return () => { scene.remove(group); };
+  }, []);
+
+  const meshFor = useMemo(() => {
+    const cache = new Map<string, THREE.Object3D>();
+    return (n: any) => {
+      const color = new THREE.Color(override[n.id] ?? n.color);
+      if (n.layer !== "external") color.lerp(new THREE.Color(0xffffff), 0.18);
+      const r = Math.cbrt(n.val) * 3.6;
+      const key = `${n.id}|${color.getHexString()}`;
+      if (cache.has(key)) return cache.get(key)!;
+      const obj = new THREE.Group();
+      obj.add(new THREE.Mesh(new THREE.SphereGeometry(r, 24, 18), n.layer === "external"
+        ? new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.28 })
+        : new THREE.MeshPhysicalMaterial({ color, roughness: 0.25, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.15 })));
+      if (n.hub || override[n.id]) obj.add(halo(override[n.id] ?? "#8ad8fc", r * (n.hub ? 6 : 4)));
+      cache.set(key, obj);
+      return obj;
+    };
+  }, [override]);
+
   return (
-    <div ref={wrap} className="rounded-xl border border-line overflow-hidden bg-[#070b14]">
+    <div ref={wrap} className="relative overflow-hidden rounded-[20px] border border-white/40 shadow-[0_40px_80px_-30px_rgba(4,38,84,.55)]"
+      style={{ background: "radial-gradient(900px 500px at 50% 0%, #2c8ffa 0%, transparent 65%), linear-gradient(180deg, #0a63cf 0%, #0a508f 55%, #062f57 100%)" }}>
       <ForceGraph3D
         ref={fg}
         width={width}
         height={height}
         graphData={graph}
-        backgroundColor="#070b14"
+        backgroundColor="rgba(0,0,0,0)"
         nodeLabel={(n: any) => n.label}
-        nodeColor={(n: any) => override[n.id] ?? n.color}
+        nodeThreeObject={meshFor}
         nodeVal={(n: any) => n.val}
-        nodeOpacity={0.92}
-        nodeResolution={10}
-        linkColor={(l: any) => l.color}
-        linkOpacity={0.28}
-        linkWidth={(l: any) => (l.kind === "flow" ? 0.6 : 0)}
-        linkDirectionalParticles={(l: any) => (l.kind === "flow" ? 2 : 0)}
+        linkColor={(l: any) => (l.kind === "flow" ? "#bfe8ff" : l.kind === "thread" ? "#8ad8fc" : l.kind === "concerns" ? "#ffd27a" : l.kind === "bank" ? "#ffffff" : "#d6e6f5")}
+        linkOpacity={0.35}
+        linkWidth={(l: any) => (l.kind === "flow" ? 0.7 : 0)}
+        linkDirectionalParticles={(l: any) => (l.kind === "flow" ? 3 : 0)}
         linkDirectionalParticleSpeed={(l: any) => 0.002 + Math.min(0.01, Math.log10(1 + (l.amount ?? 0)) / 900)}
-        linkDirectionalParticleWidth={1.6}
-        linkDirectionalParticleColor={() => "#06b6d4"}
+        linkDirectionalParticleWidth={2.2}
+        linkDirectionalParticleColor={() => "#ffffff"}
         cooldownTicks={180}
-        onEngineStop={() => { if (!fitted.current) { fitted.current = true; fg.current?.zoomToFit(900, 30); } }}
+        onEngineStop={() => { if (!fitted.current) { fitted.current = true; fg.current?.cameraPosition({ x: 520, y: 380, z: 620 }, { x: 0, y: 0, z: 0 }, 1200); } }}
         showNavInfo={false}
       />
+      <div className="pointer-events-none absolute bottom-3 left-4 flex flex-wrap gap-3 text-[12px] text-white/85">
+        <span className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-full bg-white/40" />external stub</span>
+        <span className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-full" style={{ background: "#8ad8fc" }} />PageRank hub</span>
+        <span className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-full" style={{ background: "#ffd27a" }} />case covers account</span>
+        <span>drag to orbit · scroll to zoom</span>
+      </div>
     </div>
   );
 });
+
+/** Text sprite drawn on a canvas, laid flat at the corner of a layer plane. */
+function label(text: string, x: number, y: number, z: number) {
+  const c = document.createElement("canvas");
+  c.width = 1024; c.height = 96;
+  const ctx = c.getContext("2d")!;
+  ctx.font = "600 44px Inter, system-ui, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  ctx.fillText(text, 8, 62);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  sprite.scale.set(560, 52, 1);
+  sprite.position.set(x + 280, y + 30, z);
+  return sprite;
+}
+
+/** Soft radial glow around a node. */
+function halo(color: string, size: number) {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, color); g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g; ctx.globalAlpha = 0.6; ctx.fillRect(0, 0, 128, 128);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  s.scale.set(size, size, 1);
+  return s;
+}
 
 export default Consortium3D;

@@ -43,10 +43,10 @@ export default function HardwareSignModal({ caseId, actions, onClose, onDone }: 
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label="Hardware key signing">
-      <div className="glass w-full max-w-3xl max-h-[92vh] overflow-y-auto p-5 space-y-4 bg-[#0b1220]">
+      <div className="glass w-full max-w-3xl max-h-[92vh] overflow-y-auto p-5 space-y-4 bg-[#ffffff]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-verify">FIDO2 / WebAuthn · ES256</p>
+            <p className="text-[11px] font-medium text-verify">FIDO2 / WebAuthn · ES256</p>
             <h2 className="text-lg">Sign and approve with a hardware key</h2>
           </div>
           <button onClick={onClose} className="text-muted hover:text-paper text-sm">Close</button>
@@ -122,20 +122,20 @@ export default function HardwareSignModal({ caseId, actions, onClose, onDone }: 
 
 /** On-screen USB-C security key with a gold capacitive touch ring. */
 function VaultKey({ phase, onTouch, disabled }: { phase: string; onTouch: () => void; disabled: boolean }) {
-  const glow = phase === "done" ? "#10b981" : phase === "error" ? "#ef4444" : "#f5b942";
+  const glow = phase === "done" ? "#0c9466" : phase === "error" ? "#d93a3f" : "#f5b942";
   return (
     <button onClick={onTouch} disabled={disabled} aria-label="Touch the VaultKey gold pad to sign" className="group justify-self-center disabled:opacity-60">
       <svg width="200" height="96" viewBox="0 0 200 96">
-        <rect x="2" y="30" width="34" height="36" rx="6" fill="#94a3b8" />
-        <rect x="8" y="40" width="22" height="16" rx="3" fill="#475569" />
+        <rect x="2" y="30" width="34" height="36" rx="6" fill="#5b6b80" />
+        <rect x="8" y="40" width="22" height="16" rx="3" fill="#b5bcc6" />
         <rect x="34" y="14" width="160" height="68" rx="20" fill="#111827" stroke="#334155" strokeWidth="2" />
-        <text x="58" y="40" fill="#e2e8f0" fontSize="11" fontFamily="monospace" fontWeight="700">VaultKey</text>
-        <text x="58" y="54" fill="#94a3b8" fontSize="8" fontFamily="monospace">FIPS 140-3 · SIM</text>
+        <text x="58" y="40" fill="#ffffff" fontSize="11" fontFamily="monospace" fontWeight="700">VaultKey</text>
+        <text x="58" y="54" fill="#b5bcc6" fontSize="8" fontFamily="monospace">FIPS 140-3 · SIM</text>
         <circle cx="160" cy="48" r="20" fill="none" stroke={glow} strokeWidth="5" className={phase === "signing" ? "pulse-soft" : "group-hover:opacity-80"}>
           {phase === "idle" && <animate attributeName="stroke-opacity" values="1;0.35;1" dur="1.6s" repeatCount="indefinite" />}
         </circle>
         <circle cx="160" cy="48" r="11" fill={glow} fillOpacity="0.25" />
-        <circle cx="66" cy="66" r="3" fill={phase === "done" ? "#10b981" : phase === "signing" ? "#f59e0b" : "#334155"} />
+        <circle cx="66" cy="66" r="3" fill={phase === "done" ? "#0c9466" : phase === "signing" ? "#c97a06" : "#334155"} />
       </svg>
       <span className="block text-center text-xs text-verify mt-1">{phase === "signing" ? "Signing…" : phase === "done" ? "Signed" : "Touch the gold ring"}</span>
     </button>

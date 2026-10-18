@@ -84,7 +84,7 @@ export default function WeaveGraph({
       const x = lane(b);
       ctx.strokeStyle = bankHex(b) + "26"; ctx.lineWidth = Math.min(140, width / Math.max(2, banks.length + 1) * 0.66);
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
-      ctx.fillStyle = "#e9e4d4"; ctx.font = "600 13px sans-serif";
+      ctx.fillStyle = "#0c1a2e"; ctx.font = "600 13px sans-serif";
       ctx.textAlign = "center"; ctx.fillText(`Bank ${b}`, x, 18);
       ctx.fillStyle = bankHex(b); ctx.fillRect(x - 18, 24, 36, 2);
     });
@@ -93,7 +93,7 @@ export default function WeaveGraph({
       const cross = l.source.bank !== l.target.bank;
       const inCase = (l.source.cases?.length ?? 0) > 0 && (l.target.cases?.length ?? 0) > 0;
       const hot = highlight && highlight.has(l.source.id) && highlight.has(l.target.id);
-      ctx.strokeStyle = hot ? "#ef4444" : cross ? (inCase ? "rgba(239,68,68,.75)" : "rgba(6,182,212,.30)") : "rgba(148,163,184,.30)";
+      ctx.strokeStyle = hot ? "#d93a3f" : cross ? (inCase ? "rgba(217,58,63,.75)" : "rgba(8,124,248,.35)") : "rgba(91,107,128,.25)";
       ctx.lineWidth = hot ? 2.4 : cross ? 1.4 : 0.8;
       ctx.beginPath();
       const mx = (l.source.x! + l.target.x!) / 2, my = (l.source.y! + l.target.y!) / 2 - (cross ? 18 : 0);
@@ -109,7 +109,7 @@ export default function WeaveGraph({
         ctx.strokeStyle = bankHex(n.bank); ctx.lineWidth = 1.2; ctx.stroke();
       } else {
         ctx.fillStyle = bankHex(n.bank); ctx.fill();
-        if (highlight?.has(n.id) || hover === n.id) { ctx.strokeStyle = "#e9e4d4"; ctx.lineWidth = 2; ctx.stroke(); }
+        if (highlight?.has(n.id) || hover === n.id) { ctx.strokeStyle = "#0c1a2e"; ctx.lineWidth = 2; ctx.stroke(); }
       }
     }
   }

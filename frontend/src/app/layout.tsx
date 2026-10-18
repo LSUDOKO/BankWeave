@@ -1,22 +1,23 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Schibsted_Grotesk } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import Rail from "@/components/Rail";
+import TopNav from "@/components/TopNav";
 
-const sans = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-schibsted" });
+// Inter with its optical-size axis: large sizes switch to the Display cut
+const sans = Inter({ subsets: ["latin"], variable: "--font-inter", axes: ["opsz"] });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
 
 export const metadata: Metadata = {
   title: "BankWeave",
-  description: "Many banks, one ring, every claim proven.",
+  description: "Cross-bank money-laundering investigations on FalkorDB, with every claim proven.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
-      <body className="min-h-screen md:flex">
-        <Rail />
-        <main className="flex-1 min-w-0 px-4 py-5 md:px-8 md:py-7">{children}</main>
+      <body className="min-h-screen">
+        <TopNav />
+        <main className="mx-auto w-full max-w-[1360px] px-4 pb-16 pt-8 md:px-8">{children}</main>
       </body>
     </html>
   );

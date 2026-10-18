@@ -26,7 +26,7 @@ export default function Evaluation() {
           <h1>Evaluation</h1>
           <p className="mt-1.5 max-w-[75ch] text-muted">Every number is read from <span className="mono">eval/results/*.json</span>, written by the scripts in <span className="mono">eval/</span> on IBM&apos;s AMLworld HI-Small data (synthetic, labelled). Misses are reported as misses.</p>
         </div>
-        <ModeBadge mode={replay ? "replay" : undefined} />
+        {replay && <ModeBadge mode="replay" />}
       </header>
       {!ex && <p className="text-muted">Loading results…</p>}
       {e2 && <E2 r={e2.results} d={e2.dataset} />}
@@ -60,7 +60,7 @@ function E2({ r, d }: { r: any; d: string }) {
   const b = r.best_single_bank;
   return (
     <section className="glass p-6">
-      <p className="text-xs uppercase tracking-wider text-muted">E2 · Why a consortium graph</p>
+      <p className="text-xs font-medium text-muted">E2 · Why a consortium graph</p>
       <div className="mt-3 grid gap-6 md:grid-cols-3">
         <div><p className="kpi text-6xl text-verify">{p1(b.mean_accounts_held)}</p><p className="mt-1 text-sm text-muted">of a laundering ring&apos;s accounts are held by the best-placed single bank</p></div>
         <div><p className="kpi text-6xl text-ring">{p1(b.attempts_fully_held)}</p><p className="mt-1 text-sm text-muted">of rings are held entirely by any one bank</p></div>
@@ -107,7 +107,7 @@ function E1({ r, params, curve }: { r: any; params: any; curve: Curve | null }) 
   return (
     <section className="glass p-6 space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-xs uppercase tracking-wider text-muted">E1 · Alert triage on {params?.test_accounts?.toLocaleString()} later-period alerted accounts ({params?.illicit_in_test} illicit), IBM HI-Small</p>
+        <p className="text-xs font-medium text-muted">E1 · Alert triage on {params?.test_accounts?.toLocaleString()} later-period alerted accounts ({params?.illicit_in_test} illicit), IBM HI-Small</p>
         <p className="text-xs text-muted">weights and thresholds tuned on the earlier half only</p>
       </div>
       <table className="w-full text-sm">
@@ -118,7 +118,7 @@ function E1({ r, params, curve }: { r: any; params: any; curve: Curve | null }) 
       </table>
       {!curve ? <p className="text-sm text-muted">Threshold explorer: run <span className="mono">eval/e1_slice_scores.py</span> to export per-account scores.</p> : (
         <div className="space-y-2 border-t border-line pt-4">
-          <p className="text-xs uppercase tracking-wider text-muted">Threshold explorer · {curve.dataset}: {n.toLocaleString()} alerted accounts, {curve.rows.filter((x) => x[3]).length} illicit ({p1(base)} base rate)</p>
+          <p className="text-xs font-medium text-muted">Threshold explorer · {curve.dataset}: {n.toLocaleString()} alerted accounts, {curve.rows.filter((x) => x[3]).length} illicit ({p1(base)} base rate)</p>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] items-start">
             <div>
               <label className="text-sm text-muted">Escalate the top <span className="mono text-paper">{k}</span> accounts by model score
@@ -126,21 +126,21 @@ function E1({ r, params, curve }: { r: any; params: any; curve: Curve | null }) 
               </label>
               <input type="range" min={1} max={n} step={1} value={k ?? 1} onChange={(e) => setK(+e.target.value)} className="mt-1 w-full accent-[var(--cyan)]" aria-label="Accounts escalated" />
               <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full" role="img" aria-label="Precision, recall and F1 by share escalated">
-                {[0, 0.25, 0.5, 0.75, 1].map((g) => <line key={g} x1={30} x2={W - 10} y1={Y(g)} y2={Y(g)} stroke="#243247" />)}
-                <path d={line("p")} fill="none" stroke="#06b6d4" strokeWidth={2} />
-                <path d={line("r")} fill="none" stroke="#f59e0b" strokeWidth={2} />
-                <path d={line("f")} fill="none" stroke="#10b981" strokeWidth={2.5} />
-                {k != null && <line x1={X(k / n)} x2={X(k / n)} y1={10} y2={H - 20} stroke="#e2e8f0" strokeDasharray="3 3" />}
-                <line x1={X(liveK / n)} x2={X(liveK / n)} y1={10} y2={H - 20} stroke="#10b98188" />
-                {[0, 0.5, 1].map((g) => <text key={g} x={X(g)} y={H - 4} fill="#94a3b8" fontSize={10} textAnchor="middle">{Math.round(g * 100)}% escalated</text>)}
-                <text x={W - 12} y={18} fill="#06b6d4" fontSize={10} textAnchor="end">precision</text>
-                <text x={W - 12} y={32} fill="#f59e0b" fontSize={10} textAnchor="end">recall</text>
-                <text x={W - 12} y={46} fill="#10b981" fontSize={10} textAnchor="end">F1</text>
+                {[0, 0.25, 0.5, 0.75, 1].map((g) => <line key={g} x1={30} x2={W - 10} y1={Y(g)} y2={Y(g)} stroke="#dde6f0" />)}
+                <path d={line("p")} fill="none" stroke="#087cf8" strokeWidth={2} />
+                <path d={line("r")} fill="none" stroke="#c97a06" strokeWidth={2} />
+                <path d={line("f")} fill="none" stroke="#0c9466" strokeWidth={2.5} />
+                {k != null && <line x1={X(k / n)} x2={X(k / n)} y1={10} y2={H - 20} stroke="#0c1a2e" strokeDasharray="3 3" />}
+                <line x1={X(liveK / n)} x2={X(liveK / n)} y1={10} y2={H - 20} stroke="#0c946688" />
+                {[0, 0.5, 1].map((g) => <text key={g} x={X(g)} y={H - 4} fill="#5b6b80" fontSize={10} textAnchor="middle">{Math.round(g * 100)}% escalated</text>)}
+                <text x={W - 12} y={18} fill="#087cf8" fontSize={10} textAnchor="end">precision</text>
+                <text x={W - 12} y={32} fill="#c97a06" fontSize={10} textAnchor="end">recall</text>
+                <text x={W - 12} y={46} fill="#0c9466" fontSize={10} textAnchor="end">F1</text>
               </svg>
             </div>
             {live && (
               <div className="glass-2 p-4 text-sm space-y-1">
-                <p className="text-xs uppercase tracking-wider text-muted">Escalating {k} ({p1((k ?? 0) / n)})</p>
+                <p className="text-xs font-medium text-muted">Escalating {k} ({p1((k ?? 0) / n)})</p>
                 <p>Precision <b className="text-cyan">{p1(live.precision)}</b> <span className="text-xs text-muted">({(live.precision / Math.max(base, 1e-9)).toFixed(1)}× base rate)</span></p>
                 <p>Recall <b className="text-verify">{p1(live.recall)}</b></p>
                 <p>F1 <b className="text-ok">{f3(live.f1)}</b></p>
@@ -167,10 +167,10 @@ function E6({ r }: { r: any }) {
   ];
   return (
     <section className="glass p-6">
-      <p className="text-xs uppercase tracking-wider text-muted">E6 · Trust layer on the {r.cases} cases the agents built</p>
+      <p className="text-xs font-medium text-muted">E6 · Trust layer on the {r.cases} cases the agents built</p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map(([v, l, tone, tag]) => (
-          <div key={l} className="glass-2 p-4"><p className="text-[10px] uppercase tracking-wider text-muted">{tag}</p><p className={`kpi text-2xl ${tone}`}>{v}</p><p className="mt-1 text-xs text-muted">{l}</p></div>
+          <div key={l} className="glass-2 p-4"><p className="text-[10px] font-medium text-muted">{tag}</p><p className={`kpi text-2xl ${tone}`}>{v}</p><p className="mt-1 text-xs text-muted">{l}</p></div>
         ))}
       </div>
       <p className="mt-3 text-xs text-muted">The cascade figure comes from scripted dependency graphs with known ground truth, not from live cases.</p>
@@ -182,7 +182,7 @@ function E7({ r, notes }: { r: Record<string, any>; notes?: string[] }) {
   return (
     <section className="glass p-6">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-xs uppercase tracking-wider text-muted">E7 · Tool latency</p>
+        <p className="text-xs font-medium text-muted">E7 · Tool latency</p>
         <span className="badge text-verify">local benchmark</span>
         <span className="text-xs text-muted">{notes?.[0]}</span>
       </div>

@@ -25,7 +25,7 @@ export default function Dossier({ params }: { params: Promise<{ id: string }> })
         <a href={`${API}/cases/${id}/export/fincen.xml`} className="rounded-md border border-line px-3 py-1">FinCEN-style XML</a>
       </div>
       <header>
-        <p className="text-xs uppercase tracking-wider text-muted">BankWeave audit dossier · synthetic data</p>
+        <p className="text-xs font-medium text-muted">BankWeave audit dossier · synthetic data</p>
         <h1 className="mt-1">{b.case.title}</h1>
         <p className="mt-1 text-sm text-muted">Case <span className="mono">{b.case.id}</span> · SAR <span className="mono">{b.case.sar ?? "none"}</span> ({b.case.sar_status ?? "not drafted"}) · provenance fidelity {b.case.pf ?? "–"} · auditor {b.case.auditor ?? "–"} · generated {b.generated_at}</p>
       </header>

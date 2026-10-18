@@ -34,7 +34,7 @@ export default function Scenarios() {
             {capturedAt ? ` captured ${capturedAt}` : ""}.
           </p>
         </div>
-        <ModeBadge mode={replay ? "replay" : undefined} />
+        {replay && <ModeBadge mode="replay" />}
       </header>
       {err && <p className="text-verify">{err}</p>}
       {!d && !err && <p className="text-muted">Loading scenarios…</p>}
@@ -70,7 +70,7 @@ function ScenarioA({ a }: { a: any }) {
           <p className="mt-2 text-xs text-muted">The rule alone would have sent this to an analyst. Of the alerts in this dataset, most are cleared the same way.</p>
         </div>
         <div className="glass p-4 text-sm">
-          <p className="text-xs uppercase tracking-wider text-muted">Signals the agent used</p>
+          <p className="text-xs font-medium text-muted">Signals the agent used</p>
           <dl className="mt-2 grid grid-cols-[1fr_auto] gap-y-1">
             {Object.entries(s).filter(([, v]) => typeof v !== "object").slice(0, 8).map(([k, v]) => (
               <Fragment key={k}><dt className="text-muted">{k.replace(/_/g, " ")}</dt><dd className="mono text-right">{typeof v === "number" ? Math.round(v * 1000) / 1000 : String(v)}</dd></Fragment>
@@ -96,17 +96,17 @@ function ScenarioB({ b }: { b: any }) {
       </Head>
       <div className="grid gap-3 lg:grid-cols-4">
         <div className="glass p-4">
-          <p className="text-xs uppercase tracking-wider text-muted">Best single bank (bank {b.best_bank?.bank})</p>
+          <p className="text-xs font-medium text-muted">Best single bank (bank {b.best_bank?.bank})</p>
           <p className="kpi text-4xl text-verify mt-1">{b.best_bank?.holds_pct}%</p>
           <p className="text-xs text-muted">of this ring&apos;s {b.accounts} accounts are its own customers</p>
         </div>
         <div className="glass p-4">
-          <p className="text-xs uppercase tracking-wider text-muted">Consortium graph</p>
+          <p className="text-xs font-medium text-muted">Consortium graph</p>
           <p className="kpi text-4xl text-ok mt-1">100%</p>
           <p className="text-xs text-muted">{b.accounts} accounts and {b.consortium_links} money links in one structure</p>
         </div>
         <div className="glass p-4 lg:col-span-2">
-          <p className="text-xs uppercase tracking-wider text-muted">Across the IBM HI-Small evaluation (E2)</p>
+          <p className="text-xs font-medium text-muted">Across the IBM HI-Small evaluation (E2)</p>
           {e2 ? (
             <div className="mt-1 grid grid-cols-3 gap-2">
               <div><p className="kpi text-2xl text-verify">{pct(e2.mean_accounts_held)}</p><p className="text-xs text-muted">ring accounts the best bank holds</p></div>
@@ -180,7 +180,7 @@ function ScenarioC({ c, replay }: { c: any; replay: boolean }) {
           </ul>
         </div>
         <div className="glass p-4 space-y-3">
-          <p className="text-xs uppercase tracking-wider text-muted">Evidence independence in this case</p>
+          <p className="text-xs font-medium text-muted">Evidence independence in this case</p>
           <p className="kpi text-2xl">{ind.paths} paths → <span className="text-ok">{ind.origins} origins</span></p>
           <p className="text-sm text-muted">echo-proof {pct(ind.mean_confidence)} vs path counting {pct(ind.mean_naive)}</p>
           <button onClick={push} disabled={busy || replay}

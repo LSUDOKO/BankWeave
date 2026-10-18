@@ -11,15 +11,15 @@ export type DagEdge = { source: string; type: string; target: string };
 const COLUMN: Record<string, number> = { Evidence: 0, Claim: 680, Action: 1020, SAR: 1020, Sentence: 1360 };
 const WRAP: Record<string, number> = { Evidence: 2, Sentence: 2 };
 const W = 280, GAP = 20, ROW = 78;
-const STATE_COLOR: Record<string, string> = { active: "#10b981", needs_verification: "#f59e0b", historical_only: "#94a3b8", superseded: "#ef4444" };
+const STATE_COLOR: Record<string, string> = { active: "#0c9466", needs_verification: "#c97a06", historical_only: "#5b6b80", superseded: "#d93a3f" };
 const EDGE_STYLE: Record<string, { stroke: string; dash?: string; label?: string }> = {
-  SUPPORTED_BY: { stroke: "#10b98199", label: "supports" },
-  CHALLENGED_BY: { stroke: "#f59e0b", dash: "6 4", label: "challenges" },
-  DERIVED_FROM: { stroke: "#06b6d4", label: "derived" },
-  JUSTIFIED_BY: { stroke: "#a78bfa", label: "justified by" },
-  SUPERSEDES: { stroke: "#ef4444", dash: "2 3", label: "supersedes" },
-  CITES: { stroke: "#94a3b855" },
-  CONTAINS: { stroke: "#94a3b833" },
+  SUPPORTED_BY: { stroke: "#0c946699", label: "supports" },
+  CHALLENGED_BY: { stroke: "#c97a06", dash: "6 4", label: "challenges" },
+  DERIVED_FROM: { stroke: "#087cf8", label: "derived" },
+  JUSTIFIED_BY: { stroke: "#7a5ad8", label: "justified by" },
+  SUPERSEDES: { stroke: "#d93a3f", dash: "2 3", label: "supersedes" },
+  CITES: { stroke: "#5b6b8055" },
+  CONTAINS: { stroke: "#5b6b8033" },
 };
 
 export default function ProvenanceDag({ nodes, edges, upTo, focus, height = 680, onPick }: {
@@ -45,19 +45,19 @@ export default function ProvenanceDag({ nodes, edges, upTo, focus, height = 680,
           id: n.id, position: { x: (COLUMN[type] ?? 0) + Math.floor(i / perCol) * (W + GAP), y: offset + (i % perCol) * ROW },
           data: { label: <Card n={n} color={color} /> , raw: n },
           style: { width: W, padding: 0, border: `1px solid ${color}`, borderRadius: 10,
-            background: "#0f172aee", color: "#e2e8f0", opacity: dim ? 0.12 : 1, transition: "opacity .4s, border-color .4s",
-            boxShadow: n.state === "needs_verification" ? "0 0 0 3px #f59e0b33" : n.state === "superseded" ? "0 0 0 3px #ef444433" : "none" },
+            background: "#ffffff", color: "#0c1a2e", opacity: dim ? 0.12 : 1, transition: "opacity .4s, border-color .4s",
+            boxShadow: n.state === "needs_verification" ? "0 0 0 3px #c97a0633" : n.state === "superseded" ? "0 0 0 3px #d93a3f33" : "none" },
         });
       });
     }
     const shown = new Set(rfNodes.filter((n) => Number(n.style?.opacity ?? 1) > 0.5).map((n) => n.id));
     const rfEdges: Edge[] = edges.filter((e) => e.type !== "CONTAINS").map((e, i) => {
-      const s = EDGE_STYLE[e.type] ?? { stroke: "#94a3b8" };
+      const s = EDGE_STYLE[e.type] ?? { stroke: "#5b6b80" };
       const on = shown.has(e.source) && shown.has(e.target);
       return {
         id: `${e.source}-${e.type}-${e.target}-${i}`, source: e.source, target: e.target,
         label: on && s.label && e.type !== "SUPPORTED_BY" ? s.label : undefined,
-        labelStyle: { fill: "#94a3b8", fontSize: 10 }, labelBgStyle: { fill: "#070b14" },
+        labelStyle: { fill: "#5b6b80", fontSize: 10 }, labelBgStyle: { fill: "#f5f8fc" },
         style: { stroke: s.stroke, strokeDasharray: s.dash, opacity: on ? 1 : 0.06 },
         markerEnd: { type: MarkerType.ArrowClosed, color: s.stroke },
         animated: on && e.type === "CHALLENGED_BY",
@@ -69,9 +69,9 @@ export default function ProvenanceDag({ nodes, edges, upTo, focus, height = 680,
   return (
     <div style={{ height }} className="rounded-xl border border-line bg-ink/60">
       <ReactFlow nodes={rfNodes} edges={rfEdges} fitView minZoom={0.15} proOptions={{ hideAttribution: true }}
-        nodesConnectable={false} onNodeClick={(_, n) => onPick?.((n.data as any).raw)} colorMode="dark"
+        nodesConnectable={false} onNodeClick={(_, n) => onPick?.((n.data as any).raw)} colorMode="light"
         style={{ background: "transparent" }}>
-        <Background color="#1e293b" gap={24} />
+        <Background color="#dde6f0" gap={24} />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>
@@ -82,7 +82,7 @@ function Card({ n, color }: { n: DagNode; color: string }) {
   const tag = n.type === "Evidence" ? n.kind : n.type === "Claim" ? `${n.kind} claim` : n.type === "Action" ? n.kind?.replace("_", " ") : n.type;
   return (
     <div className="px-2.5 py-1.5 text-left">
-      <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-wider" style={{ color }}>
+      <div className="flex items-center justify-between gap-2 text-[10px] font-medium" style={{ color }}>
         <span>{tag}</span>
         <span className="mono normal-case text-muted">{n.id}</span>
       </div>

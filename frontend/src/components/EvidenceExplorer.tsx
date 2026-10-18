@@ -35,7 +35,7 @@ export default function EvidenceExplorer({ caseId, version, onRevoked }: { caseI
     <div className="space-y-4">
       <div className="glass p-4 flex flex-wrap items-center gap-4">
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted">Evidence independence</p>
+          <p className="text-xs font-medium text-muted">Evidence independence</p>
           <p className="kpi text-2xl mt-0.5"><span className="text-paper">{d.paths} paths</span> <span className="text-muted">→</span> <span className="text-ok">{d.origins} origins</span></p>
         </div>
         <div className="text-sm">
@@ -46,7 +46,7 @@ export default function EvidenceExplorer({ caseId, version, onRevoked }: { caseI
       {d.claims.map((c) => (
         <article key={c.id} className="glass p-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-            <span className="uppercase tracking-wider">{c.kind}</span><span className="mono">{c.id}</span>
+            <span className="font-medium">{c.kind}</span><span className="mono">{c.id}</span>
             <span className="badge text-cyan">{c.paths} paths → {c.origins} origins</span>
             <span className="ml-auto"><StateBadge state={c.state} /></span>
           </div>

@@ -29,7 +29,7 @@ export default function Lab() {
             agents use, the execution plan of any read query, and every MCP tool the agents use.
           </p>
         </div>
-        <ModeBadge mode={replay ? "replay" : undefined} />
+        {replay && <ModeBadge mode="replay" />}
       </header>
       <div role="tablist" className="flex flex-wrap gap-2 text-sm">
         {TABS.map((t) => (
@@ -129,7 +129,7 @@ function Algorithms({ onReplay }: { onReplay: (b: boolean) => void }) {
             <article key={a.key} className="glass p-4 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider text-muted">{FAMILY[a.family]}</p>
+                  <p className="text-[11px] font-medium text-muted">{FAMILY[a.family]}</p>
                   <h3 className="mt-0.5">{a.title}</h3>
                 </div>
                 <button onClick={() => run(a.key)} disabled={busy === a.key}
@@ -285,7 +285,7 @@ function Tools({ onReplay }: { onReplay: (b: boolean) => void }) {
           {ts.filter((t) => filter === "all" || t.mode === filter).map((t) => (
             <li key={t.name}>
               <button onClick={() => pick(t)} className={`w-full text-left rounded px-2 py-1.5 hover:bg-panel-2 ${sel?.name === t.name ? "bg-panel-2" : ""}`}>
-                <span className="mono">{t.name}</span> <span className={`text-[10px] uppercase ${MODE_TONE[t.mode]}`}>{t.mode}</span>
+                <span className="mono">{t.name}</span> <span className={`text-[10px] ${MODE_TONE[t.mode]}`}>{t.mode}</span>
               </button>
             </li>
           ))}

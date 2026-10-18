@@ -45,7 +45,7 @@ export default function CommandCenter() {
               Every number below is a live query{d ? <> ({d.ms} ms)</> : null}.
             </p>
           </div>
-          <ModeBadge mode={replay ? "replay" : undefined} />
+          {replay && <ModeBadge mode="replay" />}
         </header>
         {err && <p className="text-verify">{err}</p>}
 
@@ -121,7 +121,7 @@ export default function CommandCenter() {
 function Kpi({ label, value, sub, tone = "text-paper", href }: { label: string; value: string; sub: string; tone?: string; href: string }) {
   return (
     <Link href={href} className="glass p-4 block hover:border-cyan transition-colors">
-      <p className="text-xs uppercase tracking-wider text-muted">{label}</p>
+      <p className="text-xs font-medium text-muted">{label}</p>
       <p className={`kpi mt-1 text-3xl ${tone}`}>{value}</p>
       <p className="mt-1 text-xs text-muted">{sub}</p>
     </Link>

@@ -48,7 +48,7 @@ export default function Consortium3DPage() {
             Top: the cases the agents opened and their claims. Vertical threads are the same account seen at two levels.
           </p>
         </div>
-        <ModeBadge mode={replay ? "replay" : undefined} />
+        {replay && <ModeBadge mode="replay" />}
       </header>
       <div className="glass p-3 flex flex-wrap items-center gap-2 text-sm">
         {(["bank", "consortium", "cases"] as const).map((k) => (
@@ -109,13 +109,13 @@ function EchoCollapse({ caseId }: { caseId: string }) {
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
             {d.groups.map((gr: any, gi: number) => (
               <g key={gr.origin}>
-                <circle cx={((gi + 0.5) / nG) * W} cy={H - 22} r={7} fill="#10b981" />
-                <text x={((gi + 0.5) / nG) * W} y={H - 4} fontSize={8} fill="#94a3b8" textAnchor="middle">{gr.kind}</text>
+                <circle cx={((gi + 0.5) / nG) * W} cy={H - 22} r={7} fill="#0c9466" />
+                <text x={((gi + 0.5) / nG) * W} y={H - 4} fontSize={8} fill="#5b6b80" textAnchor="middle">{gr.kind}</text>
               </g>
             ))}
             {paths.map((p, k) => {
               const x0 = ((k + 0.5) / paths.length) * W, x1 = ((p.g + 0.5) / nG) * W;
-              return <circle key={k} r={4} fill="#06b6d4" style={{ transition: "all 1.2s cubic-bezier(.4,0,.2,1)" }}
+              return <circle key={k} r={4} fill="#087cf8" style={{ transition: "all 1.2s cubic-bezier(.4,0,.2,1)" }}
                 cx={collapsed ? x1 : x0} cy={collapsed ? H - 22 : 24} opacity={collapsed ? 0.25 : 1} />;
             })}
           </svg>

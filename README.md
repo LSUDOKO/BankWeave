@@ -2,7 +2,7 @@
 
 **Many banks, one ring, every claim proven.**
 
-![BankWeave live: blue hero with the live Command Center](docs/img/live/00-landing.png)
+![BankWeave live: blue bubble hero with live counters](docs/img/v3/00-landing.png)
 
 BankWeave is a team of AI agents that investigates money-laundering alerts across several
 banks, with FalkorDB as its shared brain. It clears innocent alerts fast, exposes laundering
@@ -12,6 +12,8 @@ of them dies, and refuses to file a report it can't prove.
 
 - **Tracks:** 01 Agents That Act on Connected Data (primary), 02 Agent Memory and Coordination, Best blog post
 - **Live demo:** https://bankweave.vercel.app (UI on Vercel) · API https://bankweave-api.onrender.com/docs (Render) · graph: FalkorDB Cloud (ap-south-1)
+- **Use it from Claude:** `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp` (17 read-only FalkorDB tools, each returning the Cypher it ran; [docs/MCP.md](docs/MCP.md))
+- **Understand it in five minutes:** the [3D explainer](https://bankweave.vercel.app/explainer) (eight scenes, each one FalkorDB call) and the [graph explorer](https://bankweave.vercel.app/explorer) (twelve presets, run live)
 - **Demo video:** _link added after recording_
 - **Blog post:** [`docs/BLOG.md`](docs/BLOG.md)
 
@@ -41,6 +43,37 @@ FalkorDB's QueryWeaver or Weights & Biases Weave.
    produced it.
 4. A **trust layer** built from three 2026 papers keeps the agents honest (below).
 5. Humans approve every action. Everything is measured against IBM's labels on a scoreboard.
+
+## What's new in 3.0
+
+| Area | What you can do | Where |
+|---|---|---|
+| **Console** | A sidebar listing all fourteen pages with live counts, Ctrl K search over pages and cases, and one card system across every page: stat cards from live queries, status chips, rounded charts | every page |
+| **Dashboard** | Open cases, alerts decided, independent claims, actions awaiting a human; claim support for the latest cases; the next approval; the agent team; an alert-triage gauge; FalkorDB Cloud latency, graphs and memory | `/command` |
+| **Graph explorer** | A FalkorDB-browser-style page: pick a graph, write Cypher (`GRAPH.RO_QUERY`, writes rejected by the engine), see an Obsidian-style force graph with labels, hover neighbourhoods and a property panel. Twelve presets, each a FalkorDB feature on our data: cross-bank ring, `algo.pageRank`, `algo.labelPropagation`, `algo.wcc`, `algo.SPpaths`, Double Metaphone full-text, HNSW vector KNN, shared identity, the agents' alert-to-claim chain, a SAR's provenance, the typology KB, learned procedures | `/explorer` |
+| **3D explainer** | Scroll through eight scenes on a three.js stage: six bank slices and per-graph ACL, hashed ids stitching the consortium, `algo.wcc` clearing an alert, the ring one bank sees 37.5% of, PageRank hub and `algo.SPpaths`, six paths collapsing to four origins, a KYC cascade, a Merkle root signed by a hardware key. Every number comes from the API; each scene shows the Cypher it ran | `/explainer` |
+| **Hosted MCP** | `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp`: 17 read-only tools (cases, echo-proof claims, money paths, rings, hubs, components, vector and phonetic search, triage, typologies, guarded Cypher), 3 prompts, 2 resources | `/mcp`, [docs/MCP.md](docs/MCP.md) |
+| **Real tools, recorded** | The ESP32 sketch running in Wokwi posts a real card tap to the live API, and EMVLab decodes the field 55 it printed | Hardware Lab, below |
+
+| Landing | Dashboard |
+|---|---|
+| ![](docs/img/v3/00-landing.png) | ![](docs/img/v3/01-dashboard.png) |
+
+| Graph explorer: cross-bank ring on the consortium graph | 3D explainer: the ring as one bank sees it |
+|---|---|
+| ![](docs/img/v3/07-explorer-ring.png) | ![](docs/img/v3/13-explainer-ring.png) |
+
+| Graph explorer: `algo.pageRank` hubs (hover focuses one community) | 3D explainer: six bank slices, each sees only its own graph |
+|---|---|
+| ![](docs/img/v3/15-explorer-pagerank.png) | ![](docs/img/v3/12-explainer-banks.png) |
+
+| Alert queue | Case workspace |
+|---|---|
+| ![](docs/img/v3/02-alerts.png) | ![](docs/img/v3/04-case.png) |
+
+| Approvals | Hardware Lab |
+|---|---|
+| ![](docs/img/v3/05-approvals.png) | ![](docs/img/v3/08-hardware-lab.png) |
 
 ## What's new in 2.0
 
@@ -98,7 +131,19 @@ mode badge reads "Live · LLM + FalkorDB".
 
 Banks don't let software act alone: terminals produce the device evidence, HSMs and enclaves
 guard identity hashing, and a human signs off with a security key. BankWeave simulates all three
-in software and wires each into FalkorDB. Captured on the live site:
+in software and wires each into FalkorDB.
+
+**Recorded on the real tools.** The sketch in `hardware/wokwi/` running in the Wokwi ESP32
+simulator: it joins `Wokwi-GUEST`, Card A is tapped on the Mumbai POS, the board posts it over
+HTTPS to the live API, which answers `00 APPROVED`, writes the `CARD_TXN` edge into FalkorDB
+Cloud and returns the ISO 8583 field 55 printed on the serial monitor. EMVLab.org then decodes
+that exact TLV (amount, currency, IFD serial `D0006301`, ATC, cryptogram, PAN).
+
+| Wokwi ESP32 → live API → FalkorDB | EMVLab decodes the tap's field 55 |
+|---|---|
+| ![](docs/media/wokwi-esp32.gif) | ![](docs/media/emvlab-decode.gif) |
+
+Captured on the live site:
 
 | Approve with a hardware key: VaultKey FIPS (virtual USB-C key, gold touch ring) | Real WebAuthn (Chrome virtual CTAP2 USB key): ES256 receipt, raw `authenticatorData` and `clientDataJSON` with origin `https://bankweave.vercel.app` |
 |---|---|
@@ -304,7 +349,12 @@ Things FalkorDB doesn't ship natively, done in plain Cypher (and said so): degre
 | Reporter + Auditor | SAR through the provenance gate; a different, stronger model audits |
 | Archivist | saves the tool sequence that worked (procedural memory), closes the case |
 
-The MCP server (`python -m mcp_server.server`, stdio or `--http PORT`) exposes all 34 tools (32 agent tools plus `cypher_readonly` and `list_graphs`),
+**Hosted MCP (read-only, no install):** `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp`.
+It serves 17 read-only tools over Streamable HTTP from the same Render API; every tool runs through
+`GRAPH.RO_QUERY` and returns the graph, Cypher, parameters and time. Install lines for Claude
+Desktop and Cursor, the tool table and a real transcript are in [docs/MCP.md](docs/MCP.md).
+
+The full local MCP server (`python -m mcp_server.server`, stdio or `--http PORT`) exposes all 34 tools (32 agent tools plus `cypher_readonly` and `list_graphs`),
 including `trace_flow`, `find_hub`, `find_bridges`, `money_at_risk`, `typology_patterns`,
 `passthrough_check`, `clue_expand`, `hunt_regions`, `resolve_entity`, `behavior_neighbors`,
 `kyc_lookup`, `kb_query`, `echo_check`, `invalidate_evidence`, `premise_check`, plus

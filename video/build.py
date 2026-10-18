@@ -42,8 +42,11 @@ PLAN = [
 
 
 LONG = "--long" in sys.argv
-if LONG:  # extended cut: the whiteboard explainer of problems 01 and 02 right after the problem film
-    PLAN.insert(1, ("whiteboard/whiteboard.mp4", None, 0, 1.0))
+if LONG:
+    # main cut: the whiteboard explains problems 01 and 02, so it replaces the film's first 26 s;
+    # the film picks up at "Problem three: proof" with only that part of the narration
+    PLAN[0:1] = [("whiteboard/whiteboard.mp4", None, 0, 1.0),
+                 ("films/film1-tail.mp4", "00b-problem3", 13.8, 0.28)]
 
 
 def dur(p: Path) -> float:
@@ -92,6 +95,7 @@ def chunks(words):
 
 LINES = json.load(open(ROOT / "vo" / "lines.json"))
 segs, captions, t0 = [], [], 0.0
+bed_start, own_music = 0.0, True
 for i, (src, vo, minlen, keep) in enumerate(PLAN):
     path = next((ROOT / s for s in src.split("|") if (ROOT / s).exists()), None)
     if path is None:
@@ -99,8 +103,8 @@ for i, (src, vo, minlen, keep) in enumerate(PLAN):
         continue
     vlen = dur(path)
     vo_path = ROOT / "vo" / f"{vo}.mp3" if vo else None
-    lead = 1.0 if vo == "00-problem" else LEAD
-    T = vlen if not vo else max(minlen, LEAD + dur(vo_path) + TAIL)
+    lead = {"00-problem": 1.0, "00b-problem3": 0.55}.get(vo, LEAD)
+    T = vlen if not vo else max(minlen, lead + dur(vo_path) + TAIL)
     if not vo:
         T = vlen
     out = W / f"seg{i:02d}.mp4"
@@ -128,6 +132,10 @@ for i, (src, vo, minlen, keep) in enumerate(PLAN):
             b = t0 + lead + c[-1]["t"] + c[-1]["d"] + 0.12
             captions.append((a, b, " ".join(x["w"] for x in c)))
     segs.append(out)
+    if own_music and keep:
+        bed_start = t0 + T
+    else:
+        own_music = False
     print(f"{i:02d} {path.name:22s} {T:6.2f}s  at {t0:6.2f}s")
     t0 += T
 
@@ -155,11 +163,11 @@ pad = W / "pad.wav"
 run("-f", "lavfi", "-i",
     f"aevalsrc='0.20*sin(2*PI*110*t)*(0.6+0.4*sin(2*PI*0.07*t))+0.14*sin(2*PI*164.81*t)*(0.6+0.4*sin(2*PI*0.05*t+1))"
     f"+0.12*sin(2*PI*220*t)*(0.5+0.5*sin(2*PI*0.09*t+2))+0.08*sin(2*PI*277.18*t)*(0.5+0.5*sin(2*PI*0.06*t+3))':s=48000:d={total:.2f}",
-    "-af", "lowpass=f=900,aecho=0.8:0.7:120|240:0.25|0.18,volume=0.11,afade=t=in:st=40:d=3,"
+    "-af", f"lowpass=f=900,aecho=0.8:0.7:120|240:0.25|0.18,volume=0.11,afade=t=in:st={bed_start:.2f}:d=3,"
            f"afade=t=out:st={max(total-4,0):.2f}:d=4", "-ac", "2", str(pad))
 final = ROOT / ("bankweave-demo-long.mp4" if LONG else "bankweave-demo.mp4")
 run("-i", str(joined), "-i", str(pad), "-filter_complex",
-    f"[0:v]ass={ass}[v];[1:a]volume=volume=0:enable='lt(t,40)'[p];[0:a][p]amix=inputs=2:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[a]",
+    f"[0:v]ass={ass}[v];[1:a]volume=volume=0:enable='lt(t,{bed_start:.2f})'[p];[0:a][p]amix=inputs=2:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[a]",
     "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-crf", "19", "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", str(final))
 print(f"wrote {final} {dur(final):.1f}s, {os.path.getsize(final)/1e6:.1f} MB")

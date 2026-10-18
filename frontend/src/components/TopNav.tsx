@@ -63,7 +63,7 @@ export default function TopNav() {
   );
 }
 
-function Logo({ light }: { light: boolean }) {
+export function Logo({ light }: { light: boolean }) {
   // three bank lanes crossed by one thread: the weave
   return (
     <svg width="24" height="24" viewBox="0 0 26 26" aria-hidden>

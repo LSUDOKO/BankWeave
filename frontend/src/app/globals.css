@@ -95,3 +95,8 @@ button { cursor: pointer; }
 .react-flow { --xy-background-color: transparent; --xy-controls-button-background-color: #ffffff;
   --xy-controls-button-color: #0c1a2e; --xy-controls-button-border-color: #dde6f0; }
 pre, textarea { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+
+/* no visible page scrollbar; the page still scrolls */
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
+

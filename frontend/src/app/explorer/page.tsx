@@ -333,7 +333,43 @@ export default function Explorer() {
           )}
         </Card>
       </section>
+      <BrowserProof />
     </div>
+  );
+}
+
+const PROOF: [string, string, string][] = [
+  ["01-browser-cross-bank-ring.png", "Cross-bank ring", "12 nodes, 166 edges in 1.85 ms"],
+  ["02-browser-pagerank.png", "algo.pageRank", "top accounts across banks in 3.55 ms"],
+  ["03-browser-card-taps.png", "Card taps into terminals", "the Wokwi ESP32 tap included, 0.41 ms"],
+  ["04-browser-terminal-node.png", "The Mumbai POS node", "terminal id, city and GPS on the node"],
+  ["05-browser-sar-provenance.png", "SAR provenance", "sentence → claim → evidence, 0.61 ms"],
+  ["06-browser-vector-knn.png", "HNSW vector KNN", "behaviour twins at five banks, 0.36 ms"],
+  ["07-browser-shared-identity.png", "Shared devices and IPs", "291 nodes, 220 edges in 2.79 ms"],
+];
+
+/** The same queries opened in FalkorDB's own browser against our Cloud instance (hostname cropped). */
+function BrowserProof() {
+  return (
+    <Card title="The same graphs in the official FalkorDB Browser"
+      action={<a href="https://browser.falkordb.com" target="_blank" rel="noreferrer" className={btn.small}>browser.falkordb.com ↗</a>}>
+      <p className="-mt-2 mb-4 max-w-[90ch] text-sm text-muted">
+        Captured on browser.falkordb.com connected to BankWeave&apos;s FalkorDB Cloud instance (v4.22, 36 graphs). Each query is read-only;
+        timings are the engine&apos;s own RT readout.
+      </p>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {PROOF.map(([f, t, sub]) => (
+          <a key={f} href={`/media/falkordb/${f}`} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-2xl border border-line bg-white transition-shadow hover:shadow-[var(--shadow)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/media/falkordb/${f}`} alt={`${t} in the FalkorDB Browser`} loading="lazy" className="aspect-[16/7] w-full object-cover object-left-top" />
+            <div className="px-4 py-3">
+              <p className="text-sm font-medium group-hover:text-cyan">{t}</p>
+              <p className="text-xs text-muted">{sub}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </Card>
   );
 }
 

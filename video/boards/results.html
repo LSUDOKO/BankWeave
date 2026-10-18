@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=block" rel="stylesheet"><link rel="stylesheet" href="style.css"><script src="board.js"></script></head><body><script>
+window.addEventListener('DOMContentLoaded',()=>board({title:"Measured on IBM's labelled AML data", sub:"Every number comes from eval/results in the repo; Cloud timings are FalkorDB's own RT readout",
+boxes:[
+ {id:"e2",x:50,y:150,w:740,h:300,title:"E2  No bank sees the whole ring (36 cross-bank groups, 3.5 banks each)",color:"red",ts:28},
+ {id:"e1",x:830,y:150,w:720,h:300,title:"E1  Triage F1, held out (4,000 alerts, 3.2% illicit)",color:"blue",ts:28},
+ {id:"e7",x:50,y:490,w:740,h:380,title:"E7  Local, 1.3M transfers (log scale)",color:"navy",ts:28},
+ {id:"fc",x:830,y:490,w:720,h:380,title:"FalkorDB Cloud, in FalkorDB Browser (log scale)",color:"blue",ts:28}],
+charts:[{x:70,y:225,w:700,lw:300,max:100,rowH:62,rows:[["best single bank holds",43.8,"43.8%","red"],["rings one bank holds whole",0.01,"0 / 36","red"],["consortium graph holds",100,"100%","blue"]]},
+ {x:850,y:215,w:680,lw:280,max:0.25,rowH:52,fs:24,rows:[["escalate everything",0.062,"0.062","grey"],["rules, no graph",0.126,"0.126","grey"],["graph, hand weights",0.161,"0.161","blue"],["graph, calibrated",0.205,"0.205","navy"]]},
+ {x:70,y:560,w:700,lw:290,log:true,min:0.1,max:100,rowH:50,fs:24,rows:[["HNSW behaviour twins",0.4,"0.4 ms","blue"],["cross-bank links",0.6,"0.6 ms","blue"],["shared identity",0.7,"0.7 ms","blue"],["pass-through check",2.8,"2.8 ms","blue"],["algo.wcc, consortium",39.5,"39.5 ms","navy"],["algo.pageRank, consortium",57.5,"57.5 ms","navy"]]},
+ {x:850,y:560,w:680,lw:290,log:true,min:0.1,max:100,rowH:50,fs:24,rows:[["vector KNN, 5 banks",0.36,"0.36 ms","blue"],["card taps -> terminals",0.41,"0.41 ms","blue"],["SAR provenance chain",0.61,"0.61 ms","blue"],["cross-bank ring",1.85,"1.85 ms","red"],["shared devices / IPs",2.79,"2.79 ms","blue"],["algo.pageRank",3.55,"3.55 ms","navy"]]}],
+notes:[{x:850,y:425,w:680,t:"174 escalations instead of 4,000",s:24,c:"blue"},{x:70,y:418,w:700,t:"E6: 27.8% echo caught · 25 / 28 SARs gated · 100% cascade recall",s:23,c:"green"}]}));</script></body></html>

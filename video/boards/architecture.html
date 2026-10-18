@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=block" rel="stylesheet"><link rel="stylesheet" href="style.css"><script src="board.js"></script></head><body><script>
+window.addEventListener('DOMContentLoaded',()=>board({title:"How BankWeave is built", sub:"Live: Vercel UI · Render API + agents + MCP · FalkorDB Cloud (ap-south-1, v4.22, 36 graphs)",
+boxes:[
+ {id:"ui",x:50,y:170,w:330,h:200,title:"Next.js console",color:"blue",lines:["dashboard · alerts · cases","graph explorer · 3D explainer","hardware lab · evaluation"]},
+ {id:"mcpc",x:50,y:420,w:330,h:200,title:"Any MCP client",color:"blue",lines:["Claude Code / Desktop, Cursor","17 read-only tools","io.github.LSUDOKO/bankweave"]},
+ {id:"dev",x:50,y:670,w:330,h:170,title:"Card terminals",color:"amber",lines:["POS / ATM twins","Wokwi ESP32 -> HTTPS taps"]},
+ {id:"api",x:540,y:170,w:400,h:670,title:"FastAPI on Render",lines:["REST + WebSocket events · /mcp"]},
+ {id:"ag",x:570,y:280,w:340,h:300,title:"Agent worker",color:"navy",ts:30,lines:["Orchestrator -> Triage","Investigator <-> Skeptic","Reporter -> Auditor","Human approval -> Archivist","blackboard: Task nodes"]},
+ {id:"tools",x:570,y:640,w:340,h:170,title:"Tool registry",color:"navy",ts:30,lines:["210 named Cypher queries","every result keeps its Cypher"]},
+ {id:"fdb",x:1090,y:170,w:460,h:460,title:"FalkorDB Cloud",color:"red",sw:4,ls:24,lines:["consortium  10,178 nodes · 37,448 edges","bank_001 ... bank_070  (6 bank graphs)","case_&lt;id&gt;  (27 case graphs)","procedures  ·  typology_kb","","algo.pageRank · wcc · labelPropagation","betweenness · SPpaths · maxFlow · BFS","full-text (phonetic) · HNSW vector","GRAPH.COPY · RO_QUERY · JS UDFs"]},
+ {id:"llm",x:1090,y:680,w:215,h:160,title:"LLMs",color:"green",ls:23,lines:["Groq free tier","writer + larger auditor","OpenRouter fallback"]},
+ {id:"kyc",x:1335,y:680,w:215,h:160,title:"KYC Postgres",color:"green",ls:23,lines:["Neon","people, addresses,","onboarding facts"]}],
+arrows:[{from:"ui",to:"api",fy:270,ty:270,label:"REST / WS",lx:0,ly:-40},{from:"mcpc",to:"api",fy:520,ty:520,label:"MCP / HTTP",ly:-40},{from:"dev",to:"api",fy:755,ty:755,label:"ISO 8583",ly:-40},
+ {from:"tools",to:"fdb",fy:700,ty:560,color:"red",sw:4,label:"Cypher / algo.*",ly:-46,lx:-6},{from:"api",to:"llm",fx:940,fy:800,tx:1090,ty:775,color:"green",label:"plan + write",ly:-40,lsz:22},{from:"api",to:"kyc",fx:940,fy:820,tx:1442,ty:840,ts:"b",color:"green",bend:60,dash:true,label:"SQL",ly:18}],
+notes:[{x:1092,y:126,t:"one instance, many graphs",c:"red",s:30}]}));</script></body></html>

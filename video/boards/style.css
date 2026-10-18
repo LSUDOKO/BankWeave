@@ -1,0 +1,6 @@
+*{margin:0;box-sizing:border-box}
+body{overflow:hidden;background:#fbfaf6;font-family:Caveat,cursive;color:#1f2a3a;position:relative}
+.paper{position:absolute;inset:0;background-image:linear-gradient(rgba(8,124,248,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(8,124,248,.05) 1px,transparent 1px);background-size:32px 32px}
+svg{position:absolute;inset:0}
+.t{position:absolute;font-weight:700;line-height:1.08}
+.l{font-weight:500;line-height:1.12}

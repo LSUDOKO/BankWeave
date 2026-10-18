@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=block" rel="stylesheet"><link rel="stylesheet" href="style.css"><script src="board.js"></script></head><body><script>
+window.addEventListener('DOMContentLoaded',()=>board({title:"Agents that work the graph", sub:"A task blackboard stored in FalkorDB; LLMs plan and write, Cypher and algo.* compute",
+boxes:[
+ {id:"o",x:50,y:190,w:230,h:150,title:"Orchestrator",lines:["alerts -> Task nodes","resets stale claims"]},
+ {id:"t",x:340,y:190,w:240,h:150,title:"Triage",color:"green",lines:["algo.wcc component","+ graph signals"]},
+ {id:"i",x:660,y:150,w:290,h:170,title:"Investigator",color:"blue",lines:["pageRank, SPpaths,","betweenness, maxFlow,","phonetic + vector search"]},
+ {id:"s",x:660,y:360,w:290,h:150,title:"Skeptic",color:"amber",lines:["the innocent explanation","KYC facts, at most 2 rounds"]},
+ {id:"r",x:1020,y:190,w:240,h:150,title:"Reporter",lines:["SAR, every sentence","cites its evidence"]},
+ {id:"a",x:1310,y:190,w:250,h:150,title:"Auditor",color:"navy",lines:["a different, larger","model checks each line"]},
+ {id:"h",x:1020,y:420,w:240,h:150,title:"Human",color:"green",lines:["signs the Merkle root","(WebAuthn / Ed25519)"]},
+ {id:"ar",x:1310,y:420,w:250,h:150,title:"Archivist",lines:["saves the tool sequence","as procedural memory"]},
+ {id:"live",x:50,y:590,w:900,h:260,title:"Live on FalkorDB Cloud right now",color:"red"},
+ {id:"kill",x:1020,y:640,w:540,h:210,title:"Kill a worker mid-case",color:"blue",lines:["heartbeats stop; after 30 s the orchestrator","resets its tasks and another worker","resumes from the case graph, nothing lost"]}],
+arrows:[{from:"o",to:"t"},{from:"t",to:"i",fy:265,ty:240,color:"blue",label:"open case",ly:-38,lsz:22},{from:"i",to:"s",fs:"b",ts:"t",color:"amber"},{from:"i",to:"r",fy:240,ty:265},{from:"r",to:"a"},{from:"a",to:"ar",fs:"b",ts:"t",dash:true},{from:"r",to:"h",fs:"b",ts:"t",color:"green",label:"recommend",lx:70,ly:-14,lsz:22},{from:"h",to:"ar"}],
+charts:[{x:70,y:670,w:860,lw:290,max:1208,rowH:48,rows:[["alerts raised by rules",1208,"1,208","navy"],["cleared with a reason",1113,"1,113","green"],["escalated into cases",95,"95","red"],["waiting for a human",25,"25 actions","amber"]]}],
+notes:[{x:340,y:350,w:260,t:"cleared in ms, with a reason",s:23,c:"green"}]}));</script></body></html>

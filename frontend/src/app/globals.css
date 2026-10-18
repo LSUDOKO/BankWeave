@@ -130,3 +130,14 @@ html::-webkit-scrollbar { display: none; }
 @keyframes float-a { from { transform: translateY(70px); } to { transform: translateY(-70px); } }
 @keyframes float-b { from { transform: translateY(-30px); } to { transform: translateY(110px); } }
 @keyframes reveal { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+/* the footer wordmark: oversized, gradient ink that fades out toward the page edge, cropped at the bottom */
+.footer-mark { font-size: 17.5vw; line-height: .78; font-weight: 700; letter-spacing: -.06em; margin: 3vw 0 -1.4vw;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .55) 0%, rgba(255, 255, 255, .14) 60%, rgba(255, 255, 255, 0) 92%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+@supports (animation-timeline: view()) {
+  .footer-mark { animation: mark-rise linear both; animation-duration: auto; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+}
+@keyframes mark-rise { from { opacity: 0; transform: translateY(40%); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .footer-mark, .hero-card, .hero-par, .tilt, .float-a, .float-b, .reveal, .flow-dash, .scroll-cue { animation: none !important; }
+}

@@ -14,9 +14,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import db, events
 from app.config import get_settings
 from app.events import CHANNEL_PREFIX
+from app.mcp_server import http_app as mcp_http_app
+from app.mcp_server import mcp
 from app.routers import (actions, alerts, cases, demo, evals, hardware, integrations, lab, network,
                          overview, sar,
                          scenarios, tools_api, trust, workspace)
+
+# read-only MCP server (streamable HTTP) at /mcp; its session manager runs in the lifespan below
+_mcp_app = mcp_http_app()
 
 
 @asynccontextmanager
@@ -26,7 +31,8 @@ async def lifespan(app: FastAPI):
         from agents.worker import Worker
         app.state.worker = Worker()
         app.state.worker.start()
-    yield
+    async with mcp.session_manager.run():
+        yield
     if app.state.worker:
         app.state.worker.stop()
 
@@ -37,6 +43,7 @@ app.add_middleware(CORSMiddleware, allow_origins=os.getenv("CORS_ORIGINS", "*").
 for r in (alerts, cases, sar, actions, network, trust, evals, demo, tools_api, overview, lab,
           workspace, scenarios, hardware, integrations):
     app.include_router(r.router)
+app.router.routes.extend(_mcp_app.routes)  # POST/GET/DELETE /mcp
 
 
 @app.get("/health")

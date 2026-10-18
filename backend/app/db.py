@@ -112,5 +112,10 @@ def try_query(graph_name: str, cypher: str, params: dict | None = None) -> None:
     try:
         graph(graph_name).query(cypher, params or {})
     except Exception as exc:  # noqa: BLE001
-        if "already" not in str(exc).lower():
+        msg = str(exc).lower()
+        if "maxmemory" in msg:  # a full instance must not stop the API from serving reads
+            import logging
+            logging.getLogger(__name__).warning("skipped DDL on full instance: %s", cypher[:80])
+            return
+        if "already" not in msg:
             raise

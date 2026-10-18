@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { get } from "@/lib/api";
 import WeaveGraph from "./WeaveGraph";
+import { Card, Chip, Empty } from "./ui";
 
 /** Bi-temporal view of a case. Transaction time: which transfers had happened by T.
  *  Knowledge time: what the agents believed at T (claims, support, validity state), using the
@@ -25,27 +26,25 @@ export default function TimeMachine({ caseId, graph, banks }: { caseId: string; 
   const fmt = (s: number) => new Date(s * 1000).toISOString().slice(0, 16).replace("T", " ");
   return (
     <div className="grid gap-4 xl:grid-cols-2">
-      <div className="glass p-4 space-y-2 text-sm">
-        <h2>Transaction time</h2>
-        <p className="text-muted">When the money moved. Drag to replay the ring forming: {shown.length} of {edges.length} transfers by {tTx ? fmt(tTx) : "–"} UTC.</p>
+      <Card title="Transaction time" action={<Chip tone="blue">{shown.length} / {edges.length} transfers</Chip>} className="space-y-3 text-sm">
+        <p className="-mt-2 text-muted">When the money moved. Drag to replay the ring forming: {shown.length} of {edges.length} transfers by {tTx ? fmt(tTx) : "–"} UTC.</p>
         <input type="range" min={txRange[0]} max={txRange[1]} value={tTx ?? txRange[1]} onChange={(e) => setTx(+e.target.value)} className="w-full accent-[var(--cyan)]" aria-label="Transaction time" />
-        <WeaveGraph nodes={nodes} edges={shown} banks={banks} height={300} />
-      </div>
-      <div className="glass p-4 space-y-2 text-sm">
-        <h2>Knowledge time</h2>
-        <p className="text-muted">What the agents believed. Superseded evidence is kept with its timestamps, so any past state can be asked for.</p>
+        <div className="overflow-hidden rounded-2xl border border-line"><WeaveGraph nodes={nodes} edges={shown} banks={banks} height={300} /></div>
+      </Card>
+      <Card title="Knowledge time" action={<Chip tone="deep">{beliefs.length} claims existed</Chip>} className="space-y-3 text-sm">
+        <p className="-mt-2 text-muted">What the agents believed. Superseded evidence is kept with its timestamps, so any past state can be asked for.</p>
         <input type="range" min={knRange[0]} max={knRange[1]} value={tKn ?? knRange[1]} onChange={(e) => setKn(+e.target.value)} className="w-full accent-[var(--cyan)]" aria-label="Knowledge time" />
         <p className="text-xs text-muted">as of {tKn ? new Date(tKn).toLocaleString() : "–"} · {beliefs.length} claims existed</p>
-        <ul className="space-y-1.5 max-h-[300px] overflow-y-auto scroll-thin">
+        <ul className="scroll-thin max-h-[300px] space-y-2 overflow-y-auto">
           {beliefs.map((b) => (
-            <li key={b.claim} className="glass-2 p-2 text-xs">
-              <span className={b.state_then === "active" ? "text-ok" : "text-verify"}>{b.state_then}</span> · {b.support_then} supporting item(s)
-              <p className="text-paper/85">{b.text}</p>
+            <li key={b.claim} className="rounded-2xl border border-line p-3 text-xs">
+              <p className="flex items-center gap-2"><Chip tone={b.state_then === "active" ? "ok" : "warn"}>{b.state_then}</Chip><span className="text-muted">{b.support_then} supporting item(s)</span></p>
+              <p className="mt-1.5 text-paper/85">{b.text}</p>
             </li>
           ))}
-          {!beliefs.length && <li className="text-muted text-xs">No claims yet at this time.</li>}
+          {!beliefs.length && <li><Empty>No claims yet at this time.</Empty></li>}
         </ul>
-      </div>
+      </Card>
     </div>
   );
 }

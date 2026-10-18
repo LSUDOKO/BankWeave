@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { get } from "@/lib/api";
+import { Card, Chip, Empty } from "./ui";
 
 type Span = { trace_id: string; span_id: string; parent_id: string | null; name: string; kind: string;
   start_ns: number; end_ns: number; status: string; attrs: Record<string, any> };
@@ -24,47 +25,48 @@ export default function TraceWaterfall({ caseId }: { caseId: string }) {
     walk(null, 0);
     return out;
   }, [d]);
-  if (!d) return <p className="text-muted">Loading trace…</p>;
-  if (!rows.length) return <p className="text-muted">No spans recorded yet. Spans are written when an agent task on this case finishes (cases opened before telemetry existed have none).</p>;
+  if (!d) return <div className="glass h-48 animate-pulse" />;
+  if (!rows.length) return <Empty>No spans recorded yet. Spans are written when an agent task on this case finishes (cases opened before telemetry existed have none).</Empty>;
   const t0 = Math.min(...d.spans.map((s) => s.start_ns));
   const t1 = Math.max(...d.spans.map((s) => s.end_ns));
   const span = Math.max(1, t1 - t0);
   const ms = (ns: number) => (ns / 1e6).toFixed(ns > 1e8 ? 0 : 1);
   const totals = d.spans.reduce<Record<string, number>>((a, s) => { const k = s.name.split(".")[0]; a[k] = (a[k] ?? 0) + (s.end_ns - s.start_ns); return a; }, {});
   return (
-    <div className="space-y-3">
-      <div className="glass p-3 flex flex-wrap gap-4 text-sm">
+    <div className="space-y-4">
+      <div className="glass flex flex-wrap items-center gap-2 p-4 text-sm">
         <span>Trace <span className="mono text-cyan">{d.trace_id.slice(0, 16)}</span></span>
-        <span className="text-muted">{d.spans.length} spans over {ms(span)} ms</span>
-        <span className="text-ok">agents {ms(totals.agent ?? 0)} ms</span>
-        <span className="text-cyan">tools {ms(totals.tool ?? 0)} ms</span>
-        <span className="text-[var(--bank-1)]">LLM {ms(totals.llm ?? 0)} ms</span>
-        <span className="text-xs text-muted ml-auto">OpenTelemetry span shape; exported over OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set</span>
+        <Chip>{d.spans.length} spans over {ms(span)} ms</Chip>
+        <Chip tone="ok"><i className="size-2 rounded-full bg-ok" />agents {ms(totals.agent ?? 0)} ms</Chip>
+        <Chip tone="blue"><i className="size-2 rounded-full bg-cyan" />tools {ms(totals.tool ?? 0)} ms</Chip>
+        <span className="inline-flex items-center gap-1 rounded-md bg-[#f1ecfd] px-1.5 py-px text-[11px] font-medium text-[var(--bank-1)]"><i className="size-2 rounded-full bg-[var(--bank-1)]" />LLM {ms(totals.llm ?? 0)} ms</span>
+        <span className="ml-auto text-xs text-muted">OpenTelemetry span shape; exported over OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set</span>
       </div>
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="glass p-3 overflow-x-auto">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <Card title="Waterfall" pad="p-4" className="min-w-0 overflow-x-auto">
           <ol className="min-w-[640px] space-y-0.5">
             {rows.map(({ s, depth }) => (
-              <li key={s.span_id} className={`grid grid-cols-[260px_1fr] items-center gap-2 text-xs cursor-pointer rounded hover:bg-panel-2/60 ${sel?.span_id === s.span_id ? "bg-panel-2" : ""}`} onClick={() => setSel(s)}>
-                <span className="truncate mono" style={{ paddingLeft: depth * 14 }} title={s.name}>{s.name}</span>
-                <span className="relative h-4">
-                  <span className={`absolute top-1 h-2 rounded ${TONE(s.name, s.status)}`}
-                    style={{ left: `${((s.start_ns - t0) / span) * 100}%`, width: `max(2px, ${((s.end_ns - s.start_ns) / span) * 100}%)` }} />
-                  <span className="absolute right-0 text-[10px] text-muted">{ms(s.end_ns - s.start_ns)} ms</span>
+              <li key={s.span_id} className={`grid cursor-pointer grid-cols-[260px_1fr] items-center gap-2 rounded-lg px-1.5 py-0.5 text-xs hover:bg-panel-2/60 ${sel?.span_id === s.span_id ? "bg-panel-2" : ""}`} onClick={() => setSel(s)}>
+                <span className="mono truncate" style={{ paddingLeft: depth * 14 }} title={s.name}>{s.name}</span>
+                <span className="relative h-5">
+                  <span className={`absolute top-1.5 h-2 rounded-full ${TONE(s.name, s.status)}`}
+                    style={{ left: `${((s.start_ns - t0) / span) * 100}%`, width: `max(4px, ${((s.end_ns - s.start_ns) / span) * 100}%)` }} />
+                  <span className="absolute right-0 top-0.5 text-[10px] text-muted">{ms(s.end_ns - s.start_ns)} ms</span>
                 </span>
               </li>
             ))}
           </ol>
-        </div>
-        <div className="glass p-3 text-xs">
-          {!sel ? <p className="text-muted">Select a span to see its attributes.</p> : (
+        </Card>
+        <Card title="Span" pad="p-4" className="h-fit text-xs">
+          {!sel ? <Empty>Select a span to see its attributes.</Empty> : (
             <>
               <p className="mono text-sm">{sel.name}</p>
-              <p className="text-muted">span {sel.span_id} · parent {sel.parent_id ?? "none"} · {sel.kind} · {sel.status}</p>
-              <pre className="mt-2 mono rounded bg-ink/70 p-2 overflow-auto max-h-80">{JSON.stringify(sel.attrs, null, 2)}</pre>
+              <p className="mt-1 flex flex-wrap gap-1.5 text-muted"><Chip tone={sel.status === "error" ? "ring" : "ok"}>{sel.status}</Chip><Chip>{sel.kind}</Chip></p>
+              <p className="mt-1.5 text-muted">span <span className="mono">{sel.span_id}</span> · parent <span className="mono">{sel.parent_id ?? "none"}</span></p>
+              <pre className="mono scroll-thin mt-3 max-h-80 overflow-auto rounded-xl border border-line bg-ink p-2.5">{JSON.stringify(sel.attrs, null, 2)}</pre>
             </>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

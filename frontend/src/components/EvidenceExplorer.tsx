@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { get, post } from "@/lib/api";
 import { StateBadge } from "./Trust";
+import { Chip, Empty } from "./ui";
 
 type Group = { origin: string; kind: string; multiplicity: number; evidence_ids: string[]; summary: string; weight: number };
 type Claim = { id: string; text: string; kind: string; state: string; paths: number; origins: number; confidence: number; naive: number;
@@ -30,48 +31,55 @@ export default function EvidenceExplorer({ caseId, version, onRevoked }: { caseI
     setTimeout(() => setRipple(null), 1200);
   };
 
-  if (!d) return <p className="text-muted">Loading evidence…</p>;
+  if (!d) return <div className="space-y-4">{[0, 1, 2].map((i) => <div key={i} className="glass h-32 animate-pulse" />)}</div>;
   return (
     <div className="space-y-4">
-      <div className="glass p-4 flex flex-wrap items-center gap-4">
-        <div>
-          <p className="text-xs font-medium text-muted">Evidence independence</p>
-          <p className="kpi text-2xl mt-0.5"><span className="text-paper">{d.paths} paths</span> <span className="text-muted">→</span> <span className="text-ok">{d.origins} origins</span></p>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <div className="fill-blue relative overflow-hidden rounded-[22px] p-5 shadow-[0_24px_40px_-24px_rgba(10,99,207,.9)]">
+          <span className="lines" />
+          <p className="relative text-[16px] font-medium">Evidence independence</p>
+          <p className="kpi relative mt-3 text-[40px] leading-none">{d.paths}<span className="mx-2 text-2xl text-white/60">→</span>{d.origins}</p>
+          <p className="relative mt-3 text-xs text-sky">paths → independent origins</p>
         </div>
-        <div className="text-sm">
-          <p>Echo-proof confidence <b className="text-ok">{pct(d.mean_confidence)}</b> vs path counting <b className="text-muted">{pct(d.mean_naive)}</b></p>
-          <p className="text-xs text-muted">Confidence counts each origin once (GraphEcho, arXiv 2609.17695); repeated paths to one fact add nothing.</p>
+        <div className="glass p-5 text-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <div><p className="text-xs text-muted">Echo-proof confidence</p><p className="kpi text-2xl text-ok">{pct(d.mean_confidence)}</p><Meter v={d.mean_confidence} tone="bg-ok" /></div>
+            <div><p className="text-xs text-muted">Path counting</p><p className="kpi text-2xl text-muted">{pct(d.mean_naive)}</p><Meter v={d.mean_naive} tone="bg-[#b5bcc6]" /></div>
+          </div>
+          <p className="mt-3 text-xs text-muted">Confidence counts each origin once (GraphEcho, arXiv 2609.17695); repeated paths to one fact add nothing.</p>
         </div>
       </div>
+      {!d.claims.length && <Empty>No claims to analyse yet.</Empty>}
       {d.claims.map((c) => (
-        <article key={c.id} className="glass p-4">
+        <article key={c.id} className="glass p-5">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-            <span className="font-medium">{c.kind}</span><span className="mono">{c.id}</span>
-            <span className="badge text-cyan">{c.paths} paths → {c.origins} origins</span>
+            <Chip tone="blue">{c.kind}</Chip><span className="mono">{c.id}</span>
+            <Chip tone="deep">{c.paths} paths → {c.origins} origins</Chip>
             <span className="ml-auto"><StateBadge state={c.state} /></span>
           </div>
-          <p className="mt-1">{c.text}</p>
-          <p className="mt-1 text-xs text-muted">confidence <span className="text-ok">{pct(c.confidence)}</span> · naive {pct(c.naive)}</p>
-          <ul className="mt-3 grid gap-2 md:grid-cols-2">
+          <p className="mt-2 text-[15px] leading-snug">{c.text}</p>
+          <p className="mt-1 text-xs text-muted">confidence <span className="font-semibold text-ok">{pct(c.confidence)}</span> · naive {pct(c.naive)}</p>
+          <ul className="mt-4 grid gap-2.5 md:grid-cols-2">
             {[...c.groups.map((g) => ({ g, ch: false })), ...c.challenge_groups.map((g) => ({ g, ch: true }))].map(({ g, ch }) => (
-              <li key={(ch ? "c" : "s") + g.origin} className={`glass-2 p-2.5 relative overflow-hidden ${ch ? "border-verify/60" : ""}`}>
+              <li key={(ch ? "c" : "s") + g.origin} className={`relative overflow-hidden rounded-2xl border p-3 pl-4 ${ch ? "border-verify/50 bg-[#fffaf0]" : "border-line"}`}>
+                <span className={`absolute inset-y-0 left-0 w-1 ${ch ? "bg-verify" : "bg-ok"}`} />
                 <div className="flex items-center gap-2 text-[11px]">
-                  <span className={ch ? "text-verify" : "text-ok"}>{ch ? "challenges" : "supports"}</span>
-                  <span className="mono text-muted truncate">{g.origin}</span>
-                  {g.multiplicity > 1 && <span className="ml-auto badge text-verify">{g.multiplicity}× same fact</span>}
+                  <Chip tone={ch ? "warn" : "ok"}>{ch ? "challenges" : "supports"}</Chip>
+                  <span className="mono truncate text-muted">{g.origin}</span>
+                  {g.multiplicity > 1 && <Chip tone="warn" className="ml-auto shrink-0">{g.multiplicity}× same fact</Chip>}
                 </div>
-                <ul className="mt-1 space-y-1">
+                <ul className="mt-2 space-y-1.5">
                   {g.evidence_ids.map((eid) => (
-                    <li key={eid} className="flex items-start gap-2 text-xs relative">
+                    <li key={eid} className="relative flex items-start gap-2 text-xs">
                       {ripple === eid && <span className="ripple absolute -left-2 top-0 size-6 rounded-full border-2 border-ring" />}
                       <span className="flex-1 text-paper/85">{c.evidence[eid]} <span className="mono text-muted">{eid}</span></span>
                       {revoking === eid ? (
-                        <span className="flex gap-1">
-                          <button onClick={() => revoke(eid)} className="rounded border border-ring text-ring px-1.5">confirm</button>
-                          <button onClick={() => setRevoking(null)} className="text-muted">cancel</button>
+                        <span className="flex shrink-0 gap-1">
+                          <button onClick={() => revoke(eid)} className="rounded-full bg-ring px-2 py-0.5 font-semibold text-white">confirm</button>
+                          <button onClick={() => setRevoking(null)} className="px-1 text-muted hover:text-paper">cancel</button>
                         </span>
                       ) : (
-                        <button onClick={() => setRevoking(eid)} className="shrink-0 rounded border border-line px-1.5 text-muted hover:border-ring hover:text-ring">Revoke</button>
+                        <button onClick={() => setRevoking(eid)} className="shrink-0 rounded-full border border-line px-2 py-0.5 text-muted hover:border-ring hover:text-ring">Revoke</button>
                       )}
                     </li>
                   ))}
@@ -81,9 +89,13 @@ export default function EvidenceExplorer({ caseId, version, onRevoked }: { caseI
           </ul>
         </article>
       ))}
-      <label className="block text-xs text-muted">Reason recorded when revoking
-        <input value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1 w-full rounded bg-ink border border-line px-2 py-1 text-sm text-paper" />
+      <label className="glass block p-4 text-xs font-medium text-muted">Reason recorded when revoking
+        <input value={reason} onChange={(e) => setReason(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white px-3 py-2 text-sm font-normal text-paper" />
       </label>
     </div>
   );
+}
+
+function Meter({ v, tone }: { v: number; tone: string }) {
+  return <div className="hatch mt-2 h-2.5 overflow-hidden rounded-full"><div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.max(0, Math.min(1, v ?? 0)) * 100}%` }} /></div>;
 }

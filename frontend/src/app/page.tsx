@@ -3,6 +3,7 @@ import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
+import WeaveField from "@/components/WeaveField";
 import { Logo } from "@/components/TopNav";
 import { API } from "@/lib/api";
 import { live } from "@/lib/snapshot";
@@ -41,7 +42,7 @@ export default function Landing() {
   return (
     <div className="bg-white">
       <Hero d={d} replay={replay} />
-      <Stack />
+      <div className="mt-20"><Stack /></div>
       <Statement />
       <Bento d={d} />
       <Results />
@@ -68,44 +69,59 @@ function useScrollProgress(range: number) {
 function Hero({ d, replay }: { d: Overview | null; replay: boolean }) {
   const p = useScrollProgress(520);
   const decided = (d?.alerts.cleared ?? 0) + (d?.alerts.case ?? 0);
+  const [wide, setWide] = useState(true);
+  useEffect(() => { const f = () => setWide(window.innerWidth >= 1024); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
   return (
-    <section className="hero-night relative overflow-hidden pt-36 md:pt-44">
-      <div className="dot-grid absolute inset-0" />
-      <Threads />
-      <div className="relative mx-auto max-w-[1080px] px-5 text-center" style={{ transform: `translateY(${p * -60}px)`, opacity: 1 - p * 0.9 }}>
-        <a href="#product" className="hero-in inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.06] py-1 pl-1.5 pr-3.5 text-[13px] text-[#c8d6ea] backdrop-blur hover:border-white/30">
-          <span className="rounded-full bg-cyan px-2 py-0.5 text-[11px] font-semibold text-white">{replay ? "Replay" : "Live"}</span>
-          Running on FalkorDB Cloud · 6 banks · {d ? `${n(d.falkordb.graphs)} graphs` : "…"}
+    <>
+      {/* an inset card one viewport tall: glossy blue bubbles on a near-white field, navy type on the left */}
+      <section className="hero-light relative mx-2 mt-2 flex min-h-[calc(100svh-16px)] items-center overflow-hidden rounded-[28px] md:mx-3 md:mt-3">
+        <WeaveField zoom={wide ? 1.55 : 1.25} shift={wide ? 0.14 : 0} />
+        {!wide && <div className="absolute inset-0 bg-white/55" />}
+        <div className="relative mx-auto w-full max-w-[1240px] px-6 pb-16 pt-32 md:px-10" style={{ transform: `translateY(${p * -50}px)`, opacity: 1 - p * 0.8 }}>
+          <div className="max-w-[640px] max-lg:mx-auto max-lg:text-center">
+            <a href="#product" className="hero-in inline-flex items-center gap-2 rounded-full border border-cyan/20 bg-white/80 py-1 pl-1.5 pr-3.5 text-[13px] text-deep shadow-[var(--shadow)] backdrop-blur hover:border-cyan/40">
+              <span className="rounded-full bg-cyan px-2 py-0.5 text-[11px] font-semibold text-white">{replay ? "Replay" : "Live"}</span>
+              Running on FalkorDB Cloud · 6 banks · {d ? `${n(d.falkordb.graphs)} graphs` : "…"}
+            </a>
+            <h1 style={{ letterSpacing: "-0.05em", animationDelay: "80ms" }}
+              className="hero-in mt-6 text-[44px] font-semibold leading-[1.02] text-deep sm:text-[60px] lg:text-[72px]">
+              Find the laundering ring <span className="bg-gradient-to-r from-[#087cf8] to-[#0a508f] bg-clip-text text-transparent">no single bank can see</span>
+            </h1>
+            <p style={{ animationDelay: "160ms" }} className="hero-in mt-6 text-[17px] leading-relaxed text-[#3b5272] md:text-[19px]">
+              AI agents investigate alerts across banks in one FalkorDB instance. Each bank keeps its own graph, rings appear where
+              the graphs join, and every sentence of a report points to the query that proves it.
+            </p>
+            <div style={{ animationDelay: "240ms" }} className="hero-in mt-8 flex flex-wrap items-center gap-3 max-lg:justify-center">
+              <Link href="/command" className="group inline-flex items-center gap-2 rounded-xl bg-cyan px-6 py-3 font-semibold text-white shadow-[0_14px_34px_-12px_rgba(8,124,248,.85)] transition hover:bg-[#1a8bff]">
+                Open the console <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              </Link>
+              <Link href="/explainer" className="rounded-xl border-[1.5px] border-deep/80 bg-white/70 px-6 py-3 font-semibold text-deep backdrop-blur transition hover:bg-white">How it works, in 3D</Link>
+            </div>
+            <dl style={{ animationDelay: "320ms" }} className="hero-in mt-10 grid max-w-[560px] grid-cols-3 gap-2 max-lg:mx-auto">
+              {[[n(decided), "alerts decided by agents"], [n(d?.claims.independent), "independent claims"], [d ? `${Math.round(d.ms)} ms` : "…", "live overview query"]].map(([v, l]) => (
+                <div key={l} className="rounded-2xl border border-white bg-white/75 px-3 py-3 shadow-[var(--shadow)] backdrop-blur">
+                  <dt className="sr-only">{l}</dt><dd className="kpi text-[24px] text-deep md:text-[28px]">{v}</dd><p className="text-[12px] text-muted">{l}</p>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+        <a href="#product" aria-label="Scroll to the product" className="absolute bottom-6 left-1/2 -translate-x-1/2 text-deep/50 hover:text-deep">
+          <span className="scroll-cue block h-9 w-5 rounded-full border-2 border-current" />
         </a>
-        <h1 style={{ letterSpacing: "-0.05em", animationDelay: "80ms" }}
-          className="hero-in mx-auto mt-7 max-w-[1000px] text-[44px] font-semibold leading-[1.02] text-white sm:text-[62px] lg:text-[80px]">
-          Find the laundering ring <br className="hidden sm:block" /><span className="text-grad">no single bank can see</span>
-        </h1>
-        <p style={{ animationDelay: "160ms" }} className="hero-in mx-auto mt-6 max-w-[640px] text-[17px] leading-relaxed text-[#a9bcd8] md:text-[19px]">
-          AI agents investigate alerts across banks in one FalkorDB instance. Each bank keeps its own graph, rings appear where
-          the graphs join, and every sentence of a report points to the query that proves it.
-        </p>
-        <div style={{ animationDelay: "240ms" }} className="hero-in mt-9 flex flex-wrap items-center justify-center gap-3">
-          <Link href="/command" className="group inline-flex items-center gap-2 rounded-xl bg-cyan px-6 py-3 font-semibold text-white shadow-[0_14px_40px_-12px_rgba(8,124,248,.95)] transition hover:bg-[#1a8bff]">
-            Open the console <span className="transition-transform group-hover:translate-x-0.5">→</span>
-          </Link>
-          <Link href="/scenarios" className="rounded-xl border border-white/20 bg-white/[.06] px-6 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/[.12]">See the golden scenarios</Link>
+      </section>
+      {/* the console rises in and flattens as you scroll, framer-style */}
+      <div id="product" className="relative mx-auto mt-20 max-w-[1180px] scroll-mt-24 px-4" style={{ perspective: "1600px" }}>
+        <div className="mb-10 text-center">
+          <p className="mono font-medium text-cyan">The console</p>
+          <h2 className="mt-3 text-[34px] leading-[1.05] sm:text-[46px]" style={{ letterSpacing: "-0.045em", fontWeight: 700 }}>Every bank&apos;s investigators, one live picture</h2>
         </div>
-        <dl style={{ animationDelay: "320ms" }} className="hero-in mx-auto mt-12 grid max-w-[720px] grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[.04] py-4 backdrop-blur">
-          {[[n(decided), "alerts decided by agents"], [n(d?.claims.independent), "independent claims"], [d ? `${Math.round(d.ms)} ms` : "…", "live overview query"]].map(([v, l]) => (
-            <div key={l} className="px-3"><dt className="sr-only">{l}</dt><dd className="kpi text-[26px] text-white md:text-[30px]">{v}</dd><p className="text-[12px] text-[#8fa6c6]">{l}</p></div>
-          ))}
-        </dl>
-      </div>
-      {/* the console rises out of the hero and flattens as you scroll, framer-style */}
-      <div id="product" className="relative mx-auto mt-16 max-w-[1180px] px-4 md:mt-20" style={{ perspective: "1600px" }}>
-        <div className="pointer-events-none absolute inset-x-[10%] -top-10 h-40 rounded-full bg-cyan/40 blur-[90px] glow-pulse" />
-        <div style={{ transform: `rotateX(${(1 - p) * 22}deg) scale(${0.92 + p * 0.08})`, transformOrigin: "50% 0%" }} className="will-change-transform">
-          <Shot src={shotCommand} alt="BankWeave dashboard on the live site" label="bankweave.vercel.app/command" dark />
+        <div className="pointer-events-none absolute inset-x-[12%] top-40 h-48 rounded-full bg-cyan/25 blur-[90px]" />
+        <div style={{ transform: `rotateX(${(1 - p) * 20}deg) scale(${0.93 + p * 0.07})`, transformOrigin: "50% 0%" }} className="will-change-transform">
+          <Shot src={shotCommand} alt="BankWeave dashboard on the live site" label="bankweave.vercel.app/command" />
         </div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-white" />
-    </section>
+    </>
   );
 }
 
@@ -367,11 +383,11 @@ function CallToAction() {
   return (
     <section className="py-16 md:py-32">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="hero-night relative overflow-hidden rounded-[32px] px-8 py-16 md:px-12 md:py-24">
-          <div className="dot-grid absolute inset-0" /><Threads />
+        <div className="hero-light relative overflow-hidden rounded-[32px] px-8 py-16 md:px-12 md:py-24">
+          <WeaveField zoom={1.2} /><div className="absolute inset-0 bg-[radial-gradient(closest-side,rgba(255,255,255,.82),rgba(255,255,255,0))]" />
           <div className="relative flex flex-col items-center justify-center px-4 text-center">
-            <h2 className="text-5xl font-semibold text-white md:text-6xl lg:text-7xl" style={{ letterSpacing: "-0.05em" }}>Watch it work <span className="text-grad">live</span></h2>
-            <p className="mt-4 max-w-2xl text-center text-lg leading-relaxed text-[#a9bcd8] lg:text-xl">
+            <h2 className="text-5xl font-semibold text-deep md:text-6xl lg:text-7xl" style={{ letterSpacing: "-0.05em" }}>Watch it work <span className="bg-gradient-to-r from-[#087cf8] to-[#0a508f] bg-clip-text text-transparent">live</span></h2>
+            <p className="mt-4 max-w-2xl text-center text-lg leading-relaxed text-[#3b5272] lg:text-xl">
               Agents opening cases on FalkorDB Cloud right now, with every claim one click from the query that proves it.
             </p>
             <div className="mt-6">

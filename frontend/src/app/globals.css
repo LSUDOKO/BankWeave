@@ -3,10 +3,11 @@
 /* BankWeave 2.1: light, saturated-blue system. Token names are kept so every page re-themes:
    --ink = page, --panel = surface, --paper = text, --cyan = the signal blue. */
 :root {
-  --ink: #f5f8fc;          /* paper page */
-  --panel: #ffffff;        /* surfaces */
-  --panel-2: #eef4fb;      /* hover, selected, code wells */
-  --line: #dde6f0;         /* structure */
+  --ink: #f4f6fa;          /* workspace (the rounded panel behind cards) */
+  --frame: #e7ebf1;        /* the app frame around sidebar and workspace */
+  --panel: #ffffff;        /* cards */
+  --panel-2: #eef3fa;      /* hover, selected, code wells */
+  --line: #e3e8ef;         /* structure */
   --paper: #0c1a2e;        /* primary text */
   --muted: #5b6b80;        /* secondary text */
   --cyan: #087cf8;         /* signal blue: links, primary actions, live data */
@@ -23,7 +24,8 @@
   --bank-3: #a8792a;
   --bank-4: #3d55c4;
   --bank-5: #5f6f84;
-  --shadow: 0 1px 2px rgba(10, 80, 143, .06), 0 8px 24px -12px rgba(10, 80, 143, .18);
+  --shadow: 0 1px 2px rgba(12, 26, 46, .04), 0 10px 30px -18px rgba(12, 26, 46, .16);
+  --deep: #0b2a5b;         /* dark blue for filled cards */
 }
 
 @theme inline {
@@ -39,6 +41,8 @@
   --color-cyan: var(--cyan);
   --color-sky: var(--sky);
   --color-navy: var(--navy);
+  --color-deep: var(--deep);
+  --color-frame: var(--frame);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains);
 }
@@ -48,7 +52,7 @@ html { background: var(--ink); color: var(--paper); }
 body { overflow-x: clip; font-family: var(--font-inter), system-ui, sans-serif; font-size: 15px; line-height: 1.55;
   background: var(--ink); -webkit-font-smoothing: antialiased; }
 h1, h2, h3 { font-family: var(--font-inter); font-optical-sizing: auto; color: var(--paper); }
-h1 { font-size: 2.25rem; line-height: 1.05; font-weight: 700; letter-spacing: -0.045em; }
+h1 { font-size: 2.25rem; line-height: 1.08; font-weight: 650; letter-spacing: -0.04em; }
 h2 { font-size: 1.15rem; line-height: 1.2; font-weight: 650; letter-spacing: -0.02em; }
 h3 { font-size: 0.95rem; font-weight: 650; letter-spacing: -0.01em; }
 :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 6px; }
@@ -61,7 +65,7 @@ h3 { font-size: 0.95rem; font-weight: 650; letter-spacing: -0.01em; }
 }
 
 /* surfaces: white, hairline border, a soft blue-tinted shadow */
-.glass { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+.glass { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); }
 .glass-2 { background: var(--panel-2); border: 1px solid transparent; border-radius: 12px; }
 a.link, .link { color: var(--cyan); }
 a.link:hover, .link:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -140,4 +144,38 @@ html::-webkit-scrollbar { display: none; }
 @keyframes mark-rise { from { opacity: 0; transform: translateY(40%); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .footer-mark, .hero-card, .hero-par, .tilt, .float-a, .float-b, .reveal, .flow-dash, .scroll-cue { animation: none !important; }
+}
+
+/* app shell (dashboard pages) */
+.shell-nav a { transition: background-color .15s, color .15s; }
+.hatch { background-image: repeating-linear-gradient(135deg, #9fb3cc 0 2px, transparent 2px 7px); background-color: #fff; border: 1px solid #c9d6e6; }
+.fill-blue { background: radial-gradient(120% 90% at 100% 0%, #3aa0ff 0%, transparent 55%), linear-gradient(140deg, #0a63cf 0%, #0b2a5b 100%); color: #fff; }
+.fill-deep { background: radial-gradient(90% 70% at 85% 10%, rgba(58,160,255,.45) 0%, transparent 60%), linear-gradient(160deg, #0b2a5b 0%, #061634 100%); color: #fff; }
+.fill-deep .lines, .fill-blue .lines { position: absolute; inset: 0; opacity: .35; pointer-events: none;
+  background: repeating-radial-gradient(circle at 110% 120%, transparent 0 14px, rgba(255,255,255,.18) 14px 15px); }
+@keyframes grow-up { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.grow-up { transform-origin: bottom; animation: grow-up .9s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.fade-up { animation: fade-up .6s cubic-bezier(.2,.7,.2,1) both; }
+
+/* landing: deep-navy hero and scroll reveals that work without scroll timelines */
+.hero-night { background:
+  radial-gradient(60% 55% at 50% -5%, rgba(46, 140, 255, .55) 0%, rgba(46, 140, 255, 0) 70%),
+  radial-gradient(40% 40% at 90% 30%, rgba(138, 216, 252, .12) 0%, transparent 70%),
+  linear-gradient(180deg, #061430 0%, #071c40 55%, #0a2550 100%); color: #fff; }
+.dot-grid { background-image: radial-gradient(rgba(255,255,255,.13) 1px, transparent 1px); background-size: 26px 26px;
+  mask-image: radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 100%); }
+.text-grad { background: linear-gradient(90deg, #8ad8fc 0%, #4aa8ff 45%, #ffffff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+[data-reveal] { opacity: 0; transform: translateY(28px); filter: blur(6px);
+  transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1), filter .9s; transition-delay: var(--d, 0ms); }
+[data-reveal].in { opacity: 1; transform: none; filter: none; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee { animation: marquee 38s linear infinite; }
+@keyframes thread { to { stroke-dashoffset: -400; } }
+.thread { stroke-dasharray: 120 280; animation: thread 6s linear infinite; }
+@keyframes glow-pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+.glow-pulse { animation: glow-pulse 4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; filter: none; }
+  .marquee, .thread, .grow-up, .fade-up, .glow-pulse { animation: none !important; }
 }

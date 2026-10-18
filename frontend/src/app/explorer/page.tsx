@@ -115,8 +115,10 @@ export default function Explorer() {
     } catch (e) {
       if (id !== runId.current) return;
       const status = (e as { status?: number }).status;
+      // FastAPI's bare "Not Found" means an older API without this route: treat it like an outage
+      const noRoute = status === 404 && (e as Error).message === "Not Found";
       // the API answered with a query error: show it, never paper over it with a replay
-      if (status && status !== 502 && status !== 503 && status !== 504) {
+      if (status && !noRoute && status !== 502 && status !== 503 && status !== 504) {
         setErr((e as Error).message || "Query failed");
       } else {
         const snap = await loadSnapshot().catch(() => null);

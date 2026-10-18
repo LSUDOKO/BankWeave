@@ -27,3 +27,13 @@ eval/*ground_truth.json
 .vscode/
 video/.venv/
 video/work/
+video/clips/
+video/films/*.mp4
+video/films/node_modules/
+video/work/
+video/work2/frames/
+video/work2/node_modules/
+video/work2/*.png
+video/work2/gif/
+video/bankweave-demo*.mp4
+video/whiteboard/frames/

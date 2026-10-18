@@ -1,0 +1,316 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>BankWeave · Card tap to signed report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=block" rel="stylesheet">
+<style>
+:root{--page:#fdfdfb;--ice:#e6f0fa;--deep:#0b2a5b;--navy:#0a508f;--cyan:#087cf8;--sky:#8ad8fc;--paper:#0c1a2e;--muted:#5b6b80;--mist:#b5bcc6;--red:#d93a3f;--amber:#c97a06;--ok:#0c9466;--gold:#d9b45a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--page)}
+body{font-family:Inter,system-ui,sans-serif;color:var(--paper);-webkit-font-smoothing:antialiased;position:relative}
+.mono{font-family:'JetBrains Mono',monospace}
+#bg{position:absolute;inset:0;background:radial-gradient(60% 70% at 50% 52%,#eef4fb 0%,#f6f9fc 45%,#fdfdfb 100%)}
+#cam{position:absolute;inset:0;transform-origin:960px 540px}
+.abs{position:absolute}
+svg{position:absolute;left:0;top:0;overflow:visible}
+/* terminal + card */
+#term{left:650px;top:300px;width:340px;height:560px}
+#card{left:0;top:0;width:340px;height:214px;border-radius:18px;transform-origin:50% 50%;
+  background:linear-gradient(135deg,#0b2a5b 0%,#0a3f7c 55%,#0a508f 100%);box-shadow:0 30px 60px rgba(11,42,91,.28),0 4px 12px rgba(11,42,91,.18);overflow:hidden}
+#card .chip{position:absolute;left:30px;top:74px;width:50px;height:38px;border-radius:7px;background:linear-gradient(135deg,#e8eef6,#b9c7d8)}
+#card .pan{position:absolute;left:30px;bottom:26px;font-size:19px;letter-spacing:.08em;color:#e6f0fa}
+#card .nm{position:absolute;left:30px;top:24px;font-size:13px;letter-spacing:.18em;color:var(--sky);font-weight:500}
+/* the terminal screen is the shared element that unfolds into the byte strip */
+#panel{position:absolute;background:var(--deep);overflow:hidden;box-shadow:0 24px 60px rgba(11,42,91,.22)}
+#scr{position:absolute;left:0;top:0;width:284px;height:180px;transform-origin:0 0;color:#fff}
+#scr .big{position:absolute;left:0;right:0;top:46px;text-align:center;font-size:44px;font-weight:600;letter-spacing:.02em}
+#scr .s1{position:absolute;left:0;right:0;top:16px;text-align:center;font-size:12px;letter-spacing:.16em;color:var(--sky)}
+#scr .s2{position:absolute;left:0;right:0;top:118px;text-align:center;font-size:15px;color:#cfe0f3}
+#bytes{position:absolute;left:0;top:0;width:1440px;height:560px;color:#fff}
+#bytes .hd{position:absolute;left:48px;top:36px;font-size:15px;font-weight:600;letter-spacing:.14em;color:var(--sky)}
+#bytes .hr{position:absolute;right:48px;top:32px;font-size:18px;color:#e6f0fa;white-space:pre}
+#bytes .hr b{font-weight:500;color:var(--sky)}
+#bytes .rule{position:absolute;left:48px;right:48px;top:80px;height:1px;background:rgba(138,216,252,.25)}
+#bytes .f55{position:absolute;left:48px;top:100px;font-size:14px;letter-spacing:.12em;color:var(--sky)}
+.trow{position:absolute;left:48px;height:40px;font-size:24px;white-space:pre;display:flex;align-items:baseline}
+.trow .tg{width:112px;color:var(--sky);font-weight:600}
+.trow .ln{width:60px;color:#7f93ad}
+.trow .vl{width:520px;color:#fff}
+.trow .ds{font-family:Inter,sans-serif;font-size:18px;color:#9fb3cc}
+#bytes .ft{position:absolute;left:48px;top:500px;font-size:15px;color:#9fb3cc;white-space:pre}
+.caret{display:inline-block;width:.55em;height:1em;background:var(--sky);vertical-align:-.12em;margin-left:2px}
+/* chips + graph */
+#graph{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+.pchip{position:absolute;left:0;top:0;height:40px;padding:0 16px;border-radius:999px;background:#fff;border:1.5px solid var(--cyan);display:flex;align-items:center;gap:10px;font-size:17px;white-space:nowrap;box-shadow:0 10px 24px rgba(8,124,248,.14);transform-origin:0 50%}
+.pchip b{font-weight:600;color:var(--cyan)}
+.pchip span{color:var(--paper)}
+.nlab{position:absolute;font-size:16px;color:var(--paper);text-align:center;width:240px;margin-left:-120px;line-height:1.35}
+.nlab small{display:block;font-family:Inter,sans-serif;font-size:14px;color:var(--muted)}
+#elabel{position:absolute;font-size:18px;color:var(--cyan);font-weight:600;letter-spacing:.04em}
+#ring{position:absolute;font-size:24px;font-weight:600;color:var(--red);letter-spacing:-.01em;white-space:nowrap}
+/* claim card */
+#claim{position:absolute;left:330px;top:150px;width:1060px;height:700px;border-radius:26px;background:#fff;border:1px solid #dfe8f3;box-shadow:0 40px 90px rgba(11,42,91,.16)}
+#claim .k{position:absolute;left:48px;top:44px;font-size:14px;letter-spacing:.16em;color:var(--cyan);font-weight:500}
+#claim h2{position:absolute;left:48px;top:72px;font-size:46px;font-weight:600;letter-spacing:-.035em;white-space:nowrap}
+#claim .sub{position:absolute;left:48px;top:138px;font-size:16px;color:var(--muted);white-space:nowrap}
+#claim .eh{position:absolute;left:48px;top:226px;font-size:13px;letter-spacing:.16em;color:var(--muted)}
+#thumb{position:absolute;left:720px;top:40px;width:300px;height:190px;border-radius:16px;background:var(--ice)}
+.erow{position:absolute;left:48px;width:964px;height:64px;border-radius:14px;border:1px solid #e3ebf5;background:#fbfcfe;display:flex;align-items:center;padding:0 18px;gap:18px;overflow:hidden}
+.erow .kd{font-size:14px;color:var(--cyan);background:var(--ice);border-radius:8px;padding:5px 10px;min-width:118px;text-align:center}
+.erow .mn{font-size:20px;color:var(--paper);white-space:nowrap}
+.erow .ds{font-size:16px;color:var(--muted);white-space:nowrap}
+.erow .st{margin-left:auto;font-size:14px;font-weight:600;border-radius:999px;padding:5px 12px;color:var(--ok);background:rgba(12,148,102,.1);white-space:nowrap}
+#claim .mk{position:absolute;left:48px;top:520px;font-size:13px;letter-spacing:.16em;color:var(--muted)}
+#hash{position:absolute;left:48px;top:546px;font-size:26px;color:var(--paper);white-space:pre;letter-spacing:.01em}
+#hsrc{position:absolute;left:48px;top:598px;font-size:14px;color:var(--muted);white-space:nowrap}
+/* key + seal */
+#key{position:absolute;left:1525px;top:440px;width:150px;height:330px}
+#keycap{position:absolute;left:1450px;top:788px;width:300px;text-align:center;font-size:14px;color:var(--muted)}
+#finger{position:absolute;left:0;top:0;width:96px;height:150px;border-radius:48px 48px 40px 40px;background:linear-gradient(180deg,#dfe6ef,#c9d4e2);border:2px solid #a9b6c7;box-shadow:0 18px 36px rgba(11,42,91,.22)}
+#seal{position:absolute;left:1222px;top:690px;width:156px;height:156px}
+.sh{position:absolute;inset:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center}
+.sh .l1{font-size:22px;font-weight:600;letter-spacing:-.01em}
+.sh .l2{font-size:14px;letter-spacing:.14em;margin-top:4px;opacity:.9}
+#broken{position:absolute;left:1180px;top:860px;width:240px;text-align:center;font-size:22px;font-weight:600;color:var(--red);white-space:nowrap}
+#sim{position:absolute;left:48px;bottom:38px;font-size:14px;color:var(--muted);letter-spacing:.01em;display:flex;align-items:center;gap:10px}
+#sim i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--cyan)}
+</style></head><body>
+<div id="bg"></div>
+<div id="cam">
+  <!-- graph layer (beneath the claim card while it shrinks into the thumbnail) -->
+  <div id="claim">
+    <div class="k mono">CLAIM · POS_SHARED_TERMINAL</div>
+    <h2>Claim · shared terminal</h2>
+    <div class="sub mono">accounts cc42b9 · 2319a9 · 1eb0b5 &nbsp;→&nbsp; device D00063</div>
+    <div id="thumb"></div>
+    <div class="eh mono">EVIDENCE</div>
+    <div class="erow" id="er0" style="top:252px"><span class="kd mono">shared_attr</span><span class="mn mono">origin attr:D00063</span><span class="ds">3 accounts share one terminal device</span><span class="st" id="st0">active</span></div>
+    <div class="erow" id="er1" style="top:328px"><span class="kd mono">card_txn</span><span class="mn mono">9F26 6CC097FA3609FA3C</span><span class="ds">ATC 0018 · INR 9,400.00</span><span class="st">active</span></div>
+    <div class="erow" id="er2" style="top:404px"><span class="kd mono">card_txn</span><span class="mn mono">3 taps · 20 s · INR 28,870</span><span class="ds">cards from banks 001 and 010</span><span class="st">active</span></div>
+    <div class="mk mono">MERKLE ROOT</div>
+    <div id="hash" class="mono"></div>
+    <div id="hsrc"></div>
+  </div>
+  <div id="graph">
+    <svg id="gsvg" width="1920" height="1080"></svg>
+    <div id="labs"></div>
+    <div id="elabel" class="mono"></div>
+    <div id="ring">3 cards · 20 s · mule ring</div>
+  </div>
+  <svg id="term" class="abs" viewBox="0 0 340 560"></svg>
+  <svg id="pulse" width="1920" height="1080"><circle id="pc" cx="820" cy="600" r="0" fill="none" stroke="#087cf8" stroke-width="3"/></svg>
+  <div id="panel">
+    <div id="scr"><div class="s1 mono">POS-MUM-D00063</div><div class="big mono">D00063</div><div class="s2 mono" id="s2">TAP CARD</div></div>
+    <div id="bytes">
+      <div class="hd">ISO 8583 · MTI 0200</div>
+      <div class="hr mono"><b>F41</b> <span id="f41">POS-MUM-D00063</span>   <b>F11</b> 851743   <b>F4</b> 000000940000</div>
+      <div class="rule"></div>
+      <div class="f55 mono">F55 · EMV TLV</div>
+      <div id="trows"></div>
+      <div class="ft mono" id="ft">terminal registry · gps <span id="gpsv">19.076, 72.8777</span> · imei 356938035643809</div>
+    </div>
+  </div>
+  <div id="chips" style="position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0"></div>
+  <div id="card" class="abs"><div class="nm">CARD-A · TEST PAN</div><div class="chip"></div>
+    <svg width="340" height="214" style="position:absolute"><g fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" opacity=".92">
+      <path d="M268 86 a22 22 0 0 1 0 42"/><path d="M280 76 a36 36 0 0 1 0 62"/><path d="M292 66 a50 50 0 0 1 0 82"/></g></svg>
+    <div class="pan mono">4761 73•• •••• 0011</div></div>
+  <svg id="key" viewBox="0 0 150 330"></svg>
+  <div id="keycap" class="mono">VaultKey · WebAuthn ES256</div>
+  <div id="finger"></div>
+  <div id="seal"><div class="sh" id="sh1"><div class="l1">Signed</div><div class="l2 mono">ES256</div></div><div class="sh" id="sh2"><div class="l1">Signed</div><div class="l2 mono">ES256</div></div></div>
+  <div id="broken">Merkle seal broken</div>
+</div>
+<div id="sim"><i></i>Simulated devices · real cryptography</div>
+<script src="../lib.js"></script>
+<script>
+/* ---------- real values (captured from the live API, 18 Oct 2026) ----------
+   tap: POS-MUM-D00063, CARD-A, INR 9,400.00, ATC 24 (0x0018), cryptogram 6CC097FA3609FA3C, STAN 851743,
+        ts 1792650179 (2026-10-22) — from MATCH ()-[t:CARD_TXN]->() on the consortium graph
+   mule ring: CARD-A/B/C at D00063, 10 s apart (20 s), INR 9,400 + 9,650 + 9,820 = 28,870, banks 001/010
+   Merkle root: GET /cases/C-44c08392/merkle (46 leaves); after = same leaves recomputed (RFC 6962)
+   with evidence E-1c2a24b9 state 'superseded'. */
+const ROOT_A = 'b7133c9c37e8abab58b37a3729010a6bfb79fa13c35a7b5318af1b885e03dfae';
+const ROOT_B = '0b2dfad423d6faf3161cc30aca977aa695fd181d93bba5bb0846faca2691b0bb';
+const HN = 46;
+const TLV = [['9F02', '06', '000000940000', 'Amount, authorised · INR 9,400.00'], ['9A', '03', '261022', 'Transaction date'],
+  ['9C', '01', '00', 'Transaction type · purchase'], ['9F1E', '08', '4430303036333031', 'IFD serial · "D0006301"'],
+  ['9F36', '02', '0018', 'Application transaction counter · 24'], ['9F26', '08', '6CC097FA3609FA3C', 'Application cryptogram'],
+  ['95', '05', '0000000000', 'Terminal verification results']];
+const trows = TLV.map((r, i) => el(`<div class="trow mono" style="top:${134 + i * 50}px"><span class="tg">${r[0]}</span><span class="ln">${r[1]}</span><span class="vl"></span><span class="ds"></span></div>`, $('trows')));
+/* ---------- terminal drawing ---------- */
+const T = $('term');
+const tdefs = mk('defs', {}, T);
+const tg = mk('linearGradient', { id: 'tb', x1: 0, y1: 0, x2: 0, y2: 1 }, tdefs);
+mk('stop', { offset: 0, 'stop-color': '#ffffff' }, tg); mk('stop', { offset: 1, 'stop-color': '#e9f0f8' }, tg);
+mk('rect', { x: 0, y: 0, width: 340, height: 560, rx: 42, fill: 'url(#tb)', stroke: '#d3deeb', 'stroke-width': 2 }, T);
+mk('rect', { x: 14, y: 14, width: 312, height: 532, rx: 32, fill: 'none', stroke: 'rgba(255,255,255,.9)', 'stroke-width': 2 }, T);
+mk('rect', { x: 26, y: 26, width: 288, height: 184, rx: 16, fill: '#0b2a5b' }, T);
+const cl = mk('g', { fill: 'none', stroke: '#0a508f', 'stroke-width': 4, 'stroke-linecap': 'round', opacity: .8 }, T);
+mk('path', { d: 'M160 280 a20 20 0 0 1 0 40' }, cl); mk('path', { d: 'M172 268 a34 34 0 0 1 0 64' }, cl); mk('path', { d: 'M184 256 a48 48 0 0 1 0 88' }, cl);
+for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) mk('rect', { x: 62 + c * 76, y: 372 + r * 42, width: 64, height: 30, rx: 9, fill: r === 3 && c === 2 ? '#0c9466' : '#dfe8f3', opacity: r === 3 && c === 2 ? .85 : 1 }, T);
+/* ---------- graph ---------- */
+const G = $('gsvg');
+const NODES = { a1: [430, 540], dev: [960, 540], a2: [1490, 330], a3: [1490, 750] };
+const edges = [['a1', 'dev'], ['a2', 'dev'], ['a3', 'dev']].map(([a, b]) => { const [x1, y1] = NODES[a], [x2, y2] = NODES[b]; const l = mk('line', { x1, y1, x2, y2, stroke: '#0a508f', 'stroke-width': 3, 'stroke-linecap': 'round' }, G); l.len = Math.hypot(x2 - x1, y2 - y1); l.setAttribute('stroke-dasharray', l.len); return l; });
+const redEdges = [['a1', 'dev'], ['a2', 'dev'], ['a3', 'dev']].map(([a, b]) => { const [x1, y1] = NODES[b], [x2, y2] = NODES[a]; const l = mk('line', { x1, y1, x2, y2, stroke: '#d93a3f', 'stroke-width': 3.5, 'stroke-linecap': 'round' }, G); l.len = Math.hypot(x2 - x1, y2 - y1); l.setAttribute('stroke-dasharray', l.len); return l; });
+const acct = ['a1', 'a2', 'a3'].map(k => { const g = mk('g', {}, G); mk('circle', { cx: 0, cy: 0, r: 44, fill: '#fff', stroke: '#0a508f', 'stroke-width': 3 }, g); mk('circle', { cx: 0, cy: 0, r: 12, fill: '#087cf8' }, g); return g; });
+const devG = mk('g', {}, G);
+const devR = mk('rect', { x: -52, y: -52, width: 104, height: 104, rx: 22, fill: '#0b2a5b' }, devG);
+const devRed = mk('rect', { x: -52, y: -52, width: 104, height: 104, rx: 22, fill: '#d93a3f' }, devG);
+const dt = mk('text', { x: 0, y: 7, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono', 'font-size': 18, 'font-weight': 600, fill: '#fff' }, devG); dt.textContent = 'D00063';
+const LABS = [['a1', 'cc42b9be…', 'Account · bank 001'], ['dev', 'Device', 'POS-MUM-D00063'], ['a2', '2319a942…', 'Account · bank 010'], ['a3', '1eb0b508…', 'Account · bank 010']];
+const labEls = LABS.map(([k, a, b]) => { const [x, y] = NODES[k]; return el(`<div class="nlab mono" style="left:${x}px;top:${y + (k === 'dev' ? 66 : 58)}px">${a}<small>${b}</small></div>`, $('labs')); });
+$('elabel').style.left = '598px'; $('elabel').style.top = '496px';
+$('ring').style.left = '960px'; $('ring').style.top = '420px';
+/* chips: lift out of the byte strip, land as the USES_DEVICE edge's properties */
+const CHIPS = [['terminal_id', 'POS-MUM-D00063'], ['emv_atc', '24'], ['gps', '[19.076, 72.8777]']];
+const chips = CHIPS.map(([k, v]) => el(`<div class="pchip mono"><b>${k}</b><span>${v}</span></div>`, $('chips')));
+const CH_END = [[500, 576], [500, 624], [500, 672]];
+let CH_START = [];
+/* panel geometry: terminal screen → byte strip */
+const SCR = { x: 676, y: 326, w: 288, h: 184, r: 16 }, PAN = { x: 240, y: 170, w: 1440, h: 560, r: 26 };
+const blurs = {}; ['card', 'term', 'panel', 'graph', 'claim', 'key'].forEach(k => blurs[k] = blurFilter('mb_' + k));
+const chipBlur = chips.map((c, i) => blurFilter('mbc' + i));
+/* ---------- positions as functions of t (so velocity → blur) ---------- */
+const cardPos = t => {
+  const a = P(t, 0, .95, E.inOut), b = P(t, 1.22, 1.6, E.in);
+  const x = lerp(2150, 700, a) + b * 1500, y = lerp(470, 470, a) - b * 520 + 8 * Math.sin(Math.PI * P(t, .95, 1.12, E.lin));
+  return [x, y, lerp(-16, -8, a) - b * 10];
+};
+const termPos = t => [0, 900 * P(t, 1.32, 1.72, E.in)];
+const panPos = t => [-1900 * P(t, 3.02, 3.38, E.in), 0];
+const graphXf = t => { const k = P(t, 4.72, 5.12, E.inOut); return { s: lerp(1, .235, k), x: lerp(0, 1200 - 960 * .235 - 330, k) , y: lerp(0, 285 - 540 * .235 - 150, k), k }; };
+const keyPos = t => [0, 700 * (1 - P(t, 6.38, 6.92, E.outQ))];
+function chipPos(i, t) {
+  const lift = P(t, 2.72 + i * .06, 3.0 + i * .06, E.outQ), fly = P(t, 3.08 + i * .05, 3.62 + i * .05, E.inOut);
+  const [sx, sy] = CH_START[i] || [0, 0], [ex, ey] = CH_END[i];
+  const ax = sx, ay = sy - 10 * lift;
+  return [lerp(ax, ex, fly), lerp(ay, ey, fly) - Math.sin(Math.PI * fly) * 60, lift, fly];
+}
+window.seek = function (t) {
+  /* one camera: slow push across the whole sting, a touch of extra push on the tap */
+  const cs = 1 + .03 * P(t, 0, 10, E.sine) + .02 * P(t, .3, 1.2, E.sine) * (1 - P(t, 1.3, 2.0, E.inOut));
+  $('cam').style.transform = `scale(${cs})`;
+  /* ----- A · tap ----- */
+  const [cx, cy, cr] = cardPos(t), [px0, py0] = cardPos(t - FDT);
+  const card = $('card');
+  card.style.display = t < 1.62 ? 'block' : 'none';
+  card.style.transform = `translate(${cx}px,${cy}px) rotate(${cr}deg)`;
+  setBlur(card, blurs.card, 'mb_card', cx - px0, cy - py0);
+  const pk = P(t, .95, 1.55, E.out);
+  $('pc').setAttribute('r', 20 + 230 * pk); $('pc').setAttribute('opacity', t < .95 ? 0 : .9 * (1 - pk)); $('pc').setAttribute('stroke-width', 3.5 - 2 * pk);
+  $('s2').textContent = t < .95 ? 'TAP CARD' : 'READ · ATC 0018';
+  const [, ty] = termPos(t), [, ty0] = termPos(t - FDT);
+  T.style.transform = `translateY(${ty}px)`; setBlur(T, blurs.term, 'mb_term', 0, ty - ty0); T.style.display = t < 1.75 ? 'block' : 'none';
+  /* ----- B · screen unfolds into the byte strip ----- */
+  const uk = P(t, 1.3, 1.8, E.inOut);
+  const [ppx, ppy] = panPos(t), [ppx0] = panPos(t - FDT);
+  const pr = { x: lerp(SCR.x, PAN.x, uk) + ppx, y: lerp(SCR.y, PAN.y, uk) + ppy, w: lerp(SCR.w, PAN.w, uk), h: lerp(SCR.h, PAN.h, uk), r: lerp(SCR.r, PAN.r, uk) };
+  const pn = $('panel');
+  Object.assign(pn.style, { left: pr.x + 'px', top: pr.y + 'px', width: pr.w + 'px', height: pr.h + 'px', borderRadius: pr.r + 'px', display: t < 3.4 ? 'block' : 'none' });
+  setBlur(pn, blurs.panel, 'mb_panel', ppx - ppx0, 0);
+  pn.style.boxShadow = `0 24px 60px rgba(11,42,91,${.22 * P(t, 1.3, 1.7)})`;
+  const scr = $('scr'); scr.style.opacity = 1 - P(t, 1.32, 1.5, E.lin); scr.style.transform = `scale(${lerp(1, 1.6, uk)})`;
+  const by = $('bytes'); by.style.opacity = P(t, 1.62, 1.8, E.lin);
+  trows.forEach((r, i) => {
+    const st = 1.8 + i * .085, v = TLV[i][2];
+    r.style.opacity = P(t, st - .08, st, E.lin);
+    r.children[2].innerHTML = typed(v, t, st, 30) + caret(t, t > st && t < st + v.length / 30 + .1);
+    const dk = P(t, st + v.length / 30, st + v.length / 30 + .2, E.out);
+    r.children[3].textContent = TLV[i][3]; r.children[3].style.opacity = dk;
+  });
+  $('ft').style.opacity = P(t, 2.3, 2.5, E.lin);
+  /* chips lift out of their sources, then fly into the graph (the strip leaves on an accelerating move) */
+  chips.forEach((c, i) => {
+    const [x, y, lift, fly] = chipPos(i, t), [x0, y0] = chipPos(i, t - FDT);
+    c.style.display = t > 2.7 ? 'flex' : 'none';
+    c.style.transform = `translate(${x}px,${y - 20}px) scale(${lerp(1, 1.04, lift * (1 - fly))})`;
+    c.style.opacity = P(t, 2.7 + i * .06, 2.82 + i * .06, E.lin);
+    setBlur(c, chipBlur[i], 'mbc' + i, x - x0, y - y0);
+  });
+  /* ----- C · into the graph ----- */
+  const nA = [spring(t, 3.12, 13), spring(t, 3.95, 13), spring(t, 4.07, 13)];
+  acct.forEach((g, i) => { const k = ['a1', 'a2', 'a3'][i], [x, y] = NODES[k]; g.setAttribute('transform', `translate(${x},${y}) scale(${nA[i]})`); g.setAttribute('opacity', clamp(nA[i] * 1.6)); });
+  const nd = spring(t, 3.2, 13);
+  devG.setAttribute('transform', `translate(960,540) scale(${nd})`); devG.setAttribute('opacity', clamp(nd * 1.6));
+  [P(t, 3.28, 3.6, E.inOut), P(t, 4.02, 4.3, E.inOut), P(t, 4.12, 4.4, E.inOut)].forEach((k, i) => { edges[i].setAttribute('stroke-dashoffset', edges[i].len * (1 - k)); });
+  const red = P(t, 4.32, 4.5, E.inOut);
+  const rs = spring(t, 4.3, 18);
+  devRed.setAttribute('transform', `scale(${rs})`); devRed.setAttribute('opacity', t > 4.3 ? 1 : 0);
+  redEdges.forEach((e, i) => { const k = P(t, 4.34 + i * .04, 4.62 + i * .04, E.inOut); e.setAttribute('stroke-dashoffset', e.len * (1 - k)); });
+  labEls.forEach((l, i) => { const a = [3.25, 3.3, 4.1, 4.2][i]; l.style.opacity = P(t, a, a + .2, E.lin); });
+  $('elabel').innerHTML = typed('USES_DEVICE', t, 3.5, 30) + caret(t, t > 3.5 && t < 3.95);
+  const rk = P(t, 4.4, 4.75, E.outQ);
+  $('ring').style.opacity = rk; $('ring').style.transform = `translate(-50%,${(1 - rk) * 18}px)`;
+  $('ring').style.top = '400px';
+  /* ----- D · the graph shrinks into the claim card ----- */
+  const gx = graphXf(t), gx0 = graphXf(t - FDT);
+  const gr = $('graph');
+  gr.style.transform = `translate(${gx.x + 330}px,${gx.y + 150}px) scale(${gx.s})`;
+  gr.style.transform = `translate(${lerp(0, 1200 - 960 * .235, gx.k)}px,${lerp(0, 285 - 540 * .235, gx.k)}px) scale(${gx.s})`;
+  gr.style.display = t > 3.0 ? 'block' : 'none';
+  $('chips').style.transform = gr.style.transform;
+  /* claim card grows outward from the thumbnail slot */
+  const ck = P(t, 4.78, 5.2, E.inOut);
+  const cl = $('claim');
+  cl.style.display = t > 4.75 ? 'block' : 'none';
+  const ins = [lerp(40, 0, ck), lerp(1060 - 720 - 300, 0, ck), lerp(700 - 40 - 190, 0, ck), lerp(720, 0, ck)];
+  cl.style.clipPath = `inset(${ins[0]}px ${ins[1]}px ${ins[2]}px ${ins[3]}px round ${lerp(16, 26, ck)}px)`;
+  ['er0', 'er1', 'er2'].forEach((id, i) => { const k = P(t, 5.12 + i * .14, 5.55 + i * .14, E.outQ); const e = $(id); e.style.opacity = k; e.style.transform = `translateY(${(1 - k) * 26}px)`; });
+  /* Merkle root types in (2 chars per frame), then re-types after the revocation */
+  let h = '';
+  if (t < 8.5) { h = typed(ROOT_A, t, 5.55, 60).slice(0, HN); if (h.length === HN) h += '…'; }
+  else { const n = clamp(Math.floor((t - 8.5) * 60), 0, HN); h = ROOT_B.slice(0, n) + ROOT_A.slice(n, HN) + '…'; }
+  $('hash').innerHTML = h + caret(t, (t > 5.55 && t < 6.45) || (t > 8.5 && t < 9.3));
+  $('hsrc').textContent = t < 8.5 ? 'root of live case C-44c08392 · 46 leaves · SHA-256, RFC 6962' : 'same 46 leaves recomputed with evidence E-1c2a24b9 superseded · root no longer matches the signature';
+  $('hsrc').style.opacity = P(t, 6.1, 6.4, E.lin) * (t < 8.5 ? 1 : P(t, 8.5, 8.7, E.lin));
+  $('hsrc').style.color = t < 8.5 ? '#5b6b80' : '#b02e33';
+  /* ----- E · signed ----- */
+  const [, ky] = keyPos(t), [, ky0] = keyPos(t - FDT);
+  const K = $('key'); K.style.transform = `translateY(${ky}px)`; setBlur(K, blurs.key, 'mb_key', 0, ky - ky0);
+  K.style.display = t > 6.3 ? 'block' : 'none';
+  $('keycap').style.opacity = P(t, 6.85, 7.1, E.lin);
+  /* fingertip arrives, presses, lifts */
+  const fin = P(t, 6.86, 7.18, E.outQ), press = Math.sin(Math.PI * P(t, 7.18, 7.42, E.lin)), up = P(t, 7.5, 7.85, E.in);
+  const fx = lerp(1720, 1552, fin), fy = lerp(1100, 612, fin) + 6 * press + 520 * up;
+  $('finger').style.transform = `translate(${fx}px,${fy}px) scale(${1 - .03 * press})`;
+  $('finger').style.display = t > 6.8 && t < 7.9 ? 'block' : 'none';
+  const glow = Math.sin(Math.PI * P(t, 7.2, 7.75, E.lin));
+  ring.setAttribute('stroke', mixc('d9b45a', 'f6dd8c', glow)); ring.setAttribute('stroke-width', 7 + 4 * glow);
+  ringFill.setAttribute('opacity', .18 + .5 * glow);
+  /* green seal stamps: critically damped, no bounce */
+  const sk = spring(t, 7.45, 16), sh1 = $('sh1'), sh2 = $('sh2'), seal = $('seal');
+  seal.style.display = t > 7.44 ? 'block' : 'none';
+  seal.style.transform = `scale(${lerp(1.35, 1, sk)})`; seal.style.opacity = P(t, 7.45, 7.55, E.lin);
+  /* ----- F · revoked, re-hash, seal breaks ----- */
+  const am = P(t, 8.2, 8.32, E.lin);
+  const st0 = $('st0'); st0.textContent = t < 8.2 ? 'active' : 'superseded';
+  st0.style.color = am > 0 ? '#c97a06' : '#0c9466'; st0.style.background = am > 0 ? 'rgba(201,122,6,.12)' : 'rgba(12,148,102,.1)';
+  $('er0').style.background = am > 0 ? mixc('fbfcfe', 'fdf3e3', am) : '#fbfcfe'; $('er0').style.borderColor = am > 0 ? mixc('e3ebf5', 'efcf98', am) : '#e3ebf5';
+  const br = P(t, 9.3, 9.62, E.outQ), redk = P(t, 9.22, 9.34, E.lin);
+  const col = mixc('0c9466', 'd93a3f', redk);
+  sh1.style.background = col; sh2.style.background = col;
+  sh1.style.clipPath = 'polygon(0 0,100% 0,0 100%)'; sh2.style.clipPath = 'polygon(100% 0,100% 100%,0 100%)';
+  sh1.style.transform = `translate(${-5.7 * br}px,${-5.7 * br}px)`; sh2.style.transform = `translate(${5.7 * br}px,${5.7 * br}px)`;
+  const bk = P(t, 9.38, 9.75, E.outQ);
+  $('broken').style.opacity = bk; $('broken').style.transform = `translateY(${(1 - bk) * 14}px)`;
+};
+/* key drawing */
+const K = $('key');
+const kd = mk('defs', {}, K); const kg = mk('linearGradient', { id: 'kb', x1: 0, y1: 0, x2: 1, y2: 1 }, kd);
+mk('stop', { offset: 0, 'stop-color': '#ffffff' }, kg); mk('stop', { offset: 1, 'stop-color': '#e6edf6' }, kg);
+mk('rect', { x: 52, y: 0, width: 46, height: 46, rx: 9, fill: '#c9d3df' }, K);
+mk('rect', { x: 60, y: 10, width: 30, height: 22, rx: 5, fill: '#aeb9c7' }, K);
+mk('rect', { x: 10, y: 38, width: 130, height: 290, rx: 44, fill: 'url(#kb)', stroke: '#d3deeb', 'stroke-width': 2 }, K);
+const ringFill = mk('circle', { cx: 75, cy: 210, r: 34, fill: '#d9b45a', opacity: .18 }, K);
+const ring = mk('circle', { cx: 75, cy: 210, r: 34, fill: 'none', stroke: '#d9b45a', 'stroke-width': 7 }, K);
+mk('circle', { cx: 75, cy: 300, r: 9, fill: 'none', stroke: '#c9d3df', 'stroke-width': 3 }, K);
+function measure() {
+  /* chip sources inside the fully unfolded strip (offsets are transform-free) */
+  const off = e => { let x = 0, y = 0; while (e && e.id !== 'bytes') { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; } return [x, y]; };
+  const f41 = off($('f41')), atc = off(trows[4].children[2]), gps = off($('gpsv'));
+  CH_START = [[PAN.x + f41[0] - 16, PAN.y + f41[1] + 12], [PAN.x + atc[0] - 16, PAN.y + atc[1] + 14], [PAN.x + gps[0] - 16, PAN.y + gps[1] + 10]];
+}
+window.ready = (async () => { await document.fonts.load('600 46px Inter'); await document.fonts.load('500 24px "JetBrains Mono"'); await document.fonts.load('600 24px "JetBrains Mono"'); await document.fonts.ready;
+  seek(2.6); trows.forEach(r => r.children[2].textContent = '0018'); measure(); seek(0); return true; })();
+</script></body></html>

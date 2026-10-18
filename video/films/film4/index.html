@@ -1,0 +1,222 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>BankWeave · Ask the graph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=block" rel="stylesheet">
+<style>
+:root{--canvas:#f4f6fa;--deep:#0b2a5b;--navy:#0a508f;--cyan:#087cf8;--sky:#8ad8fc;--paper:#0c1a2e;--muted:#5b6b80;--mist:#b5bcc6;--ok:#0c9466}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--canvas)}
+body{font-family:Inter,system-ui,sans-serif;color:var(--paper);-webkit-font-smoothing:antialiased;position:relative}
+.mono{font-family:'JetBrains Mono',monospace}
+#world{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+#win{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:960px 540px}
+#wbg{position:absolute;left:330px;top:90px;width:1260px;height:900px;border-radius:30px;background:#fff;border:1px solid #e1e8f2;box-shadow:0 40px 100px rgba(11,42,91,.12)}
+#bar{position:absolute;left:330px;top:90px;width:1260px;height:60px;border-bottom:1px solid #edf1f6;display:flex;align-items:center;padding:0 28px;gap:14px}
+#bar .t{font-size:18px;font-weight:600;letter-spacing:-.01em}
+#bar .c{margin-left:auto;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+#bar .c i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+#halo{position:absolute;left:637px;top:787px;width:646px;height:156px;border-radius:30px}
+#comp{position:absolute;left:640px;top:790px;width:640px;height:150px;border-radius:28px;background:#fff;border:1px solid #dfe7f1}
+#ph{position:absolute;left:672px;top:818px;font-size:24px;color:#9aa8ba}
+#send{position:absolute;left:1218px;top:883px;width:44px;height:44px;border-radius:22px;background:var(--cyan);display:flex;align-items:center;justify-content:center}
+#rail{position:absolute;background:var(--cyan)}
+#conn{position:absolute;left:640px;top:954px;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:10px;white-space:nowrap}
+#conn .p{display:flex;align-items:center;gap:8px;border:1px solid #d6e2f0;border-radius:999px;padding:5px 12px 5px 8px;background:#fff;color:var(--paper);font-family:Inter,sans-serif;font-weight:500}
+#conn img{width:18px;height:18px}
+#msg{position:absolute;left:0;top:0;padding:16px 22px;border-radius:22px;font-size:26px;line-height:38px;letter-spacing:-.01em;white-space:pre;transform-origin:0 0}
+#rip{position:absolute;left:0;top:0;border-radius:50%;background:var(--cyan)}
+#thdr{position:absolute;left:430px;top:262px;font-size:14px;color:var(--muted);letter-spacing:.08em}
+.pill{position:absolute;left:430px;width:1060px;height:52px;border-radius:14px;background:#fff;border:1px solid #dfe7f1;overflow:hidden;transform-origin:0 50%;box-shadow:0 8px 20px rgba(11,42,91,.06)}
+.pill .r1{position:absolute;left:20px;right:20px;top:13px;display:flex;align-items:center;gap:12px;font-size:18px;white-space:nowrap}
+.pill .nm{font-weight:600;color:var(--paper)}
+.pill .ar{font-size:15px;color:var(--muted)}
+.pill .ms{margin-left:auto;font-size:16px;color:var(--muted)}
+.pill .ck{width:18px;height:18px;border-radius:50%;background:var(--ok);display:inline-flex;align-items:center;justify-content:center}
+.pill .r2{position:absolute;left:20px;right:20px;top:50px;height:26px;overflow:hidden}
+.pill .r2 div{font-size:15px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rdot{position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--cyan)}
+#flood{position:absolute;left:0;top:0;width:1920px;height:1080px;background:radial-gradient(90% 90% at 50% 45%,#0e3470 0%,#0b2a5b 55%,#082150 100%)}
+#rsvg{position:absolute;left:0;top:0;transform-origin:0 0}
+.lanelab{font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:.16em}
+#fcap{position:absolute;left:120px;top:96px;font-size:18px;color:var(--sky);white-space:nowrap}
+#fsrc{position:absolute;left:120px;top:968px;font-size:14px;color:#8fa3bf;white-space:nowrap}
+#ans{position:absolute;left:470px;top:318px;width:620px;color:#fff}
+#ans .k{font-size:13px;letter-spacing:.14em;color:var(--sky)}
+.al{position:relative;margin-top:18px;height:40px;overflow:hidden;white-space:nowrap}
+.al>div{display:flex;align-items:baseline;gap:14px}
+.al .ph{font-size:24px;font-weight:500;letter-spacing:-.015em;position:relative}
+.al .ul{position:absolute;left:0;bottom:-6px;height:1.5px;background:var(--sky)}
+.al .ev{font-size:13px;color:var(--sky);border:1px solid rgba(138,216,252,.45);border-radius:6px;padding:2px 7px}
+#every{position:absolute;left:430px;top:626px;height:40px;border-radius:999px;border:1.5px solid var(--cyan);background:#fff;padding:0 18px;display:flex;align-items:center;font-size:17px;font-weight:500;color:var(--paper);white-space:nowrap}
+#badge{position:absolute;left:0;top:626px;height:40px;border-radius:999px;background:var(--paper);padding:0 18px;display:flex;align-items:center;gap:10px;font-size:16px;color:#e8eef7;white-space:nowrap}
+#badge b{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--sky)}
+#badge i{width:8px;height:8px;border-radius:50%;background:#2fd59a;display:inline-block}
+#bmark{position:absolute;left:850px;top:430px;width:220px;height:220px}
+#bmark img{width:100%;height:100%}
+.caret{display:inline-block;width:2.5px;height:30px;background:var(--cyan);vertical-align:-6px;margin-left:1px}
+</style></head><body>
+<div id="world">
+ <div id="win">
+  <div id="wbg"></div>
+  <div id="bar"><span class="t">Claude</span><span class="mono" style="font-size:14px;color:var(--muted)">new chat</span><span class="c mono"><i></i>bankweave-api.onrender.com/mcp · read-only</span></div>
+  <div id="halo"></div>
+  <div id="comp"></div>
+  <div id="ph">Ask a follow-up…</div>
+  <div id="conn"><span class="p"><img src="../logo.png">BankWeave MCP · read-only</span><span class="mono">bankweave-api.onrender.com/mcp</span></div>
+  <div id="thdr" class="mono">CALLED 4 TOOLS ON BANKWEAVE MCP</div>
+  <div id="pills"></div>
+  <div id="rail"></div>
+  <div id="rdots"></div>
+  <div id="rip"></div>
+  <div id="send"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 16V4M4.5 9.5 10 4l5.5 5.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div id="msg"></div>
+  <div id="every">Every result includes the Cypher it ran</div>
+  <div id="badge"><i></i><b>GRAPH.RO_QUERY</b>writes refused by FalkorDB</div>
+  <div id="flood">
+    <svg id="rsvg" width="1920" height="1080"></svg>
+    <div id="fcap" class="mono">find_rings → community 9 · 17 accounts · 4 banks</div>
+    <div id="fsrc">live result, bankweave-api.onrender.com/mcp · consortium graph · 18 Oct 2026</div>
+    <div id="ans"><div class="k mono">ANSWER · 4 TOOL CALLS · 1,032.1 MS</div></div>
+  </div>
+ </div>
+ <div id="bmark"><img src="../logo.png"></div>
+</div>
+<script src="../lib.js"></script>
+<script>
+/* ---------- real MCP results (hosted /mcp, tools/call, 18 Oct 2026) ---------- */
+const TOOLS = [
+  ['find_rings', '{}', "CALL algo.labelPropagation({nodeLabels:['Account'], relationshipTypes:['TRANSFERS'], maxIterations:$iters}) YIELD node, communityId", '359.3'],
+  ['trace_money_path', '{src:"898b14…", dst:"585399…"}', "CALL algo.SPpaths({sourceNode:s, targetNode:d, relTypes:['TRANSFERS'], maxLen:$max_len, pathCount:$path_count, relDirection:$direction})", '123.0'],
+  ['explain_claim', '{case_id:"C-64cbd23a", claim_id:"CL-237a5887"}', "MATCH (c:Claim {id:$id})-[:SUPPORTED_BY]->(e:Evidence) WHERE e.state IN ['active', 'needs_verification'] RETURN e.id AS id, e.kind AS kind, e.origin AS origin", '426.9'],
+  ['run_readonly_cypher', '{cypher:"…"}', "MATCH (a:Account)-[t:TRANSFERS]->(b:Account) WHERE a.id IN $ring AND b.id IN $ring AND a.bank_id <> b.bank_id RETURN count(t) AS cross_bank", '122.9']];
+/* ring: community 9 from find_rings, banks per member and in-ring TRANSFERS edges from run_readonly_cypher */
+const LANES = [['012', ['d18821', 'b7ec9f', '7c8d87', '551009', '898b14', '21c3e0', '80ff41']], ['010', ['73295e', '92612e']],
+  ['020', ['4cbf59', 'f0cfc7', '661732']], ['001', ['5d01f2', '585399', '2d0e87', '707d81', '2895b5']]];
+const EDGES = [['2895b5', '73295e'], ['2d0e87', '707d81'], ['2d0e87', '73295e'], ['898b14', '80ff41'], ['73295e', '5d01f2'], ['898b14', '585399'],
+  ['898b14', '73295e'], ['4cbf59', '898b14'], ['73295e', '7c8d87'], ['21c3e0', '551009'], ['898b14', '551009']];
+const LINE1 = 'Find the laundering rings across banks', LINE2 = 'and prove the strongest one.';
+const FULL = LINE1 + '\n' + LINE2;
+/* keystroke times: natural rhythm from a seeded hash, scaled to land by 2.6 s */
+const KT = []; { let acc = 0; for (let i = 0; i < FULL.length; i++) { const c = FULL[i]; acc += .03 + .035 * hash(i + 3) + (c === ' ' ? .03 : 0) + (c === '\n' ? .12 : 0); KT.push(acc); } const s = (2.6 - .3) / acc; for (let i = 0; i < KT.length; i++) KT[i] = .3 + KT[i] * s; }
+const nTyped = t => { let n = 0; while (n < KT.length && KT[n] <= t) n++; return n; };
+/* pills */
+const SLOT = i => 290 + i * 92;
+const LAND = i => 4.0 + i * .5;
+const pills = TOOLS.map(([n, a, c, ms], i) => el(`<div class="pill mono" style="top:${SLOT(i)}px"><div class="r1"><span class="nm">${n}</span><span class="ar">${a}</span><span class="ms">${ms} ms</span><span class="ck"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2 4.2 7.4 8 3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></span></div><div class="r2"><div>${c}</div></div></div>`, $('pills')));
+const rdots = TOOLS.map((_, i) => el(`<div class="rdot" style="left:393px;top:${SLOT(i) + 19}px"></div>`, $('rdots')));
+/* ring layout on the flood */
+const R = $('rsvg'), LX = [600, 840, 1080, 1320], NP = {};
+const laneEls = LANES.map(([b, ids], li) => {
+  const x = LX[li];
+  const ln = mk('line', { x1: x, y1: 230, x2: x, y2: 230, stroke: 'rgba(181,188,198,.55)', 'stroke-width': 2, 'stroke-dasharray': '2 9', 'stroke-linecap': 'round' }, R);
+  const tx = mk('text', { x, y: 206, 'text-anchor': 'middle', class: 'lanelab', fill: 'rgba(181,188,198,.9)' }, R); tx.textContent = 'BANK ' + b;
+  ids.forEach((id, k) => { NP[id] = [x + (hash(k * 7 + li * 13) - .5) * 70, 290 + (ids.length === 1 ? 260 : k * (540 / Math.max(1, ids.length - 1))) + (ids.length < 4 ? 80 : 0) * (k / Math.max(1, ids.length - 1) - .5) * -1]; });
+  return { ln, tx };
+});
+/* spread short lanes over the middle band */
+LANES.forEach(([b, ids], li) => { if (ids.length < 4) ids.forEach((id, k) => { NP[id][1] = 380 + k * (360 / Math.max(1, ids.length - 1)); }); });
+const edgeEls = EDGES.map(([a, b], i) => { const [x1, y1] = NP[a], [x2, y2] = NP[b]; const mx = (x1 + x2) / 2 + (y2 - y1) * .18, my = (y1 + y2) / 2 - (x2 - x1) * .18;
+  const p = mk('path', { d: `M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`, fill: 'none', stroke: '#8ad8fc', 'stroke-width': 3, 'stroke-linecap': 'round' }, R); p.len = p.getTotalLength(); p.setAttribute('stroke-dasharray', p.len); return p; });
+const nodeEls = Object.keys(NP).map((id, i) => { const g = mk('g', {}, R); mk('circle', { r: 15, fill: '#0b2a5b', stroke: '#8ad8fc', 'stroke-width': 3 }, g); mk('circle', { r: 5, fill: '#fff' }, g); const t = mk('text', { x: 24, y: 5, 'font-family': 'JetBrains Mono', 'font-size': 13, fill: 'rgba(230,240,250,.75)' }, g); t.textContent = id; return { g, id, i }; });
+/* answer lines: phrase underlined, linked to an evidence id */
+const ANS = [['Ring across 4 banks · 17 accounts', 'community 9'], ['70 cross-bank transfers inside the ring', 'run_readonly_cypher'],
+  ['Claim check: 3 paths · 1 independent origin', 'CL-237a5887'], ['Echo-proof confidence 0.259, not 0.593', 'E-72328f91']];
+const ansEls = ANS.map(([p, e]) => el(`<div class="al"><div><span class="ph">${p}<span class="ul"></span></span><span class="ev mono">${e}</span></div></div>`, $('ans')));
+const rip = $('rip');
+let MSGW = 0, MSGH = 0, EVW = 0;
+window.seek = function (t) {
+  /* ----- one camera: slow push into the composer, one pull back on send ----- */
+  const pb = P(t, 3.0, 3.9, E.inOut);
+  const s = lerp(lerp(2.0, 2.3, P(t, 0, 3, E.sine)), 1, pb);
+  const fx = lerp(958, 960, pb), fy = lerp(866, 540, pb);
+  $('world').style.transform = `translate(${960 - fx * s}px,${540 - fy * s}px) scale(${s})`;
+  /* iridescent ring (brand blues only), fades once the message is sent */
+  const ang = 40 + t * 40;
+  $('halo').style.background = `conic-gradient(from ${ang}deg, #087cf8, #8ad8fc, #0a508f, #087cf8)`;
+  $('halo').style.opacity = 1 - P(t, 3.0, 3.5, E.lin);
+  $('halo').style.filter = 'blur(1.2px)';
+  /* ----- typing on two fixed lines ----- */
+  const n = nTyped(t), sent = P(t, 3.0, 3.55, E.inOut);
+  const typedTxt = FULL.slice(0, n);
+  $('msg').innerHTML = typedTxt.replace(/&/g, '&amp;') + (t < 3.0 ? caret(t, true) : '');
+  const tx0 = 672 - 22, ty0 = 812 - 16, tx1 = 1490 - MSGW * .86, ty1 = 172;
+  $('msg').style.transform = `translate(${lerp(tx0, tx1, sent)}px,${lerp(ty0, ty1, sent)}px) scale(${lerp(1, .86, sent)})`;
+  $('msg').style.background = `rgba(8,124,248,${P(t, 3.0, 3.22, E.lin)})`;
+  $('msg').style.color = mixc('0c1a2e', 'ffffff', P(t, 3.0, 3.2, E.lin));
+  $('ph').style.opacity = n === 0 ? 1 : P(t, 3.6, 3.9, E.lin);
+  /* send: press, cyan ripple */
+  const press = Math.sin(Math.PI * P(t, 2.88, 3.08, E.lin));
+  const rk = P(t, 3.0, 3.5, E.out);
+  Object.assign(rip.style, { width: rk * 520 + 'px', height: rk * 520 + 'px', left: 1240 - rk * 260 + 'px', top: 905 - rk * 260 + 'px', opacity: t < 3.0 ? 0 : .28 * (1 - rk) });
+  /* the send button stretches into the tool-call rail */
+  const mr = P(t, 3.15, 3.8, E.inOut);
+  const sb = { x: lerp(1218, 397, mr), y: lerp(883, 290, mr), w: lerp(44, 6, mr), h: lerp(44, 400, mr) };
+  const rail = $('rail');
+  Object.assign(rail.style, { left: sb.x + 'px', top: sb.y + 'px', width: sb.w + 'px', height: sb.h + 'px', borderRadius: lerp(22, 3, mr) + 'px', display: t > 3.15 && t < 6.4 ? 'block' : 'none' });
+  $('send').style.transform = `scale(${1 - .1 * press})`;
+  $('send').style.opacity = t < 3.15 ? 1 : (t < 3.9 ? 0 : P(t, 3.9, 4.2, E.lin));
+  $('send').style.background = t < 3.15 ? '#087cf8' : '#c9d6e6';
+  /* ----- tools: pills land on beats 8, 9, 10, 11 and expand for one line of real Cypher ----- */
+  $('thdr').style.opacity = P(t, 3.7, 3.95, E.lin) * (t < 6.3 ? 1 : 0);
+  pills.forEach((p, i) => {
+    const L = LAND(i), k = spring(t, L, 16);
+    p.style.display = t > L && t < 6.4 ? 'block' : 'none';
+    p.style.transform = `scaleX(${lerp(.04, 1, k)})`;
+    p.firstChild.style.opacity = P(t, L + .06, L + .16, E.lin);
+    const ex = i < 3 ? spring(t, L + .05, 16) * (1 - spring(t, LAND(i + 1) + .02, 16)) : spring(t, L + .05, 16);
+    p.style.height = 52 + 34 * ex + 'px';
+    const r2 = p.children[1].firstChild; r2.style.transform = `translateY(${(1 - ex) * 26}px)`;
+    rdots[i].style.display = t > L - .02 && t < 6.4 ? 'block' : 'none';
+    rdots[i].style.transform = `scale(${spring(t, L - .02, 20)})`;
+  });
+  /* ----- the drop: deep-blue flood from the last pill, corner reached in 0.35 s ----- */
+  const fl = $('flood');
+  const fk = P(t, 6.0, 6.35, E.sine);
+  const ck = P(t, 7.45, 8.0, E.inOut);
+  if (t < 6.0) fl.style.display = 'none';
+  else {
+    fl.style.display = 'block';
+    if (t < 7.45) fl.style.clipPath = `circle(${fk * 1700}px at 400px 616px)`;
+    else fl.style.clipPath = `inset(${lerp(0, 290, ck)}px ${lerp(0, 1920 - 1490, ck)}px ${lerp(0, 1080 - 600, ck)}px ${lerp(0, 430, ck)}px round ${lerp(0, 24, ck)}px)`;
+  }
+  /* the ring draws itself on the flood: lanes, members, then the thread */
+  laneEls.forEach((l, i) => { const k = P(t, 6.2 + i * .06, 6.6 + i * .06, E.inOut); l.ln.setAttribute('y2', 230 + 640 * k); l.tx.setAttribute('opacity', P(t, 6.2 + i * .06, 6.4 + i * .06, E.lin)); });
+  nodeEls.forEach(({ g, id, i }) => { const [x, y] = NP[id]; const k = spring(t, 6.4 + i * .025, 16); g.setAttribute('transform', `translate(${x},${y}) scale(${k})`); g.setAttribute('opacity', clamp(k * 2)); });
+  edgeEls.forEach((p, i) => { const k = P(t, 6.65 + i * .05, 7.0 + i * .05, E.inOut); p.setAttribute('stroke-dashoffset', p.len * (1 - k)); });
+  $('fcap').style.opacity = P(t, 6.4, 6.6, E.lin) * (1 - P(t, 7.45, 7.6, E.lin));
+  $('fsrc').style.opacity = P(t, 6.5, 6.7, E.lin) * (1 - P(t, 7.45, 7.6, E.lin));
+  /* contract into the answer card: ring scales into the card's right side */
+  const rs = lerp(1, .32, ck), rx = lerp(0, 1330 - 960 * .32, ck), ry = lerp(0, 450 - 550 * .32, ck);
+  R.style.transform = `translate(${rx}px,${ry}px) scale(${rs})`;
+  /* answer lines rise out of a mask, underlines draw, evidence ids attach */
+  $('ans').style.display = t > 7.85 ? 'block' : 'none';
+  $('ans').firstChild.style.opacity = P(t, 7.85, 8.05, E.lin);
+  ansEls.forEach((a, i) => {
+    const k = P(t, 7.95 + i * .14, 8.45 + i * .14, E.outQ);
+    a.firstChild.style.transform = `translateY(${(1 - k) * 44}px)`;
+    const ph = a.querySelector('.ph'), ul = a.querySelector('.ul');
+    ul.style.width = ph.offsetWidth * P(t, 8.35 + i * .12, 8.75 + i * .12, E.inOut) + 'px';
+    a.querySelector('.ev').style.opacity = P(t, 8.6 + i * .12, 8.75 + i * .12, E.lin);
+  });
+  const ek = P(t, 8.75, 9.2, E.outQ);
+  $('every').style.display = t > 8.75 ? 'flex' : 'none';
+  $('every').style.clipPath = `inset(0 ${(1 - ek) * 100}% 0 0 round 999px)`;
+  /* ----- lock: read-only badge slides in from the right edge of the pill ----- */
+  const bk = P(t, 9.25, 9.7, E.outQ);
+  $('badge').style.display = t > 9.25 ? 'flex' : 'none';
+  $('badge').style.left = (1490 - EVW) + 'px';
+  $('badge').style.transform = `translateX(${(1 - bk) * 60}px)`;
+  $('badge').style.clipPath = `inset(0 0 0 ${(1 - bk) * 100}% round 999px)`;
+  /* the chat window scales down into the BankWeave mark (accelerating), hard cut at 12.0 */
+  const wk = P(t, 10.7, 11.3, E.in);
+  $('win').style.transform = `scale(${lerp(1, .16, wk)})`;
+  $('win').style.display = t < 11.3 ? 'block' : 'none';
+  const bm = spring(t, 11.28, 15);
+  $('bmark').style.display = t >= 11.28 ? 'block' : 'none';
+  $('bmark').style.transform = `scale(${lerp(.62, 1, bm)})`;
+};
+window.ready = (async () => { await document.fonts.load('600 24px Inter'); await document.fonts.load('500 26px Inter'); await document.fonts.load('500 18px "JetBrains Mono"'); await document.fonts.load('600 18px "JetBrains Mono"'); await document.fonts.ready;
+  await Promise.all([...document.images].map(i => i.decode().catch(() => { })));
+  $('msg').textContent = FULL; MSGW = $('msg').offsetWidth; MSGH = $('msg').offsetHeight; EVW = $('badge').offsetWidth;
+  $('flood').style.display = 'block'; seek(0); return true; })();
+</script></body></html>

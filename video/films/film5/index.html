@@ -1,0 +1,100 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>BankWeave · Every claim proven</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@1&display=block" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#071c3d}
+body{font-family:Inter,system-ui,sans-serif;color:#fff;-webkit-font-smoothing:antialiased;position:relative}
+#bg{position:absolute;inset:0;background:radial-gradient(75% 85% at 50% 46%,#0b2a5b 0%,#0a2550 40%,#071c3d 100%)}
+#stage{position:absolute;inset:0;transform-origin:960px 520px}
+svg{position:absolute;left:0;top:0;overflow:visible}
+#mark{position:absolute;left:0;top:0;width:220px;height:220px;transform-origin:0 0}
+#mark img{width:100%;height:100%;display:block}
+#wclip{position:absolute;overflow:hidden;height:130px}
+#word{position:absolute;left:0;top:8px;font-size:96px;font-weight:600;letter-spacing:-.045em;line-height:1;white-space:nowrap}
+#tag{position:absolute;left:0;width:1920px;top:0;display:flex;justify-content:center;align-items:baseline;gap:0;white-space:nowrap}
+.w{display:inline-block;overflow:hidden;padding:0 0 .14em;margin-bottom:-.14em;vertical-align:baseline}
+.w>span{display:inline-block}
+.a{font-size:46px;font-weight:500;letter-spacing:-.025em;color:#f4f6fa}
+.b{font-family:'Instrument Serif',serif;font-style:italic;font-size:60px;color:#8ad8fc;letter-spacing:-.005em}
+#row{position:absolute;left:0;width:1920px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:20px;color:#8a9ab0;letter-spacing:.01em}
+#row i{font-style:normal;color:#5b6b80;padding:0 14px}
+</style></head><body>
+<div id="bg"></div>
+<div id="stage">
+  <svg id="lanes" width="1920" height="1080"></svg>
+  <div id="mark"><img src="../logo-white.png"></div>
+  <div id="wclip"><div id="word">BankWeave</div></div>
+  <div id="tag"></div>
+  <div id="row">bankweave.vercel.app<i>·</i>github.com/LSUDOKO/BankWeave<i>·</i>Built on FalkorDB</div>
+</div>
+<script src="../lib.js"></script>
+<script>
+/* big mark: 220 px, centred at (960,450). Final: 120 px, left of the wordmark, group centred. */
+const BIG = 220, SMALL = 120, CY = 440;
+const BX = 960 - BIG / 2, BY = CY - BIG / 2;
+const LX = [BX + 62, BX + 110, BX + 158];             // three bank lanes inside the B's footprint
+const lanes = LX.map(x => mk('line', { x1: x, y1: BY, x2: x, y2: BY, stroke: '#b5bcc6', 'stroke-width': 3, 'stroke-linecap': 'round' }, $('lanes')));
+/* thread: follows the B's S-cut (measured from logo.png: band centre (75,330)→(360,215) in 512 px) */
+const lp = (x, y) => [BX + x * BIG / 512, BY + y * BIG / 512];
+const T0 = lp(-150, 400), T1 = lp(120, 330), T2 = lp(300, 190), T3 = lp(640, 170);
+const thread = mk('path', { d: `M${T0} C${T1} ${T2} ${T3}`, fill: 'none', stroke: '#8ad8fc', 'stroke-width': 5, 'stroke-linecap': 'round' }, $('lanes'));
+const TL = thread.getTotalLength(); thread.setAttribute('stroke-dasharray', TL);
+const nodes = LX.map(x => mk('circle', { cx: x, cy: 0, r: 7, fill: '#8ad8fc', opacity: 0 }, $('lanes')));
+/* where the thread crosses each lane */
+function crossY(x) { let lo = 0, hi = TL; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; (thread.getPointAtLength(m).x < x ? lo = m : hi = m); } return thread.getPointAtLength(lo).y; }
+LX.forEach((x, i) => nodes[i].setAttribute('cy', crossY(x)));
+/* tagline */
+const WORDS = [['Many', 'a'], ['banks,', 'a'], ['one', 'a'], ['ring,', 'a'], ['every', 'b'], ['claim', 'b'], ['proven.', 'b']];
+const wEls = WORDS.map(([w, c], i) => { const e = el(`<span class="w ${c}"><span>${w}</span></span>`, $('tag')); e.style.marginRight = i === WORDS.length - 1 ? '0' : (i === 3 ? '.34em' : (c === 'a' ? '.25em' : '.2em')); return e; });
+const WT = [3.0, 3.13, 3.26, 3.39, 3.62, 3.76, 3.9];
+let WW = 0, GX = 0, WX = 0;
+function layout() {
+  WW = $('word').offsetWidth;
+  const gw = SMALL + 30 + WW; GX = 960 - gw / 2;
+  WX = GX + SMALL + 30;
+  Object.assign($('wclip').style, { top: (CY - 60) + 'px' });
+  $('tag').style.top = (CY + 92) + 'px';
+  $('row').style.top = (CY + 206) + 'px';
+}
+window.seek = function (t) {
+  /* 0–1.2 lanes draw top to bottom, staggered 0.1 s */
+  lanes.forEach((l, i) => { const k = P(t, .15 + i * .1, .95 + i * .1, E.inOut); l.setAttribute('y2', BY + BIG * k); });
+  /* 1.2–1.8 thread in one stroke */
+  const tk = P(t, 1.2, 1.78, E.inOut);
+  thread.setAttribute('stroke-dashoffset', TL * (1 - tk));
+  nodes.forEach((n, i) => { const x = LX[i]; const at = 1.2 + .58 * ((x - T0[0]) / (T3[0] - T0[0])); n.setAttribute('opacity', P(t, at, at + .08, E.lin)); n.setAttribute('r', 7 * spring(t, at, 18)); });
+  /* 1.7–2.25 mask wipe: lanes + thread hand over to the B along one diagonal edge */
+  const wk = P(t, 1.7, 2.22, E.inOut), edge = -20 + wk * 140;  // percent across the mark box
+  const m = `linear-gradient(100deg, #000 ${edge - 10}%, transparent ${edge + 4}%)`;
+  const inv = `linear-gradient(100deg, transparent ${edge - 10}%, #000 ${edge + 4}%)`;
+  const img = $('mark');
+  img.style.webkitMaskImage = m; img.style.maskImage = m;
+  const lv = $('lanes');
+  /* lanes mask is in canvas px: convert the edge to canvas coords over the mark box */
+  const ex = BX - 160 + (BIG + 320) * wk;
+  const lm = `linear-gradient(100deg, transparent ${ex - 40}px, #000 ${ex + 20}px)`;
+  lv.style.webkitMaskImage = lm; lv.style.maskImage = lm;
+  lv.style.opacity = t > 2.3 ? 0 : 1;
+  /* 2.2–3.0 mark scales to 120 px and moves left; wordmark wipes out from behind it */
+  const mk2 = P(t, 2.2, 2.95, E.inOut);
+  const s = lerp(BIG, SMALL, mk2) / BIG;
+  const x = lerp(BX, GX, mk2), y = lerp(BY, CY - SMALL / 2, mk2);
+  img.style.transform = `translate(${x}px,${y}px) scale(${s})`;
+  /* the clip's left edge rides 30 px right of the mark, so letters never pass under it */
+  const wk2 = P(t, 2.45, 3.1, E.outQ);
+  const clipL = x + BIG * s + 30, absX = WX - (1 - wk2) * (WW + 60);
+  Object.assign($('wclip').style, { left: clipL + 'px', width: Math.max(0, WX + WW + 20 - clipL) + 'px' });
+  $('word').style.transform = `translateX(${absX - clipL}px)`;
+  /* 3.0–4.2 tagline word by word, risen out of a mask line, one baseline */
+  wEls.forEach((e, i) => { const k = P(t, WT[i], WT[i] + .5, E.outQ); e.firstChild.style.transform = `translateY(${(1 - k) * 110}%)`; });
+  /* 4.2–5.0 URL row */
+  const rk = P(t, 4.2, 4.95, E.out);
+  $('row').style.opacity = rk; $('row').style.transform = `translateY(${(1 - rk) * 12}px)`;
+  /* 5.0–8.0 hold, creeping 2% closer (a whisper of drift before, so it never sits dead) */
+  const sc = 1 + .004 * P(t, 2.2, 5, E.sine) + .02 * P(t, 5, 8, E.sine);
+  $('stage').style.transform = `scale(${sc})`;
+};
+window.ready = (async () => { await document.fonts.load('600 96px Inter'); await document.fonts.load('500 46px Inter'); await document.fonts.load('italic 60px "Instrument Serif"'); await document.fonts.load('20px "JetBrains Mono"'); await document.fonts.ready; await Promise.all([...document.images].map(i => i.decode().catch(() => { }))); layout(); seek(0); return true; })();
+</script></body></html>

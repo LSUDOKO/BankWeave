@@ -16,9 +16,11 @@ export const NAV: [string, Item[]][] = [
     { href: "/approvals", label: "Approvals", icon: "approve", hint: "Actions waiting for a human", badge: "approvals" },
   ]],
   ["Explore", [
+    { href: "/explainer", label: "How it works, 3D", icon: "cube", hint: "Eight scenes, each one FalkorDB call" },
     { href: "/scenarios", label: "Golden scenarios", icon: "scenarios", hint: "Three investigations, end to end" },
     { href: "/network", label: "Bank vs consortium", icon: "network", hint: "What each bank can see" },
     { href: "/consortium-3d", label: "3D consortium", icon: "cube", hint: "Bank slices, consortium, cases" },
+    { href: "/explorer", label: "Graph explorer", icon: "search", hint: "Run Cypher on FalkorDB, see the graph" },
     { href: "/trust", label: "Trust layer", icon: "trust", hint: "Echo-proof confidence and cascades" },
   ]],
   ["Prove", [
@@ -52,7 +54,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Link href="/" className="flex items-center gap-2.5 px-3 text-[19px] font-semibold tracking-tight" aria-label="BankWeave home">
         <span className="grid size-9 place-items-center rounded-full border-2 border-cyan/80"><Logo light={false} /></span>BankWeave
       </Link>
-      <nav className="shell-nav mt-5 min-h-0 flex-1 space-y-4 overflow-y-auto scroll-thin" aria-label="Main">
+      <nav className="shell-nav mt-4 min-h-0 flex-1 space-y-3.5 overflow-y-auto scroll-thin" aria-label="Main">
         {NAV.map(([g, items]) => (
           <div key={g}>
             <p className="px-3 text-[11px] font-medium uppercase tracking-[.12em] text-muted/80">{g}</p>
@@ -64,7 +66,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   <li key={it.href} className="relative">
                     {on && <span className="absolute -left-4 top-1 h-7 w-1.5 rounded-r-full bg-cyan" />}
                     <Link href={it.href} title={it.hint} aria-current={on ? "page" : undefined}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-[7px] text-[14.5px] ${on ? "font-semibold text-paper" : "text-muted hover:bg-white hover:text-paper"}`}>
+                      className={`flex items-center gap-3 rounded-xl px-3 py-[6px] text-[14.5px] ${on ? "font-semibold text-paper" : "text-muted hover:bg-white hover:text-paper"}`}>
                       <Icon name={it.icon} className={`size-[19px] ${on ? "text-cyan" : ""}`} strokeWidth={on ? 2.2 : 1.8} />
                       {it.label}
                       {b > 0 && <span className="ml-auto rounded-md bg-deep px-1.5 py-0.5 text-[10.5px] font-semibold text-white">{b > 99 ? "99+" : b}</span>}
@@ -76,7 +78,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         ))}
       </nav>
-      <div className="fill-deep relative mt-3 shrink-0 overflow-hidden rounded-2xl p-4 [@media(max-height:820px)]:hidden">
+      <div className="fill-deep relative mt-3 shrink-0 overflow-hidden rounded-2xl p-4 [@media(max-height:960px)]:hidden">
         <span className="lines" />
         <span className="relative grid size-8 place-items-center rounded-full bg-white/15"><Icon name="play" className="size-4" /></span>
         <p className="relative mt-2.5 text-[15px] font-semibold leading-snug">Watch the agents work live</p>

@@ -15,6 +15,7 @@ import { useLiveReload } from "@/lib/useEvents";
 const ProvenanceDag = dynamic(() => import("@/components/ProvenanceDag"), { ssr: false, loading: () => <p className="text-muted">Loading DAG…</p> });
 const Replay = dynamic(() => import("@/components/Replay"), { ssr: false });
 const TraceWaterfall = dynamic(() => import("@/components/TraceWaterfall"), { ssr: false });
+const HardwareSignModal = dynamic(() => import("@/components/HardwareSignModal"), { ssr: false });
 const TimeMachine = dynamic(() => import("@/components/TimeMachine"), { ssr: false });
 const Screening = dynamic(() => import("@/components/Screening"), { ssr: false });
 
@@ -28,6 +29,8 @@ export default function CaseWorkspace({ params }: { params: Promise<{ id: string
   const [graph, setGraph] = useState<any>(null);
   const [dag, setDag] = useState<any>(null);
   const [seal, setSeal] = useState<any>(null);
+  const [hwSeal, setHwSeal] = useState<any>(null);
+  const [signing, setSigning] = useState(false);
   const [banks, setBanks] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>("claims");
   const [selClaim, setSelClaim] = useState<string | null>(null);
@@ -42,6 +45,7 @@ export default function CaseWorkspace({ params }: { params: Promise<{ id: string
     get(`/cases/${id}/graph`).then(setGraph).catch(() => {});
     get(`/cases/${id}/dag`).then(setDag).catch(() => {});
     get(`/cases/${id}/merkle`).then(setSeal).catch(() => {});
+    get(`/hardware/seal/${id}`).then(setHwSeal).catch(() => {});
     setVersion((v) => v + 1);
   }, [id]);
   useEffect(() => { load(); get("/network/banks").then((b) => { setBankOrder(b.banks ?? []); setBanks(b.banks ?? []); }).catch(() => {}); }, [load]);
@@ -73,7 +77,11 @@ export default function CaseWorkspace({ params }: { params: Promise<{ id: string
           <Pill tone={c.case.status === "awaiting_approval" ? "verify" : "muted"}>{c.case.status.replace("_", " ")}</Pill>
           <span className="text-muted">Seed <span className="mono text-paper">{short(c.case.seed, 10)}</span> · alert <span className="mono">{c.case.alert}</span></span>
           {seal && <span className="badge text-cyan" title={`${seal.count} records sealed (${seal.algorithm})`}>Merkle {seal.root.slice(0, 12)}…</span>}
+          {hwSeal?.attestations?.length > 0 && (hwSeal.broken.length
+            ? <span className="badge text-ring pulse-soft" title="Evidence changed after the hardware signature">Hardware Merkle seal broken · re-attestation required</span>
+            : <span className="badge text-ok" title={`${hwSeal.attestations.length} hardware signature(s) over the current root`}>Hardware-sealed ({hwSeal.attestations[0].method})</span>)}
           <span className="ml-auto flex flex-wrap gap-2">
+            {c.actions.length > 0 && <button onClick={() => setSigning(true)} className="rounded border border-verify text-verify px-2.5 py-1 hover:bg-verify/10">Sign &amp; approve with hardware key</button>}
             <button onClick={() => get(`/cases/${id}/resume`).then(setResume)} className="rounded border border-line px-2.5 py-1 hover:border-cyan">Resume from graph</button>
             <button onClick={() => post(`/cases/${id}/rerun`).then(load)} className="rounded border border-line px-2.5 py-1 hover:border-cyan">Re-investigate</button>
             <a href={`${API}/cases/${id}/export/fincen.xml`} className="rounded border border-line px-2.5 py-1 hover:border-cyan">FinCEN-style XML</a>
@@ -166,6 +174,7 @@ export default function CaseWorkspace({ params }: { params: Promise<{ id: string
         )}
       </div>
       <ActivityFeed caseId={id} height="h-[80vh]" />
+      {signing && <HardwareSignModal caseId={id} actions={c.actions} onClose={() => setSigning(false)} onDone={load} />}
     </div>
   );
 }

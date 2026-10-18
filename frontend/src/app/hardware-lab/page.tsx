@@ -100,7 +100,10 @@ function Terminals() {
             <div className="flex flex-wrap items-center gap-2">
               <h3>ISO 8583 {sel.iso8583.mti}</h3>
               <span className={`badge ${sel.alerts.length ? "text-ring" : "text-ok"}`}>{sel.response}</span>
-              <a href={sel.emvlab} target="_blank" rel="noreferrer" className="link text-xs ml-auto">Decode field 55 at emvlab.org</a>
+              <span className="ml-auto flex gap-3 text-xs">
+                <button className="link" onClick={() => { navigator.clipboard?.writeText(sel.iso8583.fields["55"]); window.open("https://emvlab.org/tlvutils/", "_blank"); }}>Copy TLV &amp; verify on EMVLab.org ↗</button>
+                <a href="https://emvlab.org/cryptogram/" target="_blank" rel="noreferrer" className="link">Cryptogram tool ↗</a>
+              </span>
             </div>
             <div className="grid gap-3 lg:grid-cols-2">
               <table className="text-xs mono">
@@ -115,7 +118,14 @@ function Terminals() {
                 ))}</tbody>
               </table>
             </div>
-            <div><p className="text-xs text-muted mb-1">Field 55 (EMV TLV, hex)</p><pre className="mono text-[11px] rounded bg-ink/70 p-2 break-all whitespace-pre-wrap">{sel.iso8583.fields["55"]}</pre></div>
+            {sel.nfc_uid && (
+              <div className="grid gap-2 sm:grid-cols-4 text-xs">
+                {[["NFC UID", sel.nfc_uid], ["EMV ATC (9F36)", String(sel.atc)], ["GPS", sel.gps?.join(", ")], ["Terminal IMEI / MAC", `${sel.imei} · ${sel.mac}`]].map(([k, v]) => (
+                  <div key={k} className="glass-2 p-2"><p className="text-muted">{k}</p><p className="mono break-all">{v}</p></div>
+                ))}
+              </div>
+            )}
+            <div><p className="text-xs text-muted mb-1">Field 55 (EMV TLV, hex) · written to FalkorDB as <span className="mono">(:Account)-[:USES_DEVICE {"{"}emv_atc, terminal_id, gps{"}"}]-&gt;(:Device {"{"}id:&apos;{sel.device_id ?? "D00063"}&apos;{"}"})</span> and a <span className="mono">CARD_TXN</span> edge</p><pre className="mono text-[11px] rounded bg-ink/70 p-2 break-all whitespace-pre-wrap">{sel.iso8583.fields["55"]}</pre></div>
             {sel.alerts.map((a: any) => <p key={a.id} className="text-sm text-verify">Alert {a.id} ({a.rule}): {a.reason}</p>)}
           </div>
         )}
@@ -125,30 +135,62 @@ function Terminals() {
 }
 
 function Wokwi() {
+  const [log, setLog] = useState<any[]>([]);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(() => get("/hardware/twin").then((t) => setLog(t.wokwi_log ?? [])).catch(() => {}), []);
+  useEffect(() => { load(); const id = setInterval(load, 4000); return () => clearInterval(id); }, [load]);
+  // the exact JSON the ESP32 sketch posts, so the pipeline can be checked without opening Wokwi
+  const sendAsDevice = async (card: string, atm: boolean) => {
+    setBusy(true);
+    try {
+      await post("/hardware/pos-tap", { terminal_id: atm ? "ATM-DEL-A00091" : "POS-MUM-D00063", card_id: card, amount: atm ? 20000 : 9650,
+        clone: atm, source: "wokwi", device_id: atm ? "A00091" : "D00063", gps: atm ? [28.6139, 77.209] : [19.076, 72.8777] });
+    } catch { /* shown in the log */ }
+    setBusy(false); load();
+  };
   return (
-    <section className="grid gap-4 lg:grid-cols-2">
-      <div className="glass p-4 space-y-2 text-sm">
-        <h2>ESP32 terminal in the Wokwi simulator</h2>
-        <p className="text-muted">An ESP32-DevKitC v4 with an SSD1306 OLED, three card buttons, a POS/ATM switch and two LEDs. Each press posts the same JSON as the buttons on the previous tab to <span className="mono">POST /hardware/pos-tap</span>, so a simulated circuit drives real graph writes and real alerts.</p>
-        <ol className="list-decimal pl-5 space-y-1">
-          <li>Open <a className="link" href="https://wokwi.com/projects/new/esp32" target="_blank" rel="noreferrer">wokwi.com/projects/new/esp32</a>.</li>
-          <li>Paste <span className="mono">sketch.ino</span>, <span className="mono">diagram.json</span> and <span className="mono">libraries.txt</span> from <a className="link" href="https://github.com/LSUDOKO/BankWeave/tree/main/hardware/wokwi" target="_blank" rel="noreferrer">hardware/wokwi</a>.</li>
-          <li>Press play, then Card A, B and C within a minute: the red LED lights for <span className="mono">pos_shared_terminal</span>.</li>
-          <li>Switch to the Delhi ATM and press Card A again: the cloned card fires <span className="mono">impossible_travel</span>.</li>
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="glass p-4 space-y-3 text-sm">
+        <h2>ESP32 card terminal in the Wokwi simulator</h2>
+        <p className="text-muted">ESP32-DevKitC v4, SSD1306 OLED, three card buttons, a POS/ATM switch and two LEDs. Wokwi gives the simulated board real internet through its <span className="mono">Wokwi-GUEST</span> Wi-Fi, so each press is a real HTTPS <span className="mono">POST /hardware/pos-tap</span> that writes into FalkorDB and can raise alerts.</p>
+        <Circuit />
+        <ol className="list-decimal pl-5 space-y-1 text-xs">
+          <li>Open <a className="link" href="https://wokwi.com/projects/new/esp32" target="_blank" rel="noreferrer">wokwi.com/projects/new/esp32 ↗</a> and paste <span className="mono">sketch.ino</span>, <span className="mono">diagram.json</span>, <span className="mono">libraries.txt</span> from <a className="link" href="https://github.com/LSUDOKO/BankWeave/tree/main/hardware/wokwi" target="_blank" rel="noreferrer">hardware/wokwi ↗</a>.</li>
+          <li>Press play; press Card A, B, C within a minute (shared-terminal ring), then switch to ATM and press Card A (cloned card).</li>
+          <li>Taps from the board appear in the serial monitor here within seconds.</li>
         </ol>
-        <p className="text-xs text-muted">The serial monitor prints field 55 for each tap; paste it into emvlab.org/tlvutils to decode.</p>
       </div>
-      <div className="glass p-4">
-        <h3>Wiring</h3>
-        <table className="mt-2 w-full text-xs mono">
-          <tbody>{[
-            ["SSD1306 SDA / SCL", "GPIO 21 / 22 (I2C 0x3C)"], ["Card A / B / C", "GPIO 25 / 26 / 27 (pull-up, to GND)"],
-            ["POS / ATM switch", "GPIO 14"], ["Green LED (approved)", "GPIO 4 via 220 Ω"], ["Red LED (refer)", "GPIO 5 via 220 Ω"],
-            ["Network", "Wokwi-GUEST → HTTPS to the API"],
-          ].map(([a, b]) => <tr key={a} className="border-b border-line/40"><td className="py-1 pr-3 text-muted">{a}</td><td className="py-1">{b}</td></tr>)}</tbody>
-        </table>
+      <div className="glass p-4 space-y-2 text-sm min-w-0">
+        <div className="flex items-center gap-2"><h2>Serial monitor (taps from Wokwi devices)</h2><span className="badge text-cyan">source = wokwi</span></div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          {["CARD-A", "CARD-B", "CARD-C"].map((c) => <button key={c} disabled={busy} onClick={() => sendAsDevice(c, false)} className="rounded border border-line px-2 py-1 hover:border-cyan">Send {c} as device D00063</button>)}
+          <button disabled={busy} onClick={() => sendAsDevice("CARD-A", true)} className="rounded border border-verify text-verify px-2 py-1">Send CARD-A as ATM A00091 (clone)</button>
+        </div>
+        <p className="text-[11px] text-muted">The buttons send the same JSON the sketch sends, labelled as a Wokwi device, to test the pipeline without the simulator.</p>
+        <pre className="mono text-[11px] rounded bg-black/80 text-ok p-3 h-[340px] overflow-y-auto">{log.length ? log.map((l) =>
+          `[${new Date(l.ts * 1000).toISOString().slice(11, 19)}] ${l.device_id} ${l.card} ATC=${l.atc} GPS=${l.gps?.join(",")} -> ${l.response}${l.alerts.length ? "  ALERT " + l.alerts.map((a: any) => a.rule).join(",") : ""}\n  55=${l.iso8583.fields["55"].slice(0, 72)}…`).join("\n") : "waiting for a Wokwi device…"}</pre>
       </div>
     </section>
+  );
+}
+
+function Circuit() {
+  const pin = (x: number, y: number, label: string, color: string) => (
+    <g key={label}><line x1={x} y1={y} x2={150} y2={y} stroke={color} strokeWidth="2" /><text x={x - 4} y={y + 3} fontSize="9" fill="#94a3b8" textAnchor="end">{label}</text></g>
+  );
+  return (
+    <svg viewBox="0 0 420 190" className="w-full rounded-lg bg-[#0a1424] border border-line" role="img" aria-label="Wokwi circuit diagram">
+      <rect x="150" y="30" width="90" height="130" rx="6" fill="#1e293b" stroke="#475569" />
+      <text x="195" y="100" fontSize="11" fill="#e2e8f0" textAnchor="middle" fontFamily="monospace">ESP32</text>
+      <text x="195" y="114" fontSize="8" fill="#94a3b8" textAnchor="middle">DevKitC v4</text>
+      {pin(95, 50, "Card A · GPIO25", "#56b4e9")}{pin(95, 72, "Card B · GPIO26", "#56b4e9")}{pin(95, 94, "Card C · GPIO27", "#56b4e9")}{pin(95, 116, "POS/ATM · GPIO14", "#f59e0b")}
+      <line x1="240" y1="50" x2="300" y2="50" stroke="#10b981" strokeWidth="2" /><line x1="240" y1="62" x2="300" y2="62" stroke="#06b6d4" strokeWidth="2" />
+      <rect x="300" y="30" width="100" height="50" rx="4" fill="#020617" stroke="#475569" />
+      <text x="350" y="52" fontSize="9" fill="#e2e8f0" textAnchor="middle" fontFamily="monospace">SSD1306</text><text x="350" y="66" fontSize="8" fill="#94a3b8" textAnchor="middle">I2C 0x3C</text>
+      <line x1="240" y1="120" x2="300" y2="120" stroke="#10b981" strokeWidth="2" /><circle cx="310" cy="120" r="7" fill="#10b981" /><text x="324" y="123" fontSize="9" fill="#94a3b8">GPIO4 approved</text>
+      <line x1="240" y1="145" x2="300" y2="145" stroke="#ef4444" strokeWidth="2" /><circle cx="310" cy="145" r="7" fill="#ef4444" /><text x="324" y="148" fontSize="9" fill="#94a3b8">GPIO5 refer</text>
+      <text x="195" y="180" fontSize="9" fill="#06b6d4" textAnchor="middle">Wokwi-GUEST Wi-Fi → HTTPS POST /hardware/pos-tap</text>
+    </svg>
   );
 }
 
@@ -284,9 +326,18 @@ function EnclavePanel() {
         </table>
         {!ok && <p className="text-ring">{a.reason}. Blinding and PSI are refused until reset.</p>}
         <div className="flex gap-2">
-          <button disabled={busy || !ok} onClick={() => act("/hardware/enclave-tamper")} className="rounded-md bg-ring/10 border border-ring text-ring px-3 py-1.5 disabled:opacity-40">Tamper with enclave image</button>
-          <button disabled={busy || ok} onClick={() => act("/hardware/enclave-reset")} className="rounded-md border border-line px-3 py-1.5 hover:border-cyan disabled:opacity-40">Reset</button>
+          <button disabled={busy || !ok} onClick={() => act("/hardware/enclave-tamper")} className="rounded-md bg-ring/10 border border-ring text-ring px-3 py-1.5 disabled:opacity-40">Simulate PCR0 memory tamper</button>
+          <button disabled={busy || ok} onClick={() => act("/hardware/enclave-reset")} className="rounded-md border border-line px-3 py-1.5 hover:border-cyan disabled:opacity-40">Reset enclave hardware root</button>
         </div>
+        {a.hsm && (
+          <dl className="grid grid-cols-[150px_1fr] gap-y-1 text-xs">
+            <dt className="text-muted">HSM interface</dt><dd>{a.hsm.interface}</dd>
+            <dt className="text-muted">PKCS#11 slot</dt><dd className="mono">{a.hsm.pkcs11_slot_id}</dd>
+            <dt className="text-muted">Signer fingerprint</dt><dd className="mono">{a.hsm.enclave_signer_fingerprint}</dd>
+            <dt className="text-muted">Blinding key</dt><dd>{a.hsm.key}</dd>
+          </dl>
+        )}
+        {a.bank_links && <BankLinks links={a.bank_links} ok={ok} />}
         <p className="text-xs text-muted">Each attestation is recorded as an <span className="mono">(:EnclaveAttestation)</span> node in the consortium graph ({a.history?.length ?? 0} recent).</p>
       </div>
       <div className="glass p-4 text-xs">
@@ -330,5 +381,31 @@ function Psi() {
         </div>
       )}
     </section>
+  );
+}
+
+/** Bank graphs feeding the consortium through the enclave; severed while it is quarantined. */
+function BankLinks({ links, ok }: { links: { bank: string; sync: string }[]; ok: boolean }) {
+  const n = Math.max(1, links.length);
+  return (
+    <svg viewBox="0 0 420 150" className="w-full" role="img" aria-label="Bank sync links through the enclave">
+      <rect x="160" y="10" width="100" height="34" rx="8" fill="#0f172a" stroke="#06b6d4" />
+      <text x="210" y="31" fontSize="11" fill="#e2e8f0" textAnchor="middle" fontFamily="monospace">consortium</text>
+      <rect x="175" y="62" width="70" height="26" rx="6" fill={ok ? "#10b98122" : "#ef444422"} stroke={ok ? "#10b981" : "#ef4444"} />
+      <text x="210" y="79" fontSize="10" fill={ok ? "#10b981" : "#ef4444"} textAnchor="middle" fontFamily="monospace">{ok ? "enclave ✓" : "QUARANTINE"}</text>
+      <line x1="210" y1="44" x2="210" y2="62" stroke={ok ? "#10b981" : "#ef4444"} strokeWidth="2" strokeDasharray={ok ? "" : "4 4"} />
+      {links.map((l, i) => {
+        const x = 20 + (i + 0.5) * (380 / n);
+        const open = l.sync === "open";
+        return (
+          <g key={l.bank}>
+            <line x1={x} y1="118" x2="210" y2="88" stroke={open ? "#10b981" : "#ef4444"} strokeWidth="1.5" strokeDasharray={open ? "" : "3 5"} opacity={open ? 0.8 : 0.9} />
+            {!open && <text x={(x + 210) / 2} y="106" fontSize="11" fill="#ef4444" textAnchor="middle">✕</text>}
+            <rect x={x - 26} y="118" width="52" height="22" rx="5" fill="#0f172a" stroke={open ? "#334155" : "#ef4444"} />
+            <text x={x} y="133" fontSize="9" fill="#e2e8f0" textAnchor="middle" fontFamily="monospace">bank_{l.bank}</text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }

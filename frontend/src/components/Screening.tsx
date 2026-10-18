@@ -23,7 +23,7 @@ export default function Screening({ caseId }: { caseId: string }) {
             {h.hits.map((x: any) => (
               <li key={x.entity_id}>
                 <span className="text-verify">{x.caption}</span> · score {x.score} · {x.program} · {x.country}
-                <span className="block text-muted">source: {x.provenance.source} / {x.provenance.dataset} ({x.provenance.version ?? x.provenance.fetched_at}){x.provenance.url ? <> · <a className="link" href={x.provenance.url} target="_blank" rel="noreferrer">entity</a></> : null}</span>
+                <span className="block text-muted">source: {x.provenance.source} / {x.provenance.dataset} ({x.provenance.version ?? x.provenance.fetched_at}){x.provenance.url ? <> · <a className="link" href={x.provenance.url} target="_blank" rel="noreferrer">OpenSanctions record ↗</a></> : <> · <a className="link" href={`https://www.opensanctions.org/search/?q=${encodeURIComponent(x.caption)}`} target="_blank" rel="noreferrer">search real lists on OpenSanctions ↗</a></>}</span>
               </li>
             ))}
           </ul>

@@ -17,7 +17,7 @@ of them dies, and refuses to file a report it can't prove.
 - **Use it from Claude:** `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp` (17 read-only FalkorDB tools, each returning the Cypher it ran; [docs/MCP.md](docs/MCP.md))
 - **Proof in FalkorDB's own browser:** [screenshots and a recording](#proof-in-the-official-falkordb-browser) of the ring, PageRank, card taps, SAR provenance and vector search running on our Cloud instance
 - **Understand it in five minutes:** the [3D explainer](https://bankweave.vercel.app/explainer) (eight scenes, each one FalkorDB call) and the [graph explorer](https://bankweave.vercel.app/explorer) (twelve presets, run live)
-- **Demo video:** [watch it on the landing page](https://bankweave.vercel.app/#demo) or [download the MP4](docs/media/bankweave-demo.mp4) (narrated, captions burned in): the problem film, a whiteboard explainer, then the live product on FalkorDB Cloud, the hardware edge, MCP and FalkorDB's own browser. Build it yourself: `video/build.py --long`
+- **Demo video:** [watch it on the landing page](https://bankweave.vercel.app/#demo) or [download the MP4](docs/media/bankweave-demo.mp4) (narrated, captions burned in): a whiteboard explainer of the problem, the problem film's close, then the live product on FalkorDB Cloud, the hardware edge, MCP and FalkorDB's own browser. Build it yourself: `video/build.py --long`
 - **Blog post:** [`docs/BLOG.md`](docs/BLOG.md)
 
 BankWeave is an independent hackathon project. It is not a FalkorDB product and is unrelated to

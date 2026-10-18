@@ -25,6 +25,7 @@ of them dies, and refuses to file a report it can't prove.
 
 - **Tracks:** 01 Agents That Act on Connected Data (primary), 02 Agent Memory and Coordination, Best blog post
 - **Live deployment:** https://bankweave.vercel.app (UI on Vercel) · API https://bankweave-api.onrender.com/docs (Render) · graph: FalkorDB Cloud (ap-south-1)
+- **MCP Registry:** published as [`io.github.LSUDOKO/bankweave`](https://registry.modelcontextprotocol.io/v0/servers?search=bankweave) (v3.0.0, streamable HTTP)
 - **Use it from Claude:** `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp` (17 read-only FalkorDB tools, each returning the Cypher it ran; [docs/MCP.md](docs/MCP.md))
 - **Proof in FalkorDB's own browser:** [screenshots and a recording](#proof-in-the-official-falkordb-browser) of the ring, PageRank, card taps, SAR provenance and vector search running on our Cloud instance
 - **Understand it in five minutes:** the [3D explainer](https://bankweave.vercel.app/explainer) (eight scenes, each one FalkorDB call) and the [graph explorer](https://bankweave.vercel.app/explorer) (twelve presets, run live)

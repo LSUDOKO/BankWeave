@@ -1,5 +1,7 @@
 # Use BankWeave from Claude (MCP)
 
+**Listed in the official MCP Registry** as `io.github.LSUDOKO/bankweave` (remote, streamable HTTP): https://registry.modelcontextprotocol.io/v0/servers?search=bankweave. Each release tag republishes it from `server.json` via `.github/workflows/publish-mcp.yml`.
+
 BankWeave runs a hosted, **read-only** MCP server on the same service as the API:
 
 ```

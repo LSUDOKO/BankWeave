@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=block" rel="stylesheet">
+<style>
+*{margin:0;box-sizing:border-box}
+body{width:1600px;height:560px;overflow:hidden;background:#fbfaf6;font-family:Caveat,cursive;color:#1f2a3a}
+.paper{position:absolute;inset:0;background-image:linear-gradient(rgba(8,124,248,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(8,124,248,.05) 1px,transparent 1px);background-size:32px 32px}
+svg{position:absolute;inset:0}
+.t{position:absolute;font-weight:700}
+</style></head><body><div class="paper"></div>
+<svg width="1600" height="560" viewBox="0 0 1600 560">
+<defs>
+ <filter id="r" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="4"/></filter>
+ <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0 0 L10 5 L0 10" fill="none" stroke="#1f2a3a" stroke-width="2"/></marker>
+ <marker id="ahb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0 0 L10 5 L0 10" fill="none" stroke="#087cf8" stroke-width="2"/></marker>
+</defs>
+<g filter="url(#r)" fill="none" stroke="#1f2a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+ <!-- four bank columns, each seeing a fragment -->
+ <rect x="60" y="120" width="140" height="300" rx="10"/><rect x="230" y="120" width="140" height="300" rx="10"/>
+ <rect x="400" y="120" width="140" height="300" rx="10"/><rect x="570" y="120" width="140" height="300" rx="10"/>
+ <g stroke="#d93a3f" stroke-width="4">
+  <path d="M130 200 L300 260"/><path d="M300 260 L470 190"/><path d="M470 190 L640 300"/><path d="M640 300 L470 360"/><path d="M470 360 L300 380"/><path d="M300 380 L130 330"/><path d="M130 330 L130 200"/>
+ </g>
+ <g stroke="#d93a3f" stroke-width="3" fill="#fbfaf6">
+  <circle cx="130" cy="200" r="13"/><circle cx="300" cy="260" r="13"/><circle cx="470" cy="190" r="13"/><circle cx="640" cy="300" r="16" fill="#ffd9da"/>
+  <circle cx="470" cy="360" r="13"/><circle cx="300" cy="380" r="13"/><circle cx="130" cy="330" r="13"/>
+ </g>
+ <!-- arrow to the consortium -->
+ <path d="M740 270 C 800 240, 840 240, 900 262" stroke="#087cf8" stroke-width="4" marker-end="url(#ahb)"/>
+ <!-- consortium graph box -->
+ <rect x="920" y="90" width="300" height="360" rx="14" stroke="#087cf8" stroke-width="4"/>
+ <g stroke="#d93a3f" stroke-width="4"><ellipse cx="1070" cy="245" rx="100" ry="70"/></g>
+ <g stroke="#1f2a3a" stroke-width="3" fill="#fbfaf6">
+  <circle cx="970" cy="245" r="10"/><circle cx="1010" cy="190" r="10"/><circle cx="1090" cy="176" r="10"/><circle cx="1165" cy="215" r="13" fill="#ffd9da"/><circle cx="1150" cy="290" r="10"/><circle cx="1070" cy="315" r="10"/><circle cx="1000" cy="300" r="10"/>
+ </g>
+ <!-- agents and proof -->
+ <path d="M1240 262 L1300 262" stroke="#1f2a3a" marker-end="url(#ah)"/>
+ <rect x="1310" y="120" width="270" height="300" rx="12"/>
+ <path d="M1345 205 l12 12 l22 -26" stroke="#0c9466" stroke-width="4"/><path d="M1345 265 l12 12 l22 -26" stroke="#0c9466" stroke-width="4"/><path d="M1345 325 l12 12 l22 -26" stroke="#0c9466" stroke-width="4"/>
+ <path d="M1535 380 l14 -11 l14 11 l-14 11 z" stroke="#087cf8"/>
+</g>
+</svg>
+<div class="t" style="left:62px;top:28px;font-size:46px">Each bank sees only its piece&hellip;</div>
+<div class="t" style="left:95px;top:128px;font-size:28px;color:#5b6b80">Bank A</div><div class="t" style="left:265px;top:128px;font-size:28px;color:#5b6b80">Bank B</div>
+<div class="t" style="left:435px;top:128px;font-size:28px;color:#5b6b80">Bank C</div><div class="t" style="left:605px;top:128px;font-size:28px;color:#5b6b80">Bank D</div>
+<div class="t" style="left:70px;top:436px;font-size:34px;color:#d93a3f">best bank holds 43.8% of a ring (avg) &middot; 0 of 36 rings whole</div>
+<div class="t" style="left:770px;top:198px;font-size:28px;color:#087cf8;width:140px;line-height:1">hashed ids</div>
+<div class="t" style="left:930px;top:30px;font-size:44px;color:#087cf8">&hellip;FalkorDB sees the ring</div>
+<div class="t" style="left:944px;top:370px;font-size:30px;line-height:1.05">consortium graph<br>pageRank &middot; wcc &middot; paths</div>
+<div class="t" style="left:1330px;top:66px;font-size:40px">agents prove it</div>
+<div class="t" style="left:1390px;top:186px;font-size:30px">triage</div>
+<div class="t" style="left:1390px;top:246px;font-size:30px">investigate</div>
+<div class="t" style="left:1390px;top:306px;font-size:30px">skeptic + report</div>
+<div class="t" style="left:1335px;top:372px;font-size:28px;color:#087cf8">signed by a human</div>
+<div class="t" style="left:1180px;top:476px;font-size:40px;color:#0b2a5b">every claim cites its Cypher</div>
+</body></html>

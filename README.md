@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/img/logo.png" width="84" alt="BankWeave logo: a blue B whose bowls are split by one thread"></p>
+<p align="center"><img src="docs/img/logo-animated.svg" width="132" alt="BankWeave logo: a blue B whose bowls are split by one thread"></p>
 
 # BankWeave
 
@@ -7,7 +7,8 @@
 <a href="https://github.com/LSUDOKO/BankWeave/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/LSUDOKO/BankWeave?color=087cf8"></a>
 <a href="https://bankweave.vercel.app"><img alt="Live" src="https://img.shields.io/badge/live-bankweave.vercel.app-0b2a5b"></a>
 <a href="docs/MCP.md"><img alt="MCP: hosted HTTP" src="https://img.shields.io/badge/MCP-17%20read--only%20tools-6f42c1"></a>
-<a href="https://github.com/LSUDOKO/BankWeave/pkgs/container/bankweave-api"><img alt="Docker image" src="https://img.shields.io/badge/ghcr.io-bankweave--api-2496ed"></a>
+<a href="https://github.com/LSUDOKO/BankWeave/pkgs/container/bankweave-api"><img alt="API image" src="https://img.shields.io/badge/ghcr.io-bankweave--api-2496ed"></a>
+<a href="https://github.com/LSUDOKO/BankWeave/pkgs/container/bankweave-mcp"><img alt="MCP image" src="https://img.shields.io/badge/ghcr.io-bankweave--mcp-2496ed"></a>
 <img alt="FalkorDB Cloud" src="https://img.shields.io/badge/FalkorDB-Cloud%20v4.22-ff4e00">
 <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
@@ -15,7 +16,7 @@
 
 **Many banks, one ring, every claim proven.**
 
-![BankWeave live: centred hero over glossy blue bubbles, live counters, the console rising below](docs/img/v4/00-landing.png)
+![Each bank sees only its piece; FalkorDB's consortium graph sees the ring; agents prove every claim](docs/img/banner-whiteboard.png)
 
 BankWeave is a team of AI agents that investigates money-laundering alerts across several
 banks, with FalkorDB as its shared brain. It clears innocent alerts fast, exposes laundering
@@ -26,10 +27,10 @@ of them dies, and refuses to file a report it can't prove.
 - **Tracks:** 01 Agents That Act on Connected Data (primary), 02 Agent Memory and Coordination, Best blog post
 - **Live deployment:** https://bankweave.vercel.app (UI on Vercel) · API https://bankweave-api.onrender.com/docs (Render) · graph: FalkorDB Cloud (ap-south-1)
 - **MCP Registry:** published as [`io.github.LSUDOKO/bankweave`](https://registry.modelcontextprotocol.io/v0/servers?search=bankweave) (v3.0.0, streamable HTTP)
-- **Use it from Claude:** `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp` (17 read-only FalkorDB tools, each returning the Cypher it ran; [docs/MCP.md](docs/MCP.md))
+- **Use it from Claude:** `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp`, or as a stdio package: `claude mcp add bankweave -- docker run -i --rm ghcr.io/lsudoko/bankweave-mcp` (17 read-only FalkorDB tools, each returning the Cypher it ran; [docs/MCP.md](docs/MCP.md))
 - **Proof in FalkorDB's own browser:** [screenshots and a recording](#proof-in-the-official-falkordb-browser) of the ring, PageRank, card taps, SAR provenance and vector search running on our Cloud instance
 - **Understand it in five minutes:** the [3D explainer](https://bankweave.vercel.app/explainer) (eight scenes, each one FalkorDB call) and the [graph explorer](https://bankweave.vercel.app/explorer) (twelve presets, run live)
-- **Demo video:** [watch it on the landing page](https://bankweave.vercel.app/#demo) or [download the MP4](docs/media/bankweave-demo.mp4) (narrated, captions burned in): a whiteboard explainer of the problem, the problem film's close, then the live product on FalkorDB Cloud, the hardware edge, MCP and FalkorDB's own browser. Build it yourself: `video/build.py --long`
+- **Demo video:** [watch on YouTube](https://www.youtube.com/watch?v=slZH5gkAbCU), [on the landing page](https://bankweave.vercel.app/#demo) or [download the MP4](docs/media/bankweave-demo.mp4) (narrated, captions burned in): a whiteboard explainer of the problem, the problem film's close, then the live product on FalkorDB Cloud, the hardware edge, MCP and FalkorDB's own browser. Build it yourself: `video/build.py --long`
 - **Blog post:** [`docs/BLOG.md`](docs/BLOG.md)
 
 **Running now on real data.** The production instance on FalkorDB Cloud holds IBM's labelled AML

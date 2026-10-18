@@ -3,10 +3,25 @@
   "name": "io.github.LSUDOKO/bankweave",
   "title": "BankWeave",
   "description": "Read-only FalkorDB tools for cross-bank AML investigations: rings, money paths, echo-proof claims.",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "websiteUrl": "https://bankweave.vercel.app",
-  "repository": { "url": "https://github.com/LSUDOKO/BankWeave", "source": "github" },
+  "repository": {
+    "url": "https://github.com/LSUDOKO/BankWeave",
+    "source": "github"
+  },
   "remotes": [
-    { "type": "streamable-http", "url": "https://bankweave-api.onrender.com/mcp" }
+    {
+      "type": "streamable-http",
+      "url": "https://bankweave-api.onrender.com/mcp"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/lsudoko/bankweave-mcp:3.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
   ]
 }

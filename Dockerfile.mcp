@@ -5,7 +5,8 @@ FROM python:3.12-slim
 LABEL org.opencontainers.image.source="https://github.com/LSUDOKO/BankWeave" \
       org.opencontainers.image.title="BankWeave MCP" \
       org.opencontainers.image.description="17 read-only FalkorDB tools for cross-bank AML investigations, over stdio" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="MIT" \
+      io.modelcontextprotocol.server.name="io.github.LSUDOKO/bankweave"
 RUN pip install --no-cache-dir "mcp==2.3.0"
 COPY backend/mcp_stdio.py /app/mcp_stdio.py
 ENV PYTHONUNBUFFERED=1

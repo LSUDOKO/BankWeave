@@ -250,9 +250,9 @@ TWIN = Twin()
 
 
 def preset(name: str) -> dict:
-    # start an hour after the latest tap so repeated demo runs never share a detection window
+    # start a day after the latest tap so repeated demo runs never share a detection window
     last = db.ro(db.CONSORTIUM, "MATCH ()-[t:CARD_TXN]->() RETURN max(t.ts) AS ts")
-    now = max(int(time.time()), (last[0]["ts"] or 0) + 3600 if last else 0)
+    now = max(int(time.time()), (last[0]["ts"] or 0) + 86400 if last else 0)
     cards = [c["card"] for c in TWIN.cards()]
     if name == "mule_ring":
         steps = [TWIN.tap("POS-MUM-D00063", cards[i], amt, now + 10 * i)

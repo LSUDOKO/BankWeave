@@ -1,0 +1,42 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:IT;src:url(file:///home/arpit/.local/share/fonts/inter_tight.ttf)}
+*{margin:0;box-sizing:border-box}
+body{width:1280px;height:720px;overflow:hidden;font-family:IT,Inter,sans-serif;color:#fff;
+background:radial-gradient(70% 90% at 78% 40%,#1a6fe0 0%,rgba(26,111,224,0) 60%),radial-gradient(60% 70% at 10% 100%,#0a508f 0%,rgba(10,80,143,0) 70%),linear-gradient(160deg,#071a3a,#0b2a5b 60%,#061430)}
+.grid{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.10) 1.2px,transparent 1.2px);background-size:28px 28px;mask-image:linear-gradient(90deg,#000 0%,transparent 55%)}
+.left{position:absolute;left:64px;top:58px;width:660px}
+.brand{display:flex;align-items:center;gap:14px;font-weight:800;font-size:34px;letter-spacing:-.02em}
+.brand img{width:52px;height:52px}
+h1{margin-top:34px;font-weight:900;font-size:104px;line-height:.92;letter-spacing:-.055em}
+h1 .b{background:linear-gradient(90deg,#8ad8fc,#4aa8ff);-webkit-background-clip:text;color:transparent}
+.stat{margin-top:30px;display:flex;align-items:center;gap:18px}
+.big{font-weight:900;font-size:76px;letter-spacing:-.04em;color:#ff5a5f;line-height:1}
+.sl{font-size:24px;line-height:1.2;color:#c8d6ea;font-weight:600}
+.pills{position:absolute;left:64px;bottom:48px;display:flex;gap:12px}
+.pill{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:999px;padding:10px 20px;font-size:22px;font-weight:700}
+.pill.f{background:#ff4e00;border-color:#ff4e00}
+svg{position:absolute;right:30px;top:60px}
+</style></head><body><div class="grid"></div>
+<div class="left">
+ <div class="brand"><img src="logo-white.png">BankWeave</div>
+ <h1>The ring<br><span class="b">no bank</span><br>can see</h1>
+ <div class="stat"><div class="big">43.8%</div><div class="sl">of a ring is all the best<br>single bank holds (avg)</div></div>
+</div>
+<div class="pills"><div class="pill f">FalkorDB</div><div class="pill">AI agents</div><div class="pill">MCP</div></div>
+<svg width="560" height="610" viewBox="0 0 560 610">
+ <defs><filter id="g"><feGaussianBlur stdDeviation="6"/></filter></defs>
+ <g font-family="IT" font-weight="800" font-size="20" fill="#9fc0e8" text-anchor="middle">
+  <rect x="20" y="20" width="110" height="570" rx="18" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.18)"/><text x="75" y="56">BANK 1</text>
+  <rect x="155" y="20" width="110" height="570" rx="18" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.18)"/><text x="210" y="56">BANK 2</text>
+  <rect x="290" y="20" width="110" height="570" rx="18" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.18)"/><text x="345" y="56">BANK 3</text>
+  <rect x="425" y="20" width="110" height="570" rx="18" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.18)"/><text x="480" y="56">BANK 4</text>
+ </g>
+ <path d="M75 150 L210 250 L345 160 L480 300 L345 430 L210 520 L75 400 Z" fill="none" stroke="#ff5a5f" stroke-width="16" opacity=".45" filter="url(#g)"/>
+ <path d="M75 150 L210 250 L345 160 L480 300 L345 430 L210 520 L75 400 Z" fill="none" stroke="#ff5a5f" stroke-width="6" stroke-linejoin="round"/>
+ <g fill="#fff" stroke="#ff5a5f" stroke-width="6">
+  <circle cx="75" cy="150" r="17"/><circle cx="210" cy="250" r="17"/><circle cx="345" cy="160" r="17"/><circle cx="480" cy="300" r="24" fill="#ff5a5f" stroke="#fff"/>
+  <circle cx="345" cy="430" r="17"/><circle cx="210" cy="520" r="17"/><circle cx="75" cy="400" r="17"/>
+ </g>
+</svg>
+</body></html>

@@ -3,6 +3,13 @@
 *How we built BankWeave on FalkorDB for Graph Hacks: one graph per bank, a consortium graph
 that links them, and three research results turned into Cypher.*
 
+![BankWeave](img/v4/00-landing.png)
+
+**Try it:** [bankweave.vercel.app](https://bankweave.vercel.app) (live on FalkorDB Cloud) ·
+[demo video](https://bankweave.vercel.app/#demo) · [source](https://github.com/LSUDOKO/BankWeave) ·
+give your own AI agent the graph:
+`claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp`
+
 ## No bank can see a laundering ring alone
 
 Anti-money-laundering teams drown in alerts. Rule-based monitoring looks at one signal at a
@@ -202,6 +209,53 @@ The second version pushed more of the work into FalkorDB itself.
 The card terminals, enclave and security key in the Hardware Lab are simulations and say so;
 their EMV TLV encoding, hashes, signatures and key exchange are real.
 
+## 3.0: open the graph to anyone, and prove it on real tools
+
+A compliance tool is only as convincing as the evidence a sceptic can check for themselves, so
+the last version was about opening BankWeave up.
+
+- **Any AI agent can investigate.** A hosted MCP server, mounted inside the same API, exposes 17
+  read-only tools: cases, echo-proof claims, money paths, rings, hubs, components, phonetic and
+  vector search, triage and guarded Cypher. Every result carries the graph, the Cypher, its
+  parameters and the time. Ask Claude whether a claim is proven and it gets the honest answer:
+  three paths, one independent origin, 0.259 echo-proof against 0.593 by path counting.
+  Writes are refused twice: by our guard, and by FalkorDB itself, because every call runs as
+  `GRAPH.RO_QUERY`.
+- **A graph explorer for humans.** Any read-only Cypher on any of the 36 graphs, drawn as an
+  Obsidian-style force graph with labels and hover neighbourhoods. Twelve presets each show
+  one engine feature on our data: the cross-bank ring, `algo.pageRank`, `algo.labelPropagation`,
+  `algo.wcc`, `algo.SPpaths`, Double Metaphone search, HNSW KNN and a report's provenance chain.
+- **A 3D explainer.** Eight scroll-driven scenes, from six bank slices that each see only themselves to
+  a Merkle root signed by a hardware key. Every number on screen comes from the API, and every
+  scene shows the Cypher behind it.
+- **Proof on tools we don't control.**
+
+  ![The same queries in FalkorDB's own browser](media/falkordb-browser.gif)
+
+  Our ESP32 card terminal, running in the Wokwi simulator, posts a real tap over HTTPS to the
+  live API. The API approves it and writes a `CARD_TXN` edge into FalkorDB Cloud, and EMVLab
+  decodes the exact chip data it printed. Then we opened FalkorDB's own browser against our
+  instance: the cross-bank ring in 1.85 ms, PageRank in 3.55 ms, a report's
+  SAR → sentence → claim → evidence chain in 0.61 ms, and behaviour twins at five banks in 0.36 ms.
+
+## What shipping on a managed graph taught us
+
+- **Budget memory like a feature.** The free tier is 100 MB with `noeviction`. When we hit the cap,
+  writes stopped, and so did index creation when the API started. We made startup DDL tolerant,
+  and wrote a capacity guard that reads `GRAPH.MEMORY USAGE` and prunes the oldest unpinned case
+  graphs before the limit. A graph per case is great for isolation, but you have to garbage-collect
+  it.
+- **Read-only is the right default for agents.** Giving an LLM a database is safe when the engine
+  enforces it. `GRAPH.RO_QUERY`, plus a guard that rejects write clauses and `GRAPH.*` commands,
+  let us publish a Cypher endpoint and an MCP server without fear.
+- **Return the query with the answer.** Every tool returning its Cypher turned out to be the most
+  useful design decision. Auditors can rerun it, the explainer can show it, and when an agent is
+  wrong you can see exactly which query misled it.
+- **Read-heavy pages need parallel reads.** Per-case reads over a network round trip added up. Running
+  them concurrently cut the dashboard's overview from 5.3 s to 1.6 s on the same Cloud instance.
+- **Managed tiers differ.** Per-graph ACLs worked on self-hosted FalkorDB and were refused on Cloud, so the
+  Lab shows both honestly instead of pretending.
+
 ## Limits and next steps
 
 Synthetic data only; our identity layer is generated (and its rules published so leakage can
@@ -209,4 +263,4 @@ be audited). Consortium ids are salted hashes; the PSI handshake is real cryptog
 one process for the demo. Clue-guided recovery uses graph signals, not the paper's GNN. Next:
 PSI across real separate deployments, a learned risk field, and a study with real analysts.
 
-*BankWeave is open source: github.com/LSUDOKO/BankWeave. Built with help from Claude Code.*
+*BankWeave is open source: [github.com/LSUDOKO/BankWeave](https://github.com/LSUDOKO/BankWeave). Live at [bankweave.vercel.app](https://bankweave.vercel.app). Built for Graph Hacks with help from Claude Code.*

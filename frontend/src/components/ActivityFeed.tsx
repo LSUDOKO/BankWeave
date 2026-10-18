@@ -36,8 +36,9 @@ export default function ActivityFeed({ caseId, height = "h-[70vh]" }: { caseId?:
       <h2 className="mb-2">Agent activity</h2>
       <ol className={`${height} overflow-y-auto scroll-thin space-y-1.5 pr-1 text-sm`}>
         {!events.length && (
-          <li className="text-muted">
-            {connected ? "Waiting for agents. Start the worker from Demo control." : "Connecting to the event stream…"}
+          <li className="rounded-2xl border border-dashed border-line px-4 py-6 text-center text-muted">
+            <span className={`mx-auto mb-2 block size-2.5 rounded-full ${connected ? "bg-ok pulse-soft" : "bg-mist"}`} />
+            {connected ? <>Listening to the live event stream. Agent steps appear here as they happen. <Link href="/demo" className="link">Run the agents</Link></> : "Connecting to the event stream…"}
           </li>
         )}
         {events.map((e, i) => (

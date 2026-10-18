@@ -73,25 +73,25 @@ function Hero({ d, replay }: { d: Overview | null; replay: boolean }) {
       <div className="dot-grid absolute inset-0" />
       <Threads />
       <div className="relative mx-auto max-w-[1080px] px-5 text-center" style={{ transform: `translateY(${p * -60}px)`, opacity: 1 - p * 0.9 }}>
-        <a href="#product" data-reveal className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.06] py-1 pl-1.5 pr-3.5 text-[13px] text-[#c8d6ea] backdrop-blur hover:border-white/30">
+        <a href="#product" className="hero-in inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.06] py-1 pl-1.5 pr-3.5 text-[13px] text-[#c8d6ea] backdrop-blur hover:border-white/30">
           <span className="rounded-full bg-cyan px-2 py-0.5 text-[11px] font-semibold text-white">{replay ? "Replay" : "Live"}</span>
           Running on FalkorDB Cloud · 6 banks · {d ? `${n(d.falkordb.graphs)} graphs` : "…"}
         </a>
-        <h1 data-reveal style={{ letterSpacing: "-0.05em", ["--d" as string]: "80ms" }}
-          className="mx-auto mt-7 max-w-[1000px] text-[44px] font-semibold leading-[1.02] text-white sm:text-[62px] lg:text-[80px]">
+        <h1 style={{ letterSpacing: "-0.05em", animationDelay: "80ms" }}
+          className="hero-in mx-auto mt-7 max-w-[1000px] text-[44px] font-semibold leading-[1.02] text-white sm:text-[62px] lg:text-[80px]">
           Find the laundering ring <br className="hidden sm:block" /><span className="text-grad">no single bank can see</span>
         </h1>
-        <p data-reveal style={{ ["--d" as string]: "160ms" }} className="mx-auto mt-6 max-w-[640px] text-[17px] leading-relaxed text-[#a9bcd8] md:text-[19px]">
+        <p style={{ animationDelay: "160ms" }} className="hero-in mx-auto mt-6 max-w-[640px] text-[17px] leading-relaxed text-[#a9bcd8] md:text-[19px]">
           AI agents investigate alerts across banks in one FalkorDB instance. Each bank keeps its own graph, rings appear where
           the graphs join, and every sentence of a report points to the query that proves it.
         </p>
-        <div data-reveal style={{ ["--d" as string]: "240ms" }} className="mt-9 flex flex-wrap items-center justify-center gap-3">
+        <div style={{ animationDelay: "240ms" }} className="hero-in mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link href="/command" className="group inline-flex items-center gap-2 rounded-xl bg-cyan px-6 py-3 font-semibold text-white shadow-[0_14px_40px_-12px_rgba(8,124,248,.95)] transition hover:bg-[#1a8bff]">
             Open the console <span className="transition-transform group-hover:translate-x-0.5">→</span>
           </Link>
           <Link href="/scenarios" className="rounded-xl border border-white/20 bg-white/[.06] px-6 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/[.12]">See the golden scenarios</Link>
         </div>
-        <dl data-reveal style={{ ["--d" as string]: "320ms" }} className="mx-auto mt-12 grid max-w-[720px] grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[.04] py-4 backdrop-blur">
+        <dl style={{ animationDelay: "320ms" }} className="hero-in mx-auto mt-12 grid max-w-[720px] grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[.04] py-4 backdrop-blur">
           {[[n(decided), "alerts decided by agents"], [n(d?.claims.independent), "independent claims"], [d ? `${Math.round(d.ms)} ms` : "…", "live overview query"]].map(([v, l]) => (
             <div key={l} className="px-3"><dt className="sr-only">{l}</dt><dd className="kpi text-[26px] text-white md:text-[30px]">{v}</dd><p className="text-[12px] text-[#8fa6c6]">{l}</p></div>
           ))}

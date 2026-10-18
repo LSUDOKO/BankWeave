@@ -169,6 +169,8 @@ html::-webkit-scrollbar { display: none; }
 [data-reveal] { opacity: 0; transform: translateY(28px); filter: blur(6px);
   transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1), filter .9s; transition-delay: var(--d, 0ms); }
 [data-reveal].in { opacity: 1; transform: none; filter: none; }
+@keyframes hero-in { from { opacity: 0; transform: translateY(22px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+.hero-in { animation: hero-in 1s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes marquee { to { transform: translateX(-50%); } }
 .marquee { animation: marquee 38s linear infinite; }
 @keyframes thread { to { stroke-dashoffset: -400; } }
@@ -177,5 +179,5 @@ html::-webkit-scrollbar { display: none; }
 .glow-pulse { animation: glow-pulse 4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   [data-reveal] { opacity: 1; transform: none; filter: none; }
-  .marquee, .thread, .grow-up, .fade-up, .glow-pulse { animation: none !important; }
+  .marquee, .thread, .grow-up, .fade-up, .glow-pulse, .hero-in { animation: none !important; }
 }

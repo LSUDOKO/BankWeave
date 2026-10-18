@@ -119,8 +119,10 @@ def scenario_b() -> dict | None:
 
 def scenario_c() -> dict | None:
     best = None
-    for g in db.case_graphs():
-        ev = db.ro(g, SHARED_CASE)
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(8) as ex:
+        found = list(ex.map(lambda g: (g, db.ro(g, SHARED_CASE)), db.case_graphs()))
+    for g, ev in found:
         building = [e for e in ev if e["origin"] == "attr:A-77"]
         if not building:
             continue

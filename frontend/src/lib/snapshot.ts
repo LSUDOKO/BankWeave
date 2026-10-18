@@ -13,7 +13,7 @@ export function snapshot<T = any>(path: string): T | undefined {
 export const capturedAt = (snapshots["_meta"] as { captured_at?: string } | undefined)?.captured_at;
 
 /** Live first with a short timeout; on failure fall back to the bundled snapshot. */
-export async function live<T = any>(path: string, timeoutMs = 5000): Promise<{ data: T; replay: boolean }> {
+export async function live<T = any>(path: string, timeoutMs = 15000): Promise<{ data: T; replay: boolean }> {
   try {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), timeoutMs);

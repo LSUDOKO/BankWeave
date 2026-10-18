@@ -58,16 +58,21 @@ def overview(request: Request):
     alerts = {r["status"]: r["n"] for r in db.ro(db.CONSORTIUM, ALERTS)}
     cases, ev, totals = [], {}, {"claims": 0, "independent": 0, "flagged": 0, "paths": 0,
                                   "origins": 0}
-    for g in db.case_graphs():
+    def one(g):  # three small reads per case graph; run them in parallel over the network
         try:
-            head = db.ro(g, CASE_HEAD, timeout=3000)
-            cl = db.ro(g, CASE_CLAIMS, timeout=3000)[0]
-            for r in db.ro(g, CASE_EVIDENCE, timeout=3000):
-                ev[r["state"]] = ev.get(r["state"], 0) + r["n"]
+            return (db.ro(g, CASE_HEAD, timeout=3000), db.ro(g, CASE_CLAIMS, timeout=3000)[0],
+                    db.ro(g, CASE_EVIDENCE, timeout=3000))
         except Exception:  # noqa: BLE001  (a case being written right now)
+            return None
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(8) as ex:
+        results = list(ex.map(one, db.case_graphs()))
+    for res in results:
+        if not res or not res[0]:
             continue
-        if not head:
-            continue
+        head, cl, evs = res
+        for r in evs:
+            ev[r["state"]] = ev.get(r["state"], 0) + r["n"]
         for k in totals:
             totals[k] += cl.get(k) or 0
         cases.append({**head[0], **{k: cl.get(k) or 0 for k in ("claims", "independent",

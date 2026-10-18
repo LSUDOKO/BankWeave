@@ -204,14 +204,14 @@ def _kind(g: str) -> str:
 
 @router.get("/graphs")
 def graphs(include_cases: bool = True):
-    out = []
-    for g in sorted(db.list_graphs()):
-        if db.is_case_graph(g) and not include_cases:
-            continue
+    def one(g):
         mem = engine.memory(g)
-        out.append({"name": g, "kind": _kind(g), **_counts(g),
-                    "memory_mb": mem.get("total_graph_sz_mb"),
-                    "index_mb": mem.get("indices_sz_mb")})
+        return {"name": g, "kind": _kind(g), **_counts(g),
+                "memory_mb": mem.get("total_graph_sz_mb"), "index_mb": mem.get("indices_sz_mb")}
+    from concurrent.futures import ThreadPoolExecutor
+    names = [g for g in sorted(db.list_graphs()) if include_cases or not db.is_case_graph(g)]
+    with ThreadPoolExecutor(8) as ex:
+        out = list(ex.map(one, names))
     order = {"consortium": 0, "bank": 1, "system": 2, "case": 3}
     out.sort(key=lambda g: (order[g["kind"]], g["name"]))
     return {"graphs": out}

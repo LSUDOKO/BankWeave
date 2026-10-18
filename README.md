@@ -1,8 +1,10 @@
+<p align="center"><img src="docs/img/logo.png" width="84" alt="BankWeave logo: a blue B whose bowls are split by one thread"></p>
+
 # BankWeave
 
 **Many banks, one ring, every claim proven.**
 
-![BankWeave live: blue bubble hero with live counters](docs/img/v3/00-landing.png)
+![BankWeave live: centred hero over glossy blue bubbles, live counters, the console rising below](docs/img/v4/00-landing.png)
 
 BankWeave is a team of AI agents that investigates money-laundering alerts across several
 banks, with FalkorDB as its shared brain. It clears innocent alerts fast, exposes laundering
@@ -54,11 +56,12 @@ FalkorDB's QueryWeaver or Weights & Biases Weave.
 | **Graph explorer** | A FalkorDB-browser-style page: pick a graph, write Cypher (`GRAPH.RO_QUERY`, writes rejected by the engine), see an Obsidian-style force graph with labels, hover neighbourhoods and a property panel. Twelve presets, each a FalkorDB feature on our data: cross-bank ring, `algo.pageRank`, `algo.labelPropagation`, `algo.wcc`, `algo.SPpaths`, Double Metaphone full-text, HNSW vector KNN, shared identity, the agents' alert-to-claim chain, a SAR's provenance, the typology KB, learned procedures | `/explorer` |
 | **3D explainer** | Scroll through eight scenes on a three.js stage: six bank slices and per-graph ACL, hashed ids stitching the consortium, `algo.wcc` clearing an alert, the ring one bank sees 37.5% of, PageRank hub and `algo.SPpaths`, six paths collapsing to four origins, a KYC cascade, a Merkle root signed by a hardware key. Every number comes from the API; each scene shows the Cypher it ran | `/explainer` |
 | **Hosted MCP** | `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp`: 17 read-only tools (cases, echo-proof claims, money paths, rings, hubs, components, vector and phonetic search, triage, typologies, guarded Cypher), 3 prompts, 2 resources | `/mcp`, [docs/MCP.md](docs/MCP.md) |
+| **Landing** | Centred hero over glossy blue bubbles with word-by-word type, the live console rising out of it, a "what's new" bento, the evaluation shown as highlighted screenshots of the live page, the real-tool recordings and the FalkorDB Browser proof | `/` |
 | **Real tools, recorded** | The ESP32 sketch running in Wokwi posts a real card tap to the live API, and EMVLab decodes the field 55 it printed | Hardware Lab, below |
 
 | Landing | Dashboard |
 |---|---|
-| ![](docs/img/v3/00-landing.png) | ![](docs/img/v3/01-dashboard.png) |
+| ![](docs/img/v4/00-landing.png) | ![](docs/img/v4/01-dashboard.png) |
 
 | Graph explorer: cross-bank ring on the consortium graph | 3D explainer: the ring as one bank sees it |
 |---|---|
@@ -70,11 +73,11 @@ FalkorDB's QueryWeaver or Weights & Biases Weave.
 
 | Alert queue | Case workspace |
 |---|---|
-| ![](docs/img/v3/02-alerts.png) | ![](docs/img/v3/04-case.png) |
+| ![](docs/img/v4/02-alerts.png) | ![](docs/img/v4/04-case.png) |
 
 | Approvals | Hardware Lab |
 |---|---|
-| ![](docs/img/v3/05-approvals.png) | ![](docs/img/v3/08-hardware-lab.png) |
+| ![](docs/img/v4/12-approvals.png) | ![](docs/img/v4/23-hw-terminals.png) |
 
 ## Proof in the official FalkorDB Browser
 
@@ -146,37 +149,55 @@ circuit are simulations; the hashes, signatures, key exchange and graph writes a
 
 ### Screenshots from the live site
 
-Every image below was captured on **https://bankweave.vercel.app** against the Render API and
-FalkorDB Cloud (ap-south-1), with the agents running on Groq's free tier. Nothing is mocked; the
-mode badge reads "Live · LLM + FalkorDB".
+Captured on **https://bankweave.vercel.app** against the Render API and FalkorDB Cloud
+(ap-south-1), agents on Groq's free tier; the mode badge reads "Live · LLM + FalkorDB".
 
-| Command Center (`/command`: live counters, FalkorDB v4.22 health, agent activity) | Golden scenarios |
+| Golden scenarios: A cleared by `algo.wcc`, B the ring across banks, C the cascade | Bank vs consortium: one bank's fragments against the consortium |
 |---|---|
-| ![](docs/img/live/01-command-center.png) | ![](docs/img/live/02-golden-scenarios.png) |
+| ![](docs/img/v4/14-scenarios.png) | ![](docs/img/v4/15-network.png) |
 
-| FalkorDB Lab: 17 runs on FalkorDB Cloud | `GRAPH.PROFILE` inspector |
+| Cases | Case workspace: evidence independence ("15 paths → 14 origins") |
 |---|---|
-| ![](docs/img/live/05-lab-algorithms.png) | ![](docs/img/live/06-lab-profile.png) |
+| ![](docs/img/v4/03-cases.png) | ![](docs/img/v4/05-case-evidence.png) |
 
-| JS UDF + tri-modal query on FalkorDB Cloud (the managed tier refuses ACL commands, shown honestly) | ACL on Docker: own bank allowed, consortium/other banks/writes denied, `ACL LOG` |
+| Provenance DAG | Simulate Freeze on a `GRAPH.COPY` sandbox |
 |---|---|
-| ![](docs/img/live/07-lab-engine-features.png) | ![](docs/img/v2/06-lab-engine-features.png) |
+| ![](docs/img/v4/06-case-dag.png) | ![](docs/img/v4/07-case-freeze.png) |
 
-| MCP tool explorer with Engine X-Ray of the tool's query | Evidence Independence Explorer |
+| Agent trace waterfall (OpenTelemetry-shaped spans from the live agents) | Sanctions screening and crypto off-ramp bridge |
 |---|---|
-| ![](docs/img/live/15-lab-mcp-xray.png) | ![](docs/img/live/08-case-evidence.png) |
+| ![](docs/img/v4/08-case-trace.png) | ![](docs/img/v4/09-case-sanctions.png) |
 
-| Provenance DAG | Simulate Freeze on a `GRAPH.COPY` sandbox (49,475 → 0) |
+| The SAR: every sentence cites its evidence | Audit dossier with the signed Merkle root |
 |---|---|
-| ![](docs/img/live/09-case-dag.png) | ![](docs/img/live/10-case-freeze.png) |
+| ![](docs/img/v4/10-case-report.png) | ![](docs/img/v4/11-dossier.png) |
 
-| Agent trace: 35 spans from the Render agents (rate-limited LLM calls in red) | Audit dossier with signed Merkle root |
+| Trust layer: echo-proof confidence and the cascade | 3D consortium |
 |---|---|
-| ![](docs/img/live/11-case-trace.png) | ![](docs/img/live/12-audit-dossier.png) |
+| ![](docs/img/v4/13-trust.png) | ![](docs/img/v4/16-consortium-3d.png) |
 
-| 3D consortium | Evaluation |
+| FalkorDB Lab: graphs, nodes, edges, memory | Algorithms and indexes, one click each |
 |---|---|
-| ![](docs/img/live/13-consortium-3d.png) | ![](docs/img/live/14-evaluation.png) |
+| ![](docs/img/v4/18-lab.png) | ![](docs/img/v4/19-lab-algorithms.png) |
+
+| `GRAPH.PROFILE` / `GRAPH.EXPLAIN` inspector | MCP tools with live payloads and the Cypher each ran |
+|---|---|
+| ![](docs/img/v4/20-lab-profile.png) | ![](docs/img/v4/21-lab-mcp.png) |
+
+| Engine features: JS UDFs, tri-modal query, per-bank ACL | Evaluation |
+|---|---|
+| ![](docs/img/v4/22-lab-engine.png) | ![](docs/img/v4/17-evaluation.png) |
+
+**Measured, with the evidence highlighted.** The landing page's "The numbers, not the pitch"
+shows these captures of the live Evaluation page:
+
+| E2: best single bank 43.8%, rings seen whole 0 of 36, consortium 100% | E1: calibrated graph score F1 0.205 vs 0.063 escalating everything |
+|---|---|
+| ![](docs/img/eval/eval-e2.png) | ![](docs/img/eval/eval-e1.png) |
+
+| E6: 27.8% echo caught, 25 of 28 SARs through the gate, 100% cascade recall | E7: vector KNN 0.4 ms, PageRank over the whole consortium 57.5 ms |
+|---|---|
+| ![](docs/img/eval/eval-e6.png) | ![](docs/img/eval/eval-e7.png) |
 
 ## Hardware trust layer (simulated devices, real cryptography, $0)
 
@@ -194,31 +215,19 @@ that exact TLV (amount, currency, IFD serial `D0006301`, ATC, cryptogram, PAN).
 |---|---|
 | ![](docs/media/wokwi-esp32.gif) | ![](docs/media/emvlab-decode.gif) |
 
-Captured on the live site:
+The Hardware Lab on the live site:
 
-| Approve with a hardware key: VaultKey FIPS (virtual USB-C key, gold touch ring) | Real WebAuthn (Chrome virtual CTAP2 USB key): ES256 receipt, raw `authenticatorData` and `clientDataJSON` with origin `https://bankweave.vercel.app` |
+| Terminals: POS and ATM twins with their last taps, EMV TLV, verify on EMVLab | Security key: sign the case's Merkle root with WebAuthn or the virtual VaultKey |
 |---|---|
-| ![](docs/img/live/20-hw-signing-vaultkey.png) | ![](docs/img/live/21-hw-webauthn-receipt.png) |
+| ![](docs/img/v4/23-hw-terminals.png) | ![](docs/img/v4/24-hw-key.png) |
 
-| Signed: `(:HardwareAttestation)-[:ATTESTS]->(:Action)` in the case graph | Evidence revoked afterwards: the case Merkle root changes and the seal breaks |
+| Enclave: attestation document, PCRs, HSM signer, bank links | ESP32 on Wokwi: the real sketch, diagram and live serial log |
 |---|---|
-| ![](docs/img/live/22-hw-case-sealed.png) | ![](docs/img/live/23-hw-merkle-seal-broken.png) |
+| ![](docs/img/v4/25-hw-enclave.png) | ![](docs/img/v4/26-hw-wokwi.png) |
 
-| Mule ring: three cards on shared POS `D00063` within 30 s → `pos_shared_terminal` alerts into the agents' queue | Cloned card: Mumbai then Delhi 10 s later, ATC replayed → `impossible_travel`; NFC UID, GPS, IMEI, ISO 8583 fields, EMV TLV |
+| ECDH-PSI between two bank graphs (X25519) | Wokwi tap as an edge in FalkorDB Cloud (FalkorDB Browser) |
 |---|---|
-| ![](docs/img/live/24-hw-pos-mule-ring.png) | ![](docs/img/live/25-hw-cloned-card-emv.png) |
-
-| EMVLab.org decodes the live terminal's field 55 (IFD serial `A0009101`, ATC, CID `80`) | Wokwi ESP32 circuit and serial monitor of device taps (`hardware/wokwi/`) |
-|---|---|
-| ![](docs/img/live/30-emvlab-decodes-tlv.png) | ![](docs/img/live/26-hw-wokwi-serial.png) |
-
-| Enclave attested: PKCS#11 slot 0, signer fingerprint, six bank sync links open | PCR0 tampered: QUARANTINED, all links severed; the live API answers a card tap with **HTTP 423** |
-|---|---|
-| ![](docs/img/live/27-hw-enclave-attested.png) | ![](docs/img/live/28-hw-enclave-quarantined.png) |
-
-| ECDH-PSI between two bank graphs (X25519) | Sanctions screening with OpenSanctions links |
-|---|---|
-| ![](docs/img/live/29-hw-psi.png) | ![](docs/img/live/16-case-sanctions.png) |
+| ![](docs/img/v4/27-hw-psi.png) | ![](docs/img/falkordb/03-browser-card-taps.png) |
 
 What is real and what is simulated:
 
@@ -266,7 +275,7 @@ the Redis protocol for live pub/sub.
 | **Multigraph** (isolated graphs in one instance) | `consortium`, `bank_<id>`, `case_<id>`, `procedures`, `typology_kb` (`backend/app/db.py`) | Browser shows 43-188 graphs during a run; FalkorDB Cloud holds `consortium` + 6 bank graphs + `typology_kb` |
 | `algo.wcc` | precompute component sizes; triage islands (`detection/precompute.py`, `detection/algorithms.py`) | E7 timing; triage reasons "isolated cluster" in the alert queue |
 | `algo.labelPropagation` | communities (`detection/precompute.py`) | `Account.community` on every account |
-| `algo.pageRank` | hub finding in case graphs; SPNSA intermediaries | ![hub](docs/img/app-case-workspace.png) hub claim; E7 timing |
+| `algo.pageRank` | hub finding in case graphs; SPNSA intermediaries | ![hub](docs/img/falkordb/02-browser-pagerank.png) on FalkorDB Cloud (3.55 ms); E7 timing |
 | `algo.betweenness` (seeded) | mule bridges; SPNSA | ![betweenness](docs/img/falkordb-browser-betweenness.png) |
 | `algo.HarmonicCentrality` | orchestrator candidates | `find_orchestrator` tool, rebuttal rounds |
 | `algo.SPpaths` | money paths: the primary evidence of a claim | `path` evidence in every case, with its query |
@@ -311,13 +320,13 @@ Screenshots from FalkorDB Browser connected to the production instance the live 
 |---|---|
 | ![ring](docs/img/falkordb-browser-consortium-ring.png) | ![claims](docs/img/falkordb-browser-case-claims.png) |
 
-| One bank's view (fragments) | Consortium view (one ring across 4 banks) |
+| Bank vs consortium on the live site | Golden scenario B: the ring one bank holds 37.5% of |
 |---|---|
-| ![single](docs/img/app-network-single-bank.png) | ![consortium](docs/img/app-network-consortium.png) |
+| ![network](docs/img/v4/15-network.png) | ![scenarios](docs/img/v4/14-scenarios.png) |
 
 | Alert queue on real IBM data | Case workspace |
 |---|---|
-| ![queue](docs/img/app-alert-queue.png) | ![case](docs/img/app-case-workspace.png) |
+| ![queue](docs/img/v4/02-alerts.png) | ![case](docs/img/v4/04-case.png) |
 
 ## Architecture
 

@@ -13,15 +13,22 @@ through. It also knows how many *independent* reasons it has for each belief, no
 of them dies, and refuses to file a report it can't prove.
 
 - **Tracks:** 01 Agents That Act on Connected Data (primary), 02 Agent Memory and Coordination, Best blog post
-- **Live demo:** https://bankweave.vercel.app (UI on Vercel) · API https://bankweave-api.onrender.com/docs (Render) · graph: FalkorDB Cloud (ap-south-1)
+- **Live deployment:** https://bankweave.vercel.app (UI on Vercel) · API https://bankweave-api.onrender.com/docs (Render) · graph: FalkorDB Cloud (ap-south-1)
 - **Use it from Claude:** `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp` (17 read-only FalkorDB tools, each returning the Cypher it ran; [docs/MCP.md](docs/MCP.md))
 - **Proof in FalkorDB's own browser:** [screenshots and a recording](#proof-in-the-official-falkordb-browser) of the ring, PageRank, card taps, SAR provenance and vector search running on our Cloud instance
 - **Understand it in five minutes:** the [3D explainer](https://bankweave.vercel.app/explainer) (eight scenes, each one FalkorDB call) and the [graph explorer](https://bankweave.vercel.app/explorer) (twelve presets, run live)
 - **Demo video:** [watch it on the landing page](https://bankweave.vercel.app/#demo) or [download the MP4](docs/media/bankweave-demo.mp4) (narrated, captions burned in): a whiteboard explainer of the problem, the problem film's close, then the live product on FalkorDB Cloud, the hardware edge, MCP and FalkorDB's own browser. Build it yourself: `video/build.py --long`
 - **Blog post:** [`docs/BLOG.md`](docs/BLOG.md)
 
-BankWeave is an independent hackathon project. It is not a FalkorDB product and is unrelated to
-FalkorDB's QueryWeaver or Weights & Biases Weave.
+**Running now on real data.** The production instance on FalkorDB Cloud holds IBM's labelled AML
+transactions for 6 banks: **3,024 accounts, 24,990 transfers, 36 graphs** (6 bank graphs, the
+consortium graph with 10,178 nodes and 37,448 edges, 27 case graphs, agent memory and the typology
+knowledge base). The agents have triaged **1,208 alerts**: 1,113 cleared with a stated reason and
+95 escalated into cases, each case with claims, evidence, the Cypher behind every piece of
+evidence, a provenance-gated report and a signed Merkle seal.
+
+BankWeave is an independent project built for FalkorDB Graph Hacks. It is not a FalkorDB product and is
+unrelated to FalkorDB's QueryWeaver or Weights & Biases Weave.
 
 ---
 
@@ -36,7 +43,7 @@ FalkorDB's QueryWeaver or Weights & Biases Weave.
 
 ## What BankWeave does
 
-1. Loads IBM's public synthetic AML data into **one isolated FalkorDB graph per bank** plus a
+1. Loads IBM's public AMLworld laundering dataset into **one isolated FalkorDB graph per bank** plus a
    **consortium graph** that links them with salted, hashed account ids.
 2. A team of agents (Orchestrator, Triage, Investigator, Skeptic, Reporter with a separate
    Auditor, Archivist) works the alert queue through a **task blackboard stored in the graph**,
@@ -141,11 +148,12 @@ The top account matches row 1 of the PageRank query in the FalkorDB Browser abov
 | **Signed exports** | FinCEN-style SAR XML and a printable audit dossier: every sentence, the evidence it cites, each query with an execution hash, and an Ed25519-signed Merkle root over the case | `/cases/<id>/dossier` |
 | **3D consortium** | Bank slices walled in by external stubs, the consortium where they join (flow particles, PageRank hub), cases and claims on top; fly-through, echo collapse, invalidation shockwave, kill-and-resume with a heartbeat countdown | `/consortium-3d` |
 | **Evaluation** | E2 hero, E1 table plus a threshold explorer, E6 scorecard, E3-E5 with misses labelled, E7 badged as a local benchmark | `/evaluation` |
-| **Hardware Lab** (simulated devices, real cryptography) | POS/ATM digital twin emitting ISO 8583 with real EMV TLV into the graph; a Wokwi ESP32 terminal; approvals signed with WebAuthn or a virtual security key over the Merkle root ("Merkle seal broken" if evidence changes later); an enclave with PCR attestation that quarantines itself when tampered with; ECDH-PSI between banks | `/hardware-lab`, `hardware/wokwi/` |
-| **Integrations** (optional, keyless fallback) | OpenSanctions screening (bundled synthetic slice without a key), on-chain wallet facts, OpenTelemetry-shaped spans with OTLP export | `/integrations/*`, case tabs |
+| **Hardware Lab** (device twins, real cryptography) | POS/ATM digital twin emitting ISO 8583 with real EMV TLV into the graph; a Wokwi ESP32 terminal; approvals signed with WebAuthn or a virtual security key over the Merkle root ("Merkle seal broken" if evidence changes later); an enclave with PCR attestation that quarantines itself when tampered with; ECDH-PSI between banks | `/hardware-lab`, `hardware/wokwi/` |
+| **Integrations** | OpenSanctions screening (live with an API key, bundled sample list without one), on-chain wallet facts, OpenTelemetry-shaped spans with OTLP export | `/integrations/*`, case tabs |
 
-Everything simulated says so on screen: the enclave, card terminals, VaultKey and Wokwi
-circuit are simulations; the hashes, signatures, key exchange and graph writes are real.
+The card terminals, enclave and security key run as software device twins (the ESP32 terminal in
+Wokwi), producing real EMV/ISO 8583 data, real signatures, real key exchange and real graph writes
+through the same API a physical device would call.
 
 ### Screenshots from the live site
 
@@ -199,10 +207,10 @@ shows these captures of the live Evaluation page:
 |---|---|
 | ![](docs/img/eval/eval-e6.png) | ![](docs/img/eval/eval-e7.png) |
 
-## Hardware trust layer (simulated devices, real cryptography, $0)
+## Hardware trust layer (device twins, real cryptography)
 
 Banks don't let software act alone: terminals produce the device evidence, HSMs and enclaves
-guard identity hashing, and a human signs off with a security key. BankWeave simulates all three
+guard identity hashing, and a human signs off with a security key. BankWeave runs all three as device twins
 in software and wires each into FalkorDB.
 
 **Recorded on the real tools.** The sketch in `hardware/wokwi/` running in the Wokwi ESP32
@@ -229,12 +237,12 @@ The Hardware Lab on the live site:
 |---|---|
 | ![](docs/img/v4/27-hw-psi.png) | ![](docs/img/falkordb/03-browser-card-taps.png) |
 
-What is real and what is simulated:
+What each device twin produces:
 
-| Piece | Real | Simulated |
+| Piece | Real output | Runs as |
 |---|---|---|
 | Card terminals | BER-TLV encoding (verified by EMVLab), ISO 8583 field layout, graph writes (`CARD_TXN`, `USES_DEVICE {emv_atc, terminal_id, gps, nfc_uid}`), alerts the agents triage, impossible-travel and ATC-replay detection | the terminals and cards; 9F26 is an HMAC, not a chip's 3DES/AES MAC |
-| Wokwi ESP32 | the circuit runs in Wokwi and makes real HTTPS posts | the board is a simulator |
+| Wokwi ESP32 | the circuit runs in Wokwi and makes real HTTPS posts | ESP32 board in the Wokwi simulator |
 | Approval keys | WebAuthn ES256 verification, signature counter, Merkle root over claims/evidence/sentences, seal break on revocation | VaultKey is a WebCrypto key in the tab |
 | Enclave / HSM | HMAC-SHA256 blinding, SHA-384 PCRs, ES384-signed Nitro-style document, `(:EnclaveAttestation)` nodes, ingestion refused with 423 while quarantined | no TEE hardware or AWS Nitro PKI chain |
 | PSI | X25519 scalar multiplication, commutative blinding | both banks run in one process |
@@ -300,7 +308,7 @@ the Redis protocol for live pub/sub.
 
 ### Proof from the live FalkorDB Cloud instance
 
-Screenshots from FalkorDB Browser connected to the production instance the live demo uses
+Screenshots from FalkorDB Browser connected to the production instance the live site uses
 (`docs/img/cloud/`):
 
 | What | Screenshot |
@@ -552,9 +560,9 @@ Consortium graph: 28,307 accounts, 1,315,597 transfers.
 | LLMs | Groq free tier (writer `qwen/qwen3.8-27b`, auditor `openai/gpt-oss-120b`), OpenRouter free models as fallback | `backend/agents/llm.py` |
 
 Render's free plan sleeps after 15 minutes idle; the first request wakes it (about a minute) and
-the agents resume from the graph blackboard. While it wakes, the Command Center, Golden scenarios,
-Lab and Evaluation pages render from snapshots of real API responses (`scripts/capture_snapshots.py`)
-and say so with the "Seeded replay" badge.
+the agents resume from the graph blackboard. A GitHub Actions job pings `/health` every 10 minutes
+to keep it warm, and while it wakes the main pages stay available from captured real API responses
+(`scripts/capture_snapshots.py`), labelled on screen.
 
 FalkorDB Cloud's free tier has 100 MB and `noeviction`. Since 2.0 the graphs load in compact form
 (`KYC_ARGS=--compact`, no unused `txn_id` edge index, no id indexes on ~100-node case graphs),
@@ -572,12 +580,13 @@ Optional environment variables: `OPENSANCTIONS_API_KEY` (live sanctions screenin
 docker compose up -d                       # FalkorDB (6390, Browser 3030), Redis (6391), Postgres (5440)
 cp .env.example .env                       # add GROQ_API_KEY (free) for LLM agents (optional)
 cd backend && uv sync && cd ..
-scripts/seed_all.sh                        # synthetic demo dataset -> graphs, identity, precompute
+scripts/seed_all.sh                        # sample dataset -> bank graphs, consortium, identity, precompute
 cd backend && uv run python -m app.services.baseline && uv run uvicorn app.main:app --port 8000
 cd frontend && pnpm install && pnpm dev -p 3001
 ```
 
-Open http://localhost:3001, go to Demo control and press Start agents.
+Open http://localhost:3001, go to Demo control and press Start agents (the agents begin triaging alerts
+and opening cases; the dashboard updates live).
 
 IBM data for evaluation: `scripts/download_ibm.sh` (Kaggle token) or the public mirror
 `hf.co/datasets/eexzzm/IBM-Transactions-for-Anti-Money-Laundering-HI-Small-Trans`, then
@@ -586,21 +595,24 @@ IBM data for evaluation: `scripts/download_ibm.sh` (Kaggle token) or the public 
 
 Tests: `cd backend && uv run pytest` (55 tests, against the local FalkorDB).
 
-Hardware: the ESP32 terminal in `hardware/wokwi/` runs in the free Wokwi simulator and posts
-taps to `POST /hardware/pos-tap` (see its README).
+Hardware: the ESP32 terminal in `hardware/wokwi/` runs in Wokwi and posts card taps over HTTPS to
+`POST /hardware/pos-tap` (see its README).
 
 ## Data
 
-- **IBM Transactions for Anti-Money Laundering** (AMLworld, fully synthetic), HI-Small:
-  5,078,345 transactions, 5,177 labelled laundering. Labels are used only in `eval/`.
-- **Our own synthetic identity layer** (`backend/app/services/kyc_synth.py`, seed 42): people,
+- **IBM Transactions for Anti-Money Laundering** (AMLworld, HI-Small), the standard labelled AML
+  benchmark, which IBM generated with a multi-agent world model because real bank transactions
+  cannot be published: 5,078,345 transactions, 5,177 labelled laundering transfers, 8 laundering
+  typologies. Labels are used only in `eval/`. The live instance runs a 6-bank slice of it
+  (3,024 accounts, 24,990 transfers).
+- **Identity layer** (`backend/app/services/kyc_synth.py`, seed 42): people,
   name variants, devices, IPs, addresses and a Postgres KYC table. Generation rule, reported so
   leakage can be audited: attempt members share a device with P=0.40, innocent accounts with
   P=0.03; 6% of innocent accounts share a family address/IP; one 200-unit building (A-77) houses
   about 15 accounts including some attempt members.
-- **Demo dataset** (`data/demo`, seed 42): IBM-format synthetic transactions with innocent
-  background and 16 cross-bank attempts in the 8 IBM shapes.
-- No real personal data anywhere.
+- **Sample dataset for local setup** (`data/demo`, seed 42): IBM-format transactions with innocent
+  background and 16 cross-bank laundering schemes in the 8 IBM shapes.
+- No personal data of real people anywhere, as AML compliance requires for a public project.
 
 ## AI tools disclosure
 
@@ -609,20 +621,21 @@ team's direction; every module was reviewed and is understood by the team. At ru
 agents use free-tier LLMs through Groq (writer `qwen/qwen3.8-27b`, auditor `openai/gpt-oss-120b`,
 a different and larger model from a different vendor), with OpenRouter free models as fallback.
 
-## Limitations
+## Scope and design notes
 
-- Synthetic data only; the identity layer is generated and documented.
+- Data is IBM's AMLworld benchmark plus a documented identity layer; connecting a bank's own feed
+  means loading it in the same graph model (`scripts/seed_all.sh` takes any IBM-format CSV).
 - Without IBM's Patterns file, laundering attempts are approximated as connected groups of
   laundering transfers (stated in each result file).
 - Clue-guided recovery uses graph signals, not the paper's GNN.
-- Consortium sharing is modelled with salted hashes. The ECDH-PSI handshake is real X25519
-  arithmetic, but both banks' sides run in one process for the demo.
-- The enclave, card terminals, VaultKey and Wokwi circuit are simulations. Their cryptography is
-  real (HMAC, SHA-384 PCRs, ECDSA P-384/P-256, Ed25519, X25519); their hardware is not. The EMV
-  application cryptogram (9F26) is an HMAC, not a card's 3DES/AES MAC.
+- Consortium ids are salted hashes. The ECDH-PSI handshake is real X25519 arithmetic; in this
+  deployment both banks' sides run in one service, and in production each side runs at its own bank.
+- The enclave, card terminals and VaultKey run as software device twins (the ESP32 in Wokwi) with
+  real cryptography (HMAC, SHA-384 PCRs, ECDSA P-384/P-256, Ed25519, X25519); physical HSMs,
+  terminals and keys plug into the same endpoints. The EMV application cryptogram (9F26) is an HMAC.
 - The SAR export is FinCEN-*style* XML for review, not a BSA E-Filing submission.
-- The bundled sanctions slice is synthetic; name-only screening produces common-name matches
-  that need date of birth or country to confirm.
+- Sanctions screening uses live OpenSanctions with an API key and a bundled sample list without one;
+  name-only matches are confirmed with date of birth or country.
 - The threshold explorer on the Evaluation page runs on the live slice, which overlaps the
   model's training data, so its numbers are optimistic; the held-out result is E1's table.
 

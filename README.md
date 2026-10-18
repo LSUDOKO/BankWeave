@@ -2,6 +2,17 @@
 
 # BankWeave
 
+<p align="center">
+<a href="https://github.com/LSUDOKO/BankWeave/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/LSUDOKO/BankWeave/actions/workflows/ci.yml/badge.svg"></a>
+<a href="https://github.com/LSUDOKO/BankWeave/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/LSUDOKO/BankWeave?color=087cf8"></a>
+<a href="https://bankweave.vercel.app"><img alt="Live" src="https://img.shields.io/badge/live-bankweave.vercel.app-0b2a5b"></a>
+<a href="docs/MCP.md"><img alt="MCP: hosted HTTP" src="https://img.shields.io/badge/MCP-17%20read--only%20tools-6f42c1"></a>
+<a href="https://github.com/LSUDOKO/BankWeave/pkgs/container/bankweave-api"><img alt="Docker image" src="https://img.shields.io/badge/ghcr.io-bankweave--api-2496ed"></a>
+<img alt="FalkorDB Cloud" src="https://img.shields.io/badge/FalkorDB-Cloud%20v4.22-ff4e00">
+<a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
+</p>
+
+
 **Many banks, one ring, every claim proven.**
 
 ![BankWeave live: centred hero over glossy blue bubbles, live counters, the console rising below](docs/img/v4/00-landing.png)
@@ -575,6 +586,9 @@ Optional environment variables: `OPENSANCTIONS_API_KEY` (live sanctions screenin
 `DOSSIER_SIGNING_KEY` (hex Ed25519 seed for dossier signatures), `PINNED_CASES`, `CAPACITY_PRUNE`.
 
 ## Run it locally
+
+Prebuilt API image: `docker pull ghcr.io/lsudoko/bankweave-api:latest` (published on every release).
+
 
 ```bash
 docker compose up -d                       # FalkorDB (6390, Browser 3030), Redis (6391), Postgres (5440)

@@ -23,11 +23,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec tsc --noEmit -p .
       - run: pnpm lint
-      - run: pnpm build
+      - run: pnpm build  # also writes next-env.d.ts, which declares image modules for tsc
         env:
           NEXT_PUBLIC_API_URL: https://bankweave-api.onrender.com
+      - run: pnpm exec tsc --noEmit -p .
 
   backend:
     name: Backend (tests against FalkorDB)

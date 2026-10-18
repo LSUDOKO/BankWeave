@@ -1,0 +1,12 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.LSUDOKO/bankweave",
+  "title": "BankWeave",
+  "description": "Read-only FalkorDB tools for cross-bank AML investigations: rings, money paths, echo-proof claims.",
+  "version": "3.0.0",
+  "websiteUrl": "https://bankweave.vercel.app",
+  "repository": { "url": "https://github.com/LSUDOKO/BankWeave", "source": "github" },
+  "remotes": [
+    { "type": "streamable-http", "url": "https://bankweave-api.onrender.com/mcp" }
+  ]
+}

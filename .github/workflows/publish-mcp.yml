@@ -1,0 +1,26 @@
+name: Publish MCP server
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # GitHub OIDC login to the MCP Registry as io.github.LSUDOKO/*
+  contents: read
+
+jobs:
+  registry:
+    name: Publish to the MCP Registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mcp-publisher
+        run: curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+      - name: Check the hosted endpoint answers
+        run: |
+          curl -fsS -m 90 https://bankweave-api.onrender.com/health
+          curl -fsS -m 90 -X POST https://bankweave-api.onrender.com/mcp -H 'Content-Type: application/json' \
+            -H 'Accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | head -c 300
+      - run: ./mcp-publisher login github-oidc
+      - run: ./mcp-publisher publish

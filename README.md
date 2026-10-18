@@ -2,6 +2,8 @@
 
 **Many banks, one ring, every claim proven.**
 
+![BankWeave live: blue hero with the live Command Center](docs/img/live/00-landing.png)
+
 BankWeave is a team of AI agents that investigates money-laundering alerts across several
 banks, with FalkorDB as its shared brain. It clears innocent alerts fast, exposes laundering
 rings that no single bank can see, and backs every conclusion with a graph path you can click
@@ -64,7 +66,7 @@ Every image below was captured on **https://bankweave.vercel.app** against the R
 FalkorDB Cloud (ap-south-1), with the agents running on Groq's free tier. Nothing is mocked; the
 mode badge reads "Live · LLM + FalkorDB".
 
-| Command Center (live counters, FalkorDB v4.22 health, agent activity) | Golden scenarios |
+| Command Center (`/command`: live counters, FalkorDB v4.22 health, agent activity) | Golden scenarios |
 |---|---|
 | ![](docs/img/live/01-command-center.png) | ![](docs/img/live/02-golden-scenarios.png) |
 

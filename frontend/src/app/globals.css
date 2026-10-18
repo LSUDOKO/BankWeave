@@ -174,6 +174,8 @@ html::-webkit-scrollbar { display: none; }
 [data-reveal].in { opacity: 1; transform: none; filter: none; }
 @keyframes hero-in { from { opacity: 0; transform: translateY(22px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
 .hero-in { animation: hero-in 1s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes word-in { from { opacity: 0; transform: translateY(45%) rotate(3deg); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+.hero-word { display: inline-block; animation: word-in .9s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes marquee { to { transform: translateX(-50%); } }
 .marquee { animation: marquee 38s linear infinite; }
 @keyframes thread { to { stroke-dashoffset: -400; } }
@@ -182,5 +184,5 @@ html::-webkit-scrollbar { display: none; }
 .glow-pulse { animation: glow-pulse 4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   [data-reveal] { opacity: 1; transform: none; filter: none; }
-  .marquee, .thread, .grow-up, .fade-up, .glow-pulse, .hero-in { animation: none !important; }
+  .marquee, .thread, .grow-up, .fade-up, .glow-pulse, .hero-in, .hero-word { animation: none !important; }
 }

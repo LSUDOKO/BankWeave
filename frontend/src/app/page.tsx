@@ -42,7 +42,7 @@ export default function Landing() {
   return (
     <div className="bg-white">
       <Hero d={d} replay={replay} />
-      <div className="mt-20"><Stack /></div>
+      <div className="mt-16"><Stack /></div>
       <Statement />
       <Bento d={d} />
       <Results />
@@ -66,62 +66,65 @@ function useScrollProgress(range: number) {
   return p;
 }
 
-function Hero({ d, replay }: { d: Overview | null; replay: boolean }) {
-  const p = useScrollProgress(520);
-  const decided = (d?.alerts.cleared ?? 0) + (d?.alerts.case ?? 0);
-  const [wide, setWide] = useState(true);
-  useEffect(() => { const f = () => setWide(window.innerWidth >= 1024); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+function Words({ text, from = 0, className = "" }: { text: string; from?: number; className?: string }) {
+  // each word rises in on its own beat; the line still reads as one sentence to assistive tech
   return (
     <>
-      {/* an inset card one viewport tall: glossy blue bubbles on a near-white field, navy type on the left */}
-      <section className="hero-light relative mx-2 mt-2 flex min-h-[calc(100svh-16px)] items-center overflow-hidden rounded-[28px] md:mx-3 md:mt-3">
-        <WeaveField zoom={wide ? 1.85 : 1.3} shift={wide ? 0.165 : 0} />
-        {!wide && <div className="absolute inset-0 bg-white/55" />}
-        <div className="relative mx-auto w-full max-w-[1240px] px-6 pb-16 pt-32 md:px-10" style={{ transform: `translateY(${p * -50}px)`, opacity: 1 - p * 0.8 }}>
-          <div className="max-w-[640px] max-lg:mx-auto max-lg:text-center">
-            <a href="#product" className="hero-in inline-flex items-center gap-2 rounded-full border border-cyan/20 bg-white/80 py-1 pl-1.5 pr-3.5 text-[13px] text-deep shadow-[var(--shadow)] backdrop-blur hover:border-cyan/40">
-              <span className="rounded-full bg-cyan px-2 py-0.5 text-[11px] font-semibold text-white">{replay ? "Replay" : "Live"}</span>
-              Running on FalkorDB Cloud · 6 banks · {d ? `${n(d.falkordb.graphs)} graphs` : "…"}
-            </a>
-            <h1 style={{ letterSpacing: "-0.05em", animationDelay: "80ms" }}
-              className="hero-in mt-6 text-[44px] font-semibold leading-[1.02] text-deep sm:text-[60px] lg:text-[72px]">
-              Find the laundering ring <span className="bg-gradient-to-r from-[#087cf8] to-[#0a508f] bg-clip-text text-transparent">no single bank can see</span>
-            </h1>
-            <p style={{ animationDelay: "160ms" }} className="hero-in mt-6 text-[17px] leading-relaxed text-[#3b5272] md:text-[19px]">
-              AI agents investigate alerts across banks in one FalkorDB instance. Each bank keeps its own graph, rings appear where
-              the graphs join, and every sentence of a report points to the query that proves it.
-            </p>
-            <div style={{ animationDelay: "240ms" }} className="hero-in mt-8 flex flex-wrap items-center gap-3 max-lg:justify-center">
-              <Link href="/command" className="group inline-flex items-center gap-2 rounded-xl bg-cyan px-6 py-3 font-semibold text-white shadow-[0_14px_34px_-12px_rgba(8,124,248,.85)] transition hover:bg-[#1a8bff]">
-                Open the console <span className="transition-transform group-hover:translate-x-0.5">→</span>
-              </Link>
-              <Link href="/explainer" className="rounded-xl border-[1.5px] border-deep/80 bg-white/70 px-6 py-3 font-semibold text-deep backdrop-blur transition hover:bg-white">How it works, in 3D</Link>
-            </div>
-            <dl style={{ animationDelay: "320ms" }} className="hero-in mt-10 grid max-w-[560px] grid-cols-3 gap-2 max-lg:mx-auto">
-              {[[n(decided), "alerts decided by agents"], [n(d?.claims.independent), "independent claims"], [d ? `${Math.round(d.ms)} ms` : "…", "live overview query"]].map(([v, l]) => (
-                <div key={l} className="rounded-2xl border border-white bg-white/75 px-3 py-3 shadow-[var(--shadow)] backdrop-blur">
-                  <dt className="sr-only">{l}</dt><dd className="kpi text-[24px] text-deep md:text-[28px]">{v}</dd><p className="text-[12px] text-muted">{l}</p>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
-        <a href="#product" aria-label="Scroll to the product" className="absolute bottom-6 left-1/2 -translate-x-1/2 text-deep/50 hover:text-deep">
-          <span className="scroll-cue block h-9 w-5 rounded-full border-2 border-current" />
+      {text.split(" ").map((w, i) => (
+        <span key={i} aria-hidden className={`hero-word ${className}`} style={{ animationDelay: `${(from + i) * 70}ms` }}>{w}&nbsp;</span>
+      ))}
+    </>
+  );
+}
+
+function Hero({ d, replay }: { d: Overview | null; replay: boolean }) {
+  const p = useScrollProgress(620);
+  const decided = (d?.alerts.cleared ?? 0) + (d?.alerts.case ?? 0);
+  const [wide, setWide] = useState(true);
+  useEffect(() => { const f = () => setWide(window.innerWidth >= 900); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  const line1 = "Find the laundering ring", line2 = "no single bank can see";
+  return (
+    // one rounded card: glossy bubbles drift across the whole field, the copy sits centred on a soft veil,
+    // and the live console rises out of the bottom edge, flattening as you scroll
+    <section className="hero-light relative mx-2 mt-2 overflow-hidden rounded-[28px] pt-32 md:mx-3 md:mt-3 md:pt-40">
+      <WeaveField zoom={wide ? 2.35 : 1.7} spread={wide ? 2.05 : 1.45} />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_52%_40%_at_50%_30%,rgba(248,251,255,.9)_0%,rgba(248,251,255,.6)_45%,rgba(248,251,255,0)_75%)]" />
+      <div className="relative mx-auto max-w-[1040px] px-5 text-center" style={{ transform: `translateY(${p * -40}px)`, opacity: 1 - p * 0.6 }}>
+        <a href="#product" className="hero-in inline-flex items-center gap-2 rounded-full border border-cyan/20 bg-white/85 py-1 pl-1.5 pr-3.5 text-[13px] text-deep shadow-[var(--shadow)] backdrop-blur hover:border-cyan/40">
+          <span className="rounded-full bg-cyan px-2 py-0.5 text-[11px] font-semibold text-white">{replay ? "Replay" : "Live"}</span>
+          Running on FalkorDB Cloud · 6 banks · {d ? `${n(d.falkordb.graphs)} graphs` : "…"} · hosted MCP
         </a>
-      </section>
-      {/* the console rises in and flattens as you scroll, framer-style */}
-      <div id="product" className="relative mx-auto mt-20 max-w-[1180px] scroll-mt-24 px-4" style={{ perspective: "1600px" }}>
-        <div className="mb-10 text-center">
-          <p className="mono font-medium text-cyan">The console</p>
-          <h2 className="mt-3 text-[34px] leading-[1.05] sm:text-[46px]" style={{ letterSpacing: "-0.045em", fontWeight: 700 }}>Every bank&apos;s investigators, one live picture</h2>
+        <h1 aria-label={`${line1} ${line2}`} className="mx-auto mt-7 text-[42px] font-semibold leading-[1.04] text-deep sm:text-[60px] lg:text-[78px]" style={{ letterSpacing: "-0.05em" }}>
+          <Words text={line1} from={1} /><br className="hidden sm:block" />
+          <Words text={line2} from={1 + line1.split(" ").length} className="bg-gradient-to-r from-[#087cf8] to-[#0a508f] bg-clip-text text-transparent" />
+        </h1>
+        <p style={{ animationDelay: "720ms" }} className="hero-in mx-auto mt-6 max-w-[660px] text-[17px] leading-relaxed text-[#34496a] md:text-[19px]">
+          AI agents investigate alerts across banks in one FalkorDB instance. Each bank keeps its own graph, rings appear where
+          the graphs join, and every sentence of a report points to the query that proves it.
+        </p>
+        <div style={{ animationDelay: "820ms" }} className="hero-in mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link href="/command" className="group inline-flex items-center gap-2 rounded-xl bg-cyan px-6 py-3 font-semibold text-white shadow-[0_14px_34px_-12px_rgba(8,124,248,.85)] transition hover:bg-[#1a8bff]">
+            Open the console <span className="transition-transform group-hover:translate-x-0.5">→</span>
+          </Link>
+          <Link href="/explainer" className="rounded-xl border-[1.5px] border-deep/80 bg-white/80 px-6 py-3 font-semibold text-deep backdrop-blur transition hover:bg-white">How it works, in 3D</Link>
+          <Link href="/explorer" className="rounded-xl px-4 py-3 font-semibold text-deep/80 transition hover:text-deep">Graph explorer →</Link>
         </div>
-        <div className="pointer-events-none absolute inset-x-[12%] top-40 h-48 rounded-full bg-cyan/25 blur-[90px]" />
-        <div style={{ transform: `rotateX(${(1 - p) * 20}deg) scale(${0.93 + p * 0.07})`, transformOrigin: "50% 0%" }} className="will-change-transform">
+        <dl style={{ animationDelay: "920ms" }} className="hero-in mx-auto mt-10 grid max-w-[640px] grid-cols-3 gap-2">
+          {[[n(decided), "alerts decided by agents"], [n(d?.claims.independent), "independent claims"], [d ? `${Math.round(d.ms)} ms` : "…", "live overview query"]].map(([v, l]) => (
+            <div key={l} className="rounded-2xl border border-white bg-white/80 px-3 py-3 shadow-[var(--shadow)] backdrop-blur">
+              <dt className="sr-only">{l}</dt><dd className="kpi text-[24px] text-deep md:text-[28px]">{v}</dd><p className="text-[12px] text-muted">{l}</p>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div id="product" className="hero-in relative mx-auto mt-14 max-w-[1180px] scroll-mt-24 px-4 md:mt-16" style={{ perspective: "1600px", animationDelay: "1000ms" }}>
+        <div className="pointer-events-none absolute inset-x-[12%] -top-6 h-48 rounded-full bg-cyan/25 blur-[90px]" />
+        <div style={{ transform: `rotateX(${(1 - p) * 24}deg) scale(${0.9 + p * 0.1}) translateY(${(1 - p) * 30}px)`, transformOrigin: "50% 0%" }} className="will-change-transform">
           <Shot src={shotCommand} alt="BankWeave dashboard on the live site" label="bankweave.vercel.app/command" />
         </div>
       </div>
-    </>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-[#e9f2ff]" />
+    </section>
   );
 }
 
@@ -412,7 +415,7 @@ function Footer() {
       <div className="relative mx-auto max-w-[1180px] px-6 pt-16 md:px-10">
         <div className="flex flex-col gap-12 lg:flex-row lg:justify-between">
           <div className="max-w-sm space-y-5">
-            <Link href="/" aria-label="go home" className="flex size-fit items-center gap-2"><Logo light /><span className="text-xl font-bold">BankWeave</span></Link>
+            <Link href="/" aria-label="go home" className="flex size-fit items-center gap-2"><Logo light size={30} /><span className="text-xl font-bold">BankWeave</span></Link>
             <p className="text-[#a9bcd8]">Cross-bank money-laundering investigations on FalkorDB, with every claim proven.</p>
             <Link href="/command" className="inline-block rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-white hover:bg-[#1a8bff]">Open the console</Link>
           </div>

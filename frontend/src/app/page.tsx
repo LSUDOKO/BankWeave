@@ -75,7 +75,7 @@ function Hero({ d, replay }: { d: Overview | null; replay: boolean }) {
     <>
       {/* an inset card one viewport tall: glossy blue bubbles on a near-white field, navy type on the left */}
       <section className="hero-light relative mx-2 mt-2 flex min-h-[calc(100svh-16px)] items-center overflow-hidden rounded-[28px] md:mx-3 md:mt-3">
-        <WeaveField zoom={wide ? 1.55 : 1.25} shift={wide ? 0.14 : 0} />
+        <WeaveField zoom={wide ? 1.85 : 1.3} shift={wide ? 0.165 : 0} />
         {!wide && <div className="absolute inset-0 bg-white/55" />}
         <div className="relative mx-auto w-full max-w-[1240px] px-6 pb-16 pt-32 md:px-10" style={{ transform: `translateY(${p * -50}px)`, opacity: 1 - p * 0.8 }}>
           <div className="max-w-[640px] max-lg:mx-auto max-lg:text-center">

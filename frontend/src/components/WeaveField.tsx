@@ -48,10 +48,15 @@ void main() {
     t += d; if (t > 100.0) break;
   }
   if (!hit) { gl_FragColor = vec4(bg, 1.0); return; }
-  float fresnel = pow(1.0 + dot(ray, getNormal(cam + ray * t)), 3.0);
+  vec3 n = getNormal(cam + ray * t);
+  float fresnel = pow(1.0 + dot(ray, n), 3.0);
   // glossy blue: a deep signal-blue core, brightening to sky toward the rim, white at the very edge
   vec3 c = mix(vec3(0.020, 0.310, 0.760), vec3(0.231, 0.627, 1.0), smoothstep(0.0, 0.55, fresnel));
   c = mix(c, vec3(0.749, 0.910, 1.0), smoothstep(0.55, 0.85, fresnel));
+  // soft key light from the upper left with a small specular highlight, so the bubbles read as volumes
+  vec3 l = normalize(vec3(-0.45, 0.65, 0.6));
+  c *= 0.78 + 0.32 * max(dot(n, l), 0.0);
+  c += vec3(1.0) * 0.55 * pow(max(dot(reflect(-l, n), -ray), 0.0), 28.0);
   gl_FragColor = vec4(mix(c, vec3(1.0), smoothstep(0.85, 1.0, fresnel)), 1.0);
 }`;
 

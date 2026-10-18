@@ -52,7 +52,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const sidebar = (
     <aside className="flex h-full flex-col rounded-[26px] bg-ink px-4 pb-4 pt-5">
       <Link href="/" className="flex items-center gap-2.5 px-3 text-[19px] font-semibold tracking-tight" aria-label="BankWeave home">
-        <span className="grid size-9 place-items-center rounded-full border-2 border-cyan/80"><Logo light={false} /></span>BankWeave
+        <Logo light={false} size={34} />BankWeave
       </Link>
       <nav className="shell-nav mt-4 min-h-0 flex-1 space-y-3.5 overflow-y-auto scroll-thin" aria-label="Main">
         {NAV.map(([g, items]) => (

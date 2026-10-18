@@ -35,12 +35,8 @@ export default function LandingNav() {
   );
 }
 
-export function Logo({ light }: { light: boolean }) {
-  // three bank lanes crossed by one thread: the weave
-  return (
-    <svg width="22" height="22" viewBox="0 0 26 26" aria-hidden>
-      {[5, 13, 21].map((x) => <line key={x} x1={x} y1="3" x2={x} y2="23" stroke={light ? "rgba(255,255,255,.55)" : "#b5bcc6"} strokeWidth="2.5" strokeLinecap="round" />)}
-      <path d="M2 18 C 8 4, 18 22, 24 8" stroke={light ? "#8ad8fc" : "#087cf8"} strokeWidth="2.8" fill="none" strokeLinecap="round" />
-    </svg>
-  );
+export function Logo({ light, size = 24 }: { light: boolean; size?: number }) {
+  // the BankWeave mark: a B whose bowls are split by one thread, the weave across banks
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={light ? "/logo-white.png" : "/logo.png"} width={size} height={size} alt="" aria-hidden className="shrink-0" />;
 }

@@ -1,0 +1,56 @@
+# BankWeave
+
+> Multi-agent cross-bank anti-money-laundering (AML) investigation on FalkorDB. Several banks pool
+> salted, hashed transaction data into one consortium graph next to one isolated graph per bank.
+> Agents (Orchestrator, Triage, Investigator, Skeptic, Reporter + Auditor, Archivist) clear
+> innocent alerts with native graph algorithms (algo.wcc and friends), open a case graph per
+> suspicious alert, link every claim to the evidence and the Cypher that produced it, and score
+> confidence over DISTINCT evidential origins ("echo-proof"), so many paths back to one origin
+> count once. Humans approve every action; SARs carry a signed audit dossier. Independent
+> hackathon project; not a FalkorDB product.
+
+## Try it
+
+- Live UI: https://bankweave.vercel.app
+- REST API (OpenAPI docs): https://bankweave-api.onrender.com/docs
+- Health: https://bankweave-api.onrender.com/health
+- Hosted MCP server (read-only, no key, Streamable HTTP): https://bankweave-api.onrender.com/mcp
+  - Claude Code: `claude mcp add --transport http bankweave https://bankweave-api.onrender.com/mcp`
+  - Install lines for Claude Desktop, Cursor and local stdio: docs/MCP.md
+- The API runs on Render's free plan and sleeps when idle: the first request may take ~50 s.
+
+## MCP tools (all read-only, GRAPH.RO_QUERY; every result returns graph, cypher, params, ms)
+
+- engine_overview, list_graphs, graph_schema(graph): FalkorDB health, graphs, labels/indexes
+- list_cases, get_case(case_id): cases, claims (naive vs echo-proof confidence), evidence (origin, state), actions, SAR status
+- explain_claim(case_id, claim_id): paths vs independent origins, origin groups, evidence chain with Cypher
+- account_network(account_id): scores, shared identity, cross-bank counterparties, 1-2 hop neighbourhood
+- trace_money_path(src, dst, case_id?): algo.SPpaths with the bank of every hop
+- find_rings(account_id?): algo.labelPropagation communities, cross-bank first
+- top_hubs (algo.pageRank), connected_components (algo.wcc)
+- similar_accounts (vector index on Account.behavior_vec), search_customers (full-text on Person/Company name)
+- list_alerts, triage_alert(alert_id): why an alert was cleared or escalated, with a live algo.wcc re-check
+- typology_guidance(question): typology knowledge graph (full-text) with citations
+- run_readonly_cypher(cypher, graph, limit): guarded last resort
+- Prompts: investigate_case(case_id), explain_ring(account_id), review_triage(alert_id)
+- Resources: bankweave://queries (every named query), bankweave://schema/{graph}
+
+## Graphs
+
+- consortium: Account, TRANSFERS, FLOWS, Person, Company, Device, IP, Address, Alert, Decision, Case, Claim
+- bank_<id>: one bank's view; other banks' accounts are ExternalAccount stubs
+- case_<id>: Case, Claim, Evidence, Action, SAR, Sentence, Event, Account
+- typology_kb: typology guidance chunks
+
+## Example ids (live data)
+
+- case C-44c08392 (10 accounts across 4 banks); claim CL-237a5887 in case C-64cbd23a (3 paths, 1 origin)
+- account 88c75b1808a4c341; alert AL-1A9F6E3D (cleared)
+
+## Docs
+
+- README.md: full write-up (problem, agents, trust layer, FalkorDB features, evaluation)
+- docs/MCP.md: MCP install, tool table, guarantees, transcript
+- docs/QUERIES.md: every registered Cypher query
+- docs/GRAPH_MODEL.md: the graph model
+- docs/BLOG.md: the story

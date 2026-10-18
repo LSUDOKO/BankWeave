@@ -52,6 +52,10 @@ void tap(int i) {
   req["amount"] = atm ? 20000.0 : AMOUNT[i];
   req["clone"] = atm;  // the Delhi ATM is where the cloned card shows up
   req["source"] = "wokwi";
+  req["device_id"] = atm ? "A00091" : "D00063";  // the terminal's device id in the graph
+  JsonArray gps = req["gps"].to<JsonArray>();
+  gps.add(atm ? 28.6139 : 19.0760);
+  gps.add(atm ? 77.2090 : 72.8777);
   String body;
   serializeJson(req, body);
   int code = http.POST(body);

@@ -58,33 +58,86 @@ FalkorDB's QueryWeaver or Weights & Biases Weave.
 Everything simulated says so on screen: the enclave, card terminals, VaultKey and Wokwi
 circuit are simulations; the hashes, signatures, key exchange and graph writes are real.
 
-| Command Center | Golden scenarios |
-|---|---|
-| ![](docs/img/v2/01-command-center.png) | ![](docs/img/v2/02-golden-scenarios.png) |
+### Screenshots from the live site
 
-| FalkorDB Lab: 17 live runs | Read-only `GRAPH.PROFILE` inspector |
-|---|---|
-| ![](docs/img/v2/04-lab-algorithms.png) | ![](docs/img/v2/05-lab-profile.png) |
+Every image below was captured on **https://bankweave.vercel.app** against the Render API and
+FalkorDB Cloud (ap-south-1), with the agents running on Groq's free tier. Nothing is mocked; the
+mode badge reads "Live · LLM + FalkorDB".
 
-| JS UDFs, tri-modal query, per-bank ACL with `ACL LOG` | Procedural memory as a graph |
+| Command Center (live counters, FalkorDB v4.22 health, agent activity) | Golden scenarios |
 |---|---|
-| ![](docs/img/v2/06-lab-engine-features.png) | ![](docs/img/v2/07-lab-memory.png) |
+| ![](docs/img/live/01-command-center.png) | ![](docs/img/live/02-golden-scenarios.png) |
 
-| Evidence Independence Explorer | Provenance DAG |
+| FalkorDB Lab: 17 runs on FalkorDB Cloud | `GRAPH.PROFILE` inspector |
 |---|---|
-| ![](docs/img/v2/08-evidence-independence.png) | ![](docs/img/v2/09-provenance-dag.png) |
+| ![](docs/img/live/05-lab-algorithms.png) | ![](docs/img/live/06-lab-profile.png) |
 
-| Simulate Freeze (`GRAPH.COPY` sandbox, `algo.maxFlow`, `algo.wcc`) | Agent trace waterfall |
+| JS UDF + tri-modal query on FalkorDB Cloud (the managed tier refuses ACL commands, shown honestly) | ACL on Docker: own bank allowed, consortium/other banks/writes denied, `ACL LOG` |
 |---|---|
-| ![](docs/img/v2/10-simulate-freeze.png) | ![](docs/img/v2/12-agent-trace.png) |
+| ![](docs/img/live/07-lab-engine-features.png) | ![](docs/img/v2/06-lab-engine-features.png) |
 
-| 3D consortium | Card terminals with EMV TLV |
+| MCP tool explorer with Engine X-Ray of the tool's query | Evidence Independence Explorer |
 |---|---|
-| ![](docs/img/v2/16-consortium-3d.png) | ![](docs/img/v2/17-hardware-terminals.png) |
+| ![](docs/img/live/15-lab-mcp-xray.png) | ![](docs/img/live/08-case-evidence.png) |
 
-| Enclave quarantined after tampering | Approval signed over the Merkle root |
+| Provenance DAG | Simulate Freeze on a `GRAPH.COPY` sandbox (49,475 → 0) |
 |---|---|
-| ![](docs/img/v2/18-enclave-quarantined.png) | ![](docs/img/v2/20-approval-signing.png) |
+| ![](docs/img/live/09-case-dag.png) | ![](docs/img/live/10-case-freeze.png) |
+
+| Agent trace: 35 spans from the Render agents (rate-limited LLM calls in red) | Audit dossier with signed Merkle root |
+|---|---|
+| ![](docs/img/live/11-case-trace.png) | ![](docs/img/live/12-audit-dossier.png) |
+
+| 3D consortium | Evaluation |
+|---|---|
+| ![](docs/img/live/13-consortium-3d.png) | ![](docs/img/live/14-evaluation.png) |
+
+## Hardware trust layer (simulated devices, real cryptography, $0)
+
+Banks don't let software act alone: terminals produce the device evidence, HSMs and enclaves
+guard identity hashing, and a human signs off with a security key. BankWeave simulates all three
+in software and wires each into FalkorDB. Captured on the live site:
+
+| Approve with a hardware key: VaultKey FIPS (virtual USB-C key, gold touch ring) | Real WebAuthn (Chrome virtual CTAP2 USB key): ES256 receipt, raw `authenticatorData` and `clientDataJSON` with origin `https://bankweave.vercel.app` |
+|---|---|
+| ![](docs/img/live/20-hw-signing-vaultkey.png) | ![](docs/img/live/21-hw-webauthn-receipt.png) |
+
+| Signed: `(:HardwareAttestation)-[:ATTESTS]->(:Action)` in the case graph | Evidence revoked afterwards: the case Merkle root changes and the seal breaks |
+|---|---|
+| ![](docs/img/live/22-hw-case-sealed.png) | ![](docs/img/live/23-hw-merkle-seal-broken.png) |
+
+| Mule ring: three cards on shared POS `D00063` within 30 s → `pos_shared_terminal` alerts into the agents' queue | Cloned card: Mumbai then Delhi 10 s later, ATC replayed → `impossible_travel`; NFC UID, GPS, IMEI, ISO 8583 fields, EMV TLV |
+|---|---|
+| ![](docs/img/live/24-hw-pos-mule-ring.png) | ![](docs/img/live/25-hw-cloned-card-emv.png) |
+
+| EMVLab.org decodes the live terminal's field 55 (IFD serial `A0009101`, ATC, CID `80`) | Wokwi ESP32 circuit and serial monitor of device taps (`hardware/wokwi/`) |
+|---|---|
+| ![](docs/img/live/30-emvlab-decodes-tlv.png) | ![](docs/img/live/26-hw-wokwi-serial.png) |
+
+| Enclave attested: PKCS#11 slot 0, signer fingerprint, six bank sync links open | PCR0 tampered: QUARANTINED, all links severed; the live API answers a card tap with **HTTP 423** |
+|---|---|
+| ![](docs/img/live/27-hw-enclave-attested.png) | ![](docs/img/live/28-hw-enclave-quarantined.png) |
+
+| ECDH-PSI between two bank graphs (X25519) | Sanctions screening with OpenSanctions links |
+|---|---|
+| ![](docs/img/live/29-hw-psi.png) | ![](docs/img/live/16-case-sanctions.png) |
+
+What is real and what is simulated:
+
+| Piece | Real | Simulated |
+|---|---|---|
+| Card terminals | BER-TLV encoding (verified by EMVLab), ISO 8583 field layout, graph writes (`CARD_TXN`, `USES_DEVICE {emv_atc, terminal_id, gps, nfc_uid}`), alerts the agents triage, impossible-travel and ATC-replay detection | the terminals and cards; 9F26 is an HMAC, not a chip's 3DES/AES MAC |
+| Wokwi ESP32 | the circuit runs in Wokwi and makes real HTTPS posts | the board is a simulator |
+| Approval keys | WebAuthn ES256 verification, signature counter, Merkle root over claims/evidence/sentences, seal break on revocation | VaultKey is a WebCrypto key in the tab |
+| Enclave / HSM | HMAC-SHA256 blinding, SHA-384 PCRs, ES384-signed Nitro-style document, `(:EnclaveAttestation)` nodes, ingestion refused with 423 while quarantined | no TEE hardware or AWS Nitro PKI chain |
+| PSI | X25519 scalar multiplication, commutative blinding | both banks run in one process |
+
+External verifiers: [EMVLab TLV decoder](https://emvlab.org/tlvutils/) ·
+[EMVLab cryptogram tool](https://emvlab.org/cryptogram/) ·
+[WebAuthn.me debugger](https://webauthn.me/debugger) ·
+[Chrome virtual authenticator](https://developer.chrome.com/docs/devtools/webauthn) ·
+[Wokwi ESP32](https://wokwi.com/projects/new/esp32) · [OpenSanctions](https://www.opensanctions.org/search/) ·
+[FalkorDB Cloud](https://app.falkordb.cloud).
 
 ## Why FalkorDB is essential
 

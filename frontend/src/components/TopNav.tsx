@@ -23,15 +23,22 @@ export default function TopNav() {
     document.addEventListener("mousedown", off);
     return () => document.removeEventListener("mousedown", off);
   }, []);
-  const onHero = path === "/";
+  // transparent white nav only while the landing hero (one viewport tall) is behind it
+  const [atTop, setAtTop] = useState(true);
+  useEffect(() => {
+    const f = () => setAtTop(window.scrollY < window.innerHeight - 80);
+    f(); window.addEventListener("scroll", f, { passive: true });
+    return () => window.removeEventListener("scroll", f);
+  }, []);
+  const onHero = path === "/" && atTop;
   return (
-    <header className="sticky top-3 z-40 px-3">
-      <div ref={ref} className={`mx-auto flex max-w-[1180px] items-center gap-2 rounded-2xl border px-3 py-2 backdrop-blur-xl transition-colors ${
-        onHero ? "border-white/25 bg-white/12 text-white" : "border-line bg-white/85 text-paper shadow-[var(--shadow)]"}`}>
+    <header className={`${path === "/" ? "fixed inset-x-0 top-6" : "sticky top-3"} z-40 px-3`}>
+      <div ref={ref} className={`mx-auto flex items-center gap-2 rounded-2xl border py-2 transition-[max-width,padding,background-color,border-color,box-shadow,color] duration-500 ease-out ${
+        onHero ? "max-w-[calc(100vw-24px)] border-transparent bg-transparent px-5 text-white" : "max-w-[1180px] border-line bg-white/85 px-3 text-paper shadow-[var(--shadow)] backdrop-blur-xl"}`}>
         <Link href="/" className="flex items-center gap-2 pr-2 font-semibold tracking-tight" aria-label="BankWeave home">
           <Logo light={onHero} /><span className="text-[15px]">BankWeave</span>
         </Link>
-        <nav className="flex items-center gap-1 text-sm" aria-label="Main">
+        <nav className={`flex items-center gap-1 text-sm ${onHero ? "invisible opacity-0 max-md:hidden" : "visible opacity-100"} transition-[opacity,visibility] duration-300`} aria-label="Main">
           {GROUPS.map(([g, items]) => {
             const active = items.some(([h]) => path.startsWith(h));
             return (
@@ -55,7 +62,7 @@ export default function TopNav() {
           })}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden sm:inline-flex"><ModeBadge /></span>
+          <span className={`hidden sm:inline-flex ${onHero ? "invisible opacity-0" : "visible opacity-100"} transition-[opacity,visibility] duration-300`}><ModeBadge /></span>
           <Link href="/command" className={`rounded-xl px-3.5 py-1.5 text-sm font-semibold ${onHero ? "bg-white text-cyan" : "bg-cyan text-white"}`}>Open console</Link>
         </div>
       </div>

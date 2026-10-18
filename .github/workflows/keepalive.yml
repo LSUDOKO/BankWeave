@@ -1,0 +1,12 @@
+# Render's free plan sleeps after 15 idle minutes and takes about a minute to wake.
+# Ping the API every 10 minutes so visitors reach a warm instance with the agents running.
+name: keep-api-warm
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --max-time 150 https://bankweave-api.onrender.com/health

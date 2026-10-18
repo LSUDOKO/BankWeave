@@ -44,6 +44,7 @@ export default function Landing() {
     <div className="bg-white">
       <Hero d={d} replay={replay} />
       <div className="mt-16"><Stack /></div>
+      <DemoVideo />
       <Statement />
       <NewIn3 />
       <Bento d={d} />
@@ -142,6 +143,25 @@ function Stack() {
       <div className="flex w-max marquee gap-12 [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
         {[...items, ...items].map((t, i) => <span key={i} className="whitespace-nowrap text-[19px] font-semibold tracking-tight text-[#9aa8bb]">{t}</span>)}
       </div>
+    </section>
+  );
+}
+
+/** The narrated demo: problem film, whiteboard, live product, hardware, MCP and the FalkorDB proof. */
+function DemoVideo() {
+  return (
+    <section id="demo" className="mx-auto max-w-[1180px] scroll-mt-24 px-5 pt-24">
+      <div data-reveal className="mx-auto max-w-[760px] text-center">
+        <p className="mono font-medium text-cyan">The demo</p>
+        <h2 className="mt-3 text-[34px] leading-[1.05] sm:text-[46px]" style={{ letterSpacing: "-0.045em", fontWeight: 700 }}>Watch it find the ring</h2>
+        <p className="mt-4 text-[17px] text-muted">The problem, the idea on a whiteboard, then the live product on FalkorDB Cloud: agents, the ring reveal, a case, the hardware edge, MCP and FalkorDB&apos;s own browser.</p>
+      </div>
+      <div data-reveal style={{ ["--d" as string]: "120ms" }} className="mt-10 overflow-hidden rounded-[24px] border border-line bg-black shadow-[0_40px_80px_-40px_rgba(4,38,84,.5)]">
+        <video controls preload="none" playsInline poster="/media/demo-poster.jpg" className="block aspect-video w-full">
+          <source src="/media/bankweave-demo.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <p className="mt-3 text-center text-sm text-muted">Narrated, captions burned in. Every screen is the live site; every number comes from the product or eval/results.</p>
     </section>
   );
 }
